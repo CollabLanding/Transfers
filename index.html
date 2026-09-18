@@ -37,6 +37,14 @@
           <label>Pallet Count<input id="pallet" type="number" min="0" max="999" required></label>
           <label>Job Number<input id="job" required></label>
         </div>
+        <label>Order Status
+          <select id="status" required>
+            <option value="Loading" selected>Loading</option>
+            <option value="Loaded">Loaded</option>
+            <option value="In Transit">In Transit</option>
+            <option value="Delivered">Delivered</option>
+          </select>
+        </label>
         <button class="primary" type="submit" id="save">Add Transfer</button>
         <button type="button" class="danger hidden" id="delete">Delete Transfer</button>
         <button type="button" class="hidden" id="cancel">Cancel Edit</button>
