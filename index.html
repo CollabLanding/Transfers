@@ -1,23 +1,70 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Transfers</title><link rel="stylesheet" href="styles.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Transfers</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+</head>
 <body>
-<header><div><small>INTERNAL FREIGHT SCHEDULING</small><h1>Transfers</h1></div><div class="nav"><button id="prev">←</button><button id="today">Today</button><input id="boardDate" type="date"><button id="next">→</button></div></header>
+<header>
+  <div><small>INTERNAL FREIGHT SCHEDULING</small><h1>Transfers</h1></div>
+  <div class="nav"><button id="prev">←</button><button id="today">Today</button><input id="boardDate" type="date"><button id="next">→</button></div>
+</header>
 <main>
-<aside>
-<section class="panel"><h2 id="formTitle">Build Transfer Load</h2><form id="form">
-<input id="editId" type="hidden">
-<div class="row"><label>Scheduled Date<input id="date" type="date" required></label><label>Scheduled Time<input id="time" type="time" step="900" required></label></div>
-<label>Driver<input id="driver" list="drivers" required><datalist id="drivers"></datalist></label>
-<div class="row"><label>Load Origination<input id="origin" list="buildings" required></label><label>Load Destination<input id="destination" list="buildings" required></label></div>
-<datalist id="buildings"><option value="Building 100"><option value="Building 200"></datalist>
-<div class="row"><label>Pallet Count<input id="pallet" type="number" min="0" max="999" required></label><label>Job Number<input id="job" required></label></div>
-<button class="primary" type="submit" id="save">Add Transfer</button><button type="button" class="danger hidden" id="delete">Delete Transfer</button><button type="button" class="hidden" id="cancel">Cancel Edit</button><p id="msg"></p>
-</form></section>
-<section class="panel"><div class="panelhead"><h2>Active Users</h2><span id="mode">Demo</span></div><div class="me"><b id="me">Demo User</b><small id="email">Local preview mode</small></div><div id="active"></div><button id="signout" class="hidden">Sign Out</button></section>
-</aside>
-<section class="panel board"><div class="boardhead"><div><small>DAILY SCHEDULE</small><h2 id="title">Transfer Board</h2></div></div><div id="gridWrap"><div id="grid"></div></div></section>
+  <aside>
+    <section class="panel">
+      <h2 id="formTitle">Build Transfer Load</h2>
+      <form id="form">
+        <input id="editId" type="hidden">
+        <div class="row three">
+          <label>Scheduled Date<input id="date" type="date" required></label>
+          <label>Scheduled Time<input id="time" type="time" step="900" required></label>
+          <label>Load Duration
+            <select id="duration" required>
+              <option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60" selected>1 hour</option><option value="75">1 hr 15 min</option><option value="90">1 hr 30 min</option><option value="120">2 hours</option><option value="150">2 hr 30 min</option><option value="180">3 hours</option><option value="240">4 hours</option>
+            </select>
+          </label>
+        </div>
+        <label>Driver<select id="driver" required></select></label>
+        <div class="row">
+          <label>Load Origination<select id="origin" required></select></label>
+          <label>Load Destination<select id="destination" required></select></label>
+        </div>
+        <div class="row">
+          <label>Pallet Count<input id="pallet" type="number" min="0" max="999" required></label>
+          <label>Job Number<input id="job" required></label>
+        </div>
+        <button class="primary" type="submit" id="save">Add Transfer</button>
+        <button type="button" class="danger hidden" id="delete">Delete Transfer</button>
+        <button type="button" class="hidden" id="cancel">Cancel Edit</button>
+        <p id="msg"></p>
+      </form>
+    </section>
+    <section class="panel">
+      <div class="panelhead"><h2>Active Users</h2><span id="mode">Demo</span></div>
+      <div class="me"><b id="me">Demo User</b><small id="email">Local preview mode</small></div>
+      <div id="active"></div><button id="signout" class="hidden">Sign Out</button>
+    </section>
+  </aside>
+  <section class="panel board">
+    <div class="boardhead"><div><small>DAILY SCHEDULE</small><h2 id="title">Transfer Board</h2></div><small>Drag a load to change its time or driver</small></div>
+    <div id="gridWrap"><div id="grid"></div></div>
+  </section>
 </main>
-<div id="login" class="login hidden"><form id="loginForm" class="loginbox"><h1>Transfers</h1><p>Sign in to the transfer board.</p><input id="loginEmail" type="email" placeholder="Email" required><input id="loginPassword" type="password" placeholder="Password" required><button class="primary">Sign In</button><p id="loginMsg"></p></form></div>
-<script src="app.js"></script></body></html>
+<div id="optionModal" class="modal hidden" role="dialog" aria-modal="true">
+  <form id="optionForm" class="modalbox">
+    <div class="modalhead"><div><small id="optionEyebrow">NEW OPTION</small><h2 id="optionTitle">Add a Driver</h2></div><button type="button" id="optionClose" class="iconbtn">×</button></div>
+    <label id="optionLabel">Driver Name<input id="optionName" autocomplete="off" required></label>
+    <div class="modalactions"><button type="button" id="optionCancel">Cancel</button><button class="primary" type="submit">Add</button></div>
+    <p id="optionMsg"></p>
+  </form>
+</div>
+<div id="login" class="login hidden">
+  <form id="loginForm" class="loginbox"><h1>Transfers</h1><p>Sign in to the transfer board.</p><input id="loginEmail" type="email" placeholder="Email" required><input id="loginPassword" type="password" placeholder="Password" required><button class="primary">Sign In</button><p id="loginMsg"></p></form>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
