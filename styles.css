@@ -378,3 +378,46 @@ html[data-theme="dark"] .drop-preview-time,
 body.dark-theme .drop-preview-time{color:#b9ddf5}
 html[data-theme="dark"] .drop-preview-label,
 body.dark-theme .drop-preview-label{color:#8bc0e2}
+
+
+/* Driver SMS */
+#textDriver{background:#eaf5ff;color:#1d5c8f;border-color:#b9d8ed;font-weight:700}
+.sms-modalbox{width:min(610px,calc(100vw - 32px));max-height:92vh;overflow:auto}
+.sms-transfer-summary{margin:14px 0 4px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#f7f9fb;color:var(--muted);font-size:12px;font-weight:700}
+.sms-template-label{font-size:12px;font-weight:700;margin:14px 0 7px}
+.sms-presets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sms-presets button{padding:9px 8px}
+.sms-presets button.active{background:#dcecf8;border-color:#78aaca;color:#184f73;font-weight:800}
+.sms-modalbox textarea{width:100%;min-height:138px;resize:vertical;border:1px solid #cbd2d9;border-radius:8px;padding:10px;background:#fff;color:var(--text);font:inherit;line-height:1.4}
+.sms-message-meta{display:flex;justify-content:space-between;gap:12px;margin-top:-5px;color:var(--muted);font-size:10px}
+.sms-message-meta .near-limit{color:#b45309;font-weight:800}
+.sms-msg{min-height:18px;margin:8px 0 0;font-size:12px}
+.sms-msg.error{color:#a43c3c}
+.sms-msg.ok{color:#2f6f49}
+.sms-history-wrap{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.sms-history-title{font-size:12px;font-weight:800;margin-bottom:8px}
+.sms-history{display:grid;gap:6px}
+.sms-history-item{border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:#f8fafc;font-size:11px}
+.sms-history-item small{display:block;margin-top:3px;color:var(--muted)}
+.sms-history-empty{padding:10px 2px;color:var(--muted);font-size:11px}
+
+html[data-theme="dark"] #textDriver,
+body.dark-theme #textDriver{background:#20384a;color:#a9d2ec;border-color:#426b87}
+html[data-theme="dark"] .sms-transfer-summary,
+body.dark-theme .sms-transfer-summary,
+html[data-theme="dark"] .sms-history-item,
+body.dark-theme .sms-history-item{background:#151c23;border-color:#34404c}
+html[data-theme="dark"] .sms-presets button.active,
+body.dark-theme .sms-presets button.active{background:#203c50;border-color:#5b94ba;color:#b9ddf5}
+html[data-theme="dark"] .sms-modalbox textarea,
+body.dark-theme .sms-modalbox textarea{background:#121920;color:#dbe4ec;border-color:#3d4955}
+html[data-theme="dark"] .sms-history-wrap,
+body.dark-theme .sms-history-wrap{border-top-color:#34404c}
+html[data-theme="dark"] .sms-msg.ok,
+body.dark-theme .sms-msg.ok{color:#7ee2ae}
+html[data-theme="dark"] .sms-msg.error,
+body.dark-theme .sms-msg.error{color:#f0a2a2}
+
+@media(max-width:560px){
+  .sms-presets{grid-template-columns:1fr}
+}
