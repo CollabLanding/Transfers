@@ -22,7 +22,7 @@ main{grid-template-columns:380px minmax(0,1fr) 155px;align-items:start}
 .active-users-heading h2{margin:0;font-size:18px}
 .active-count{min-width:28px;height:28px;border-radius:999px;display:grid;place-items:center;background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;font-size:12px;font-weight:900}
 .active-users-list{display:grid;gap:8px}
-.active-users-list .activeRow{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:9px 8px;background:#fff;font-size:12px;font-weight:800;overflow:hidden}
+.active-users-list .activeRow{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:9px 8px;background:#fff;font-size:12px;font-weight:400;overflow:hidden}
 .active-users-list .activeRow:before{content:"";width:9px;height:9px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 3px #dcfce7;flex:0 0 auto;margin:0}
 .active-users-list .activeRow{white-space:nowrap;text-overflow:ellipsis}
 .active-users-list .active-empty{padding:12px 2px;color:var(--muted);font-size:12px;text-align:center}
@@ -39,3 +39,5 @@ main{grid-template-columns:380px minmax(0,1fr) 155px;align-items:start}
   header{height:auto;align-items:flex-start;gap:12px;flex-wrap:wrap}
   .header-right{width:100%;justify-content:space-between;flex-wrap:wrap}
 }
+
+.card-status{display:block;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#315c79;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
