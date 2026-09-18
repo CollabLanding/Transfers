@@ -18,6 +18,8 @@ A focused internal freight-transfer scheduling board for 53-foot dry van moves b
 - Displays the user who built each transfer directly on the load block.
 - Lets users click an existing load to edit or delete it.
 - Includes an Active User panel using Supabase Realtime Presence.
+- Includes Team Chat for signed-in users.
+- Supports secure Driver SMS through Twilio + a Supabase Edge Function.
 - Has no invoicing, billing, rates, or accounting fields.
 
 ## Files
@@ -27,6 +29,10 @@ A focused internal freight-transfer scheduling board for 53-foot dry van moves b
 - `app.js` – transfer scheduling, edit/delete, auth, realtime, active users
 - `config.js` – Supabase project URL and anon key
 - `schema.sql` – database tables, RLS policies, profiles, realtime setup
+- `sms.js` – driver SMS UI, templates, phone lookup, and SMS history
+- `migration-v9.sql` – driver phone + SMS history database migration
+- `supabase/functions/send-sms/index.ts` – secure Twilio SMS sender
+- `SMS-SETUP.md` – one-time Twilio/Supabase setup instructions
 
 ## Preview without Supabase
 
