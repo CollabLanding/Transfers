@@ -285,3 +285,45 @@ body.dark-theme .loginbox{background:#1a222b;color:#d9e2ea}
 .corner{background:#fafbfc;border-right:1px solid #cbd2d9}
 html[data-theme="dark"] .corner,
 body.dark-theme .corner{background:#151c23;border-right-color:#3a4652}
+
+
+/* Final time-rail cleanup: continuous from board header to schedule body */
+.times,
+.corner{
+  background:repeating-linear-gradient(
+    to bottom,
+    #fafbfc 0,
+    #fafbfc 16px,
+    #eef1f4 16px,
+    #eef1f4 17px,
+    #fafbfc 17px,
+    #fafbfc 33px,
+    #dfe4e8 33px,
+    #dfe4e8 34px
+  );
+}
+.corner{
+  background-position-y:18px;
+  border-right:1px solid #cbd2d9;
+}
+.tick[data-minute="210"]{display:none!important}
+
+html[data-theme="dark"] .times,
+html[data-theme="dark"] .corner,
+body.dark-theme .times,
+body.dark-theme .corner{
+  background:repeating-linear-gradient(
+    to bottom,
+    #151c23 0,
+    #151c23 16px,
+    #1b242d 16px,
+    #1b242d 17px,
+    #151c23 17px,
+    #151c23 33px,
+    #2a3540 33px,
+    #2a3540 34px
+  );
+  border-right-color:#3a4652;
+}
+html[data-theme="dark"] .corner,
+body.dark-theme .corner{background-position-y:18px}
