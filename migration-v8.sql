@@ -27,6 +27,7 @@ to authenticated
 with check (auth.uid() = user_id);
 
 grant select, insert on public.transfer_chat_messages to authenticated;
+grant usage, select on sequence public.transfer_chat_messages_id_seq to authenticated;
 
 do $$
 begin
