@@ -68,9 +68,20 @@
     <div class="boardhead"><div><small>DAILY SCHEDULE</small><h2 id="title">Transfer Board</h2></div></div>
     <div id="gridWrap"><div id="grid"></div></div>
   </section>
-  <aside class="panel active-users-panel" aria-label="Active users">
-    <div class="active-users-heading"><h2>Active Users</h2><span id="activeUsersCount" class="active-count">0</span></div>
-    <div id="active" class="active-users-list"><div class="active-empty">Connecting…</div></div>
+  <aside class="right-sidebar">
+    <section class="panel chat-panel" aria-label="Team chat">
+      <div class="chat-heading"><h2>Team Chat</h2><small>LIVE</small></div>
+      <div id="chatList" class="chat-list" aria-live="polite"><div class="chat-empty">Loading chat…</div></div>
+      <div id="chatNote" class="chat-note" aria-live="polite"></div>
+      <form id="chatForm" class="chat-form">
+        <textarea id="chatInput" maxlength="500" rows="2" placeholder="Type a message…" aria-label="Chat message"></textarea>
+        <button id="chatSend" class="primary" type="submit">Send</button>
+      </form>
+    </section>
+    <section class="panel active-users-panel" aria-label="Active users">
+      <div class="active-users-heading"><h2>Active Users</h2><span id="activeUsersCount" class="active-count">0</span></div>
+      <div id="active" class="active-users-list"><div class="active-empty">Connecting…</div></div>
+    </section>
   </aside>
 </main>
 <div id="optionModal" class="modal hidden" role="dialog" aria-modal="true">
@@ -89,5 +100,6 @@
 <script src="recent-activity.js"></script>
 <script src="duplicate-transfer.js"></script>
 <script src="theme.js"></script>
+<script src="chat.js"></script>
 </body>
 </html>
