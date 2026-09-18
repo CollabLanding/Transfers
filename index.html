@@ -11,7 +11,7 @@
 <body>
 <header>
   <div><small>INTERNAL FREIGHT SCHEDULING</small><h1>Transfers</h1></div>
-  <div class="nav"><button id="prev">←</button><button id="today">Today</button><input id="boardDate" type="date"><button id="next">→</button></div>
+  <div class="header-right"><div class="nav"><button id="prev">←</button><button id="today">Today</button><input id="boardDate" type="date"><button id="next">→</button></div><div class="user-session"><span id="me"></span><small id="email"></small><button id="signout" class="hidden">Sign Out</button></div></div>
 </header>
 <main>
   <aside>
@@ -24,7 +24,7 @@
           <label>Scheduled Time<input id="time" type="time" step="900" required></label>
           <label>Load Duration
             <select id="duration" required>
-              <option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60" selected>1 hour</option><option value="75">1 hr 15 min</option><option value="90">1 hr 30 min</option><option value="120">2 hours</option><option value="150">2 hr 30 min</option><option value="180">3 hours</option><option value="240">4 hours</option>
+              <option value="30">30 min</option><option value="60" selected>1 hour</option><option value="90">1 hr 30 min</option><option value="120">2 hours</option><option value="150">2 hr 30 min</option><option value="180">3 hours</option><option value="210">3 hr 30 min</option><option value="240">4 hours</option>
             </select>
           </label>
         </div>
@@ -51,16 +51,19 @@
         <p id="msg"></p>
       </form>
     </section>
-    <section class="panel">
-      <div class="panelhead"><h2>Active Users</h2><span id="mode">Demo</span></div>
-      <div class="me"><b id="me">Demo User</b><small id="email">Local preview mode</small></div>
-      <div id="active"></div><button id="signout" class="hidden">Sign Out</button>
+    <section class="panel recent-activity-panel">
+      <div class="section-heading"><div><h2>Recent Activity</h2><p>Latest transfer changes</p></div><span id="mode" class="mode-badge">Demo</span></div>
+      <div id="recentActivity" class="activity-list"><div class="activity-empty">Loading activity…</div></div>
     </section>
   </aside>
   <section class="panel board">
-    <div class="boardhead"><div><small>DAILY SCHEDULE</small><h2 id="title">Transfer Board</h2></div><small>Drag a load to change its time or driver</small></div>
+    <div class="boardhead"><div><small>DAILY SCHEDULE</small><h2 id="title">Transfer Board</h2></div></div>
     <div id="gridWrap"><div id="grid"></div></div>
   </section>
+  <aside class="panel active-users-panel" aria-label="Active users">
+    <div class="active-users-heading"><h2>Active Users</h2><span id="activeUsersCount" class="active-count">0</span></div>
+    <div id="active" class="active-users-list"><div class="active-empty">Connecting…</div></div>
+  </aside>
 </main>
 <div id="optionModal" class="modal hidden" role="dialog" aria-modal="true">
   <form id="optionForm" class="modalbox">
@@ -75,5 +78,6 @@
 </div>
 <script src="app.js"></script>
 <script src="order-status.js"></script>
+<script src="recent-activity.js"></script>
 </body>
 </html>
