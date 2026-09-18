@@ -279,3 +279,9 @@ body.dark-theme .chat-message{border-bottom-color:#34404c}
 body.dark-theme .chat-form{border-top-color:#34404c}
 body.dark-theme .modalbox,
 body.dark-theme .loginbox{background:#1a222b;color:#d9e2ea}
+
+
+/* Clean continuous time rail at top of schedule */
+.corner{background:#fafbfc;border-right:1px solid #cbd2d9}
+html[data-theme="dark"] .corner,
+body.dark-theme .corner{background:#151c23;border-right-color:#3a4652}
