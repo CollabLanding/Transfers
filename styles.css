@@ -327,3 +327,10 @@ body.dark-theme .corner{
 }
 html[data-theme="dark"] .corner,
 body.dark-theme .corner{background-position-y:18px}
+
+
+/* Compact pallet count with expanded job number / notes field */
+.row.job-row{grid-template-columns:minmax(78px,1fr) 3fr}
+@media(max-width:900px){
+  .row.job-row{grid-template-columns:minmax(78px,1fr) 3fr}
+}
