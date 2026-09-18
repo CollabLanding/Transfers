@@ -41,3 +41,15 @@ main{grid-template-columns:380px minmax(0,1fr) 155px;align-items:start}
 }
 
 .card-status{display:block;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#315c79;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+
+/* Order status colors */
+.card.status-planned{background:#f1f5f9;border-color:#64748b;border-left-color:#64748b}
+.card.status-planned .card-status{color:#475569}
+.card.status-loading{background:#fef3c7;border-color:#d97706;border-left-color:#d97706}
+.card.status-loading .card-status{color:#92400e}
+.card.status-loaded{background:#dbeafe;border-color:#2563eb;border-left-color:#2563eb}
+.card.status-loaded .card-status{color:#1d4ed8}
+.card.status-in-transit{background:#ede9fe;border-color:#7c3aed;border-left-color:#7c3aed}
+.card.status-in-transit .card-status{color:#6d28d9}
+.card.status-delivered{background:#dcfce7;border-color:#16a34a;border-left-color:#16a34a}
+.card.status-delivered .card-status{color:#166534}
