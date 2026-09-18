@@ -10,7 +10,7 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260918-2001">
+  <link rel="stylesheet" href="styles.css?v=20260918-2015">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
 </head>
@@ -39,9 +39,9 @@
           <label>Load Origination<select id="origin" required></select></label>
           <label>Load Destination<select id="destination" required></select></label>
         </div>
-        <div class="row">
+        <div class="row job-row">
           <label>Pallet Count<input id="pallet" type="number" min="0" max="999" required></label>
-          <label>Job Number<input id="job" required></label>
+          <label>Job Number / Notes<input id="job" required></label>
         </div>
         <label>Order Status
           <select id="status" required>
