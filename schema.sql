@@ -41,8 +41,12 @@ create table if not exists public.transfer_drivers(
   name text primary key,
   created_by uuid references auth.users(id) on delete set null,
   created_by_name text not null default 'System',
+  sort_order integer not null default 1000000,
   created_at timestamptz not null default now()
 );
+
+alter table public.transfer_drivers
+  add column if not exists sort_order integer not null default 1000000;
 
 create table if not exists public.transfer_locations(
   name text primary key,
@@ -110,3 +114,25 @@ begin
   if not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='transfer_drivers') then alter publication supabase_realtime add table public.transfer_drivers; end if;
   if not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='transfer_locations') then alter publication supabase_realtime add table public.transfer_locations; end if;
 end $$;
+
+create or replace function public.reorder_transfer_drivers(p_names text[])
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_name text;
+  v_pos integer := 0;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required';
+  end if;
+  foreach v_name in array p_names loop
+    update public.transfer_drivers set sort_order = v_pos where name = v_name;
+    v_pos := v_pos + 1;
+  end loop;
+end;
+$$;
+
+grant execute on function public.reorder_transfer_drivers(text[]) to authenticated;
