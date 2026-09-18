@@ -32,21 +32,13 @@ A focused internal freight-transfer scheduling board for 53-foot dry van moves b
 
 Open `index.html`. If `config.js` is blank, the page automatically runs in **Demo mode** and saves transfers to that browser's `localStorage`.
 
-## Connect Supabase
+## Live setup
 
-1. Create or choose the Supabase project you want this repository to use.
-2. Run `schema.sql` in the Supabase SQL editor.
-3. In Supabase Authentication, create the user accounts that should access Transfers.
-4. Put the project URL and anon/public key into `config.js`:
+The repository is already connected to the shared Supabase project used by the internal operations boards. The browser configuration is stored in `config.js` with the project's publishable key.
 
-```js
-window.TRANSFERS_CONFIG = {
-  supabaseUrl: "https://YOUR-PROJECT.supabase.co",
-  supabaseAnonKey: "YOUR-ANON-KEY"
-};
-```
+To finish the database setup, run the complete contents of `schema.sql` once in the Supabase SQL Editor. That creates the `transfers` table, authenticated-user access policies, profile support, and Realtime publication.
 
-5. Commit the files to a GitHub repository and enable GitHub Pages for the repository root.
+GitHub Pages is enabled for this repository and deploys from `main`.
 
 ## Notes
 
