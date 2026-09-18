@@ -1,0 +1,15 @@
+create extension if not exists pgcrypto;
+create table if not exists public.profiles(id uuid primary key references auth.users(id) on delete cascade,display_name text not null default 'User',updated_at timestamptz not null default now());
+create table if not exists public.transfers(id uuid primary key default gen_random_uuid(),scheduled_date date not null,scheduled_time time not null,driver text not null,origin text not null,destination text not null,pallet_count int not null default 0 check(pallet_count>=0),job_number text not null,created_by uuid not null references auth.users(id),created_by_name text not null,created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+alter table public.profiles enable row level security;alter table public.transfers enable row level security;
+drop policy if exists "profiles read" on public.profiles;create policy "profiles read" on public.profiles for select to authenticated using(true);
+drop policy if exists "profiles own insert" on public.profiles;create policy "profiles own insert" on public.profiles for insert to authenticated with check(auth.uid()=id);
+drop policy if exists "profiles own update" on public.profiles;create policy "profiles own update" on public.profiles for update to authenticated using(auth.uid()=id) with check(auth.uid()=id);
+drop policy if exists "transfers read" on public.transfers;create policy "transfers read" on public.transfers for select to authenticated using(true);
+drop policy if exists "transfers insert" on public.transfers;create policy "transfers insert" on public.transfers for insert to authenticated with check(auth.uid()=created_by);
+drop policy if exists "transfers update" on public.transfers;create policy "transfers update" on public.transfers for update to authenticated using(true) with check(true);
+drop policy if exists "transfers delete" on public.transfers;create policy "transfers delete" on public.transfers for delete to authenticated using(true);
+create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path='' as $$begin insert into public.profiles(id,display_name) values(new.id,coalesce(new.raw_user_meta_data->>'display_name',split_part(new.email,'@',1),'User')) on conflict(id) do nothing;return new;end;$$;
+drop trigger if exists on_auth_user_created on auth.users;create trigger on_auth_user_created after insert on auth.users for each row execute procedure public.handle_new_user();
+insert into public.profiles(id,display_name) select id,coalesce(raw_user_meta_data->>'display_name',split_part(email,'@',1),'User') from auth.users on conflict(id) do nothing;
+do $$begin if not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='transfers') then alter publication supabase_realtime add table public.transfers;end if;end$$;
