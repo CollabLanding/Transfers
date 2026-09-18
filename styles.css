@@ -53,3 +53,8 @@ main{grid-template-columns:380px minmax(0,1fr) 155px;align-items:start}
 .card.status-in-transit .card-status{color:#854d0e}
 .card.status-delivered{background:#dcfce7;border-color:#16a34a;border-left-color:#16a34a}
 .card.status-delivered .card-status{color:#166534}
+
+.driverhead[draggable="true"]{cursor:grab;user-select:none}
+.driverhead[draggable="true"]:active{cursor:grabbing}
+.driverhead.dragging-driver{opacity:.45}
+.driverhead.driver-dragover{background:#edf6fc;box-shadow:inset 3px 0 0 var(--accent),inset -3px 0 0 var(--accent)}
