@@ -334,3 +334,47 @@ body.dark-theme .corner{background-position-y:18px}
 @media(max-width:900px){
   .row.job-row{grid-template-columns:minmax(78px,1fr) 3fr}
 }
+
+
+/* Drag landing guideline */
+.drop-preview{
+  position:absolute;
+  left:5px;
+  right:5px;
+  z-index:20;
+  pointer-events:none;
+  border:2px dashed #2f78a8;
+  border-radius:8px;
+  background:rgba(79,145,189,.18);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.55);
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:6px;
+  padding:5px 7px;
+  overflow:hidden
+}
+.drop-preview-time{
+  font-size:11px;
+  font-weight:900;
+  color:#184f73;
+  white-space:nowrap
+}
+.drop-preview-label{
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  color:#326f99;
+  white-space:nowrap
+}
+html[data-theme="dark"] .drop-preview,
+body.dark-theme .drop-preview{
+  border-color:#69a8d2;
+  background:rgba(79,145,189,.24);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)
+}
+html[data-theme="dark"] .drop-preview-time,
+body.dark-theme .drop-preview-time{color:#b9ddf5}
+html[data-theme="dark"] .drop-preview-label,
+body.dark-theme .drop-preview-label{color:#8bc0e2}
