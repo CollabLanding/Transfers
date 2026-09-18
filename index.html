@@ -10,7 +10,7 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260918-landing-guide">
+  <link rel="stylesheet" href="styles.css?v=20260918-sms1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
 </head>
@@ -54,6 +54,7 @@
         </label>
         <button class="primary" type="submit" id="save">Add Transfer</button>
         <button type="button" class="hidden" id="duplicate">Duplicate Transfer</button>
+        <button type="button" class="hidden" id="textDriver">Text Driver</button>
         <button type="button" class="danger hidden" id="delete">Delete Transfer</button>
         <button type="button" class="hidden" id="cancel">Cancel Edit</button>
         <p id="msg"></p>
@@ -92,14 +93,46 @@
     <p id="optionMsg"></p>
   </form>
 </div>
+<div id="smsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="smsTitle">
+  <form id="smsForm" class="modalbox sms-modalbox">
+    <div class="modalhead">
+      <div><small>DRIVER MESSAGE</small><h2 id="smsTitle">Text Driver</h2></div>
+      <button type="button" id="smsClose" class="iconbtn" aria-label="Close">×</button>
+    </div>
+    <div id="smsTransferSummary" class="sms-transfer-summary"></div>
+    <label>Driver Phone
+      <input id="smsPhone" type="tel" autocomplete="tel" placeholder="(214) 555-1234" required>
+    </label>
+    <div class="sms-template-label">Message Template</div>
+    <div class="sms-presets">
+      <button type="button" data-sms-template="assignment">Assignment</button>
+      <button type="button" data-sms-template="update">Update</button>
+      <button type="button" data-sms-template="delay">Delay</button>
+    </div>
+    <label>Message
+      <textarea id="smsMessage" maxlength="1600" rows="7" required></textarea>
+    </label>
+    <div class="sms-message-meta"><span id="smsChars">0 / 1600</span><span>Editable before sending</span></div>
+    <div class="modalactions">
+      <button type="button" id="smsCancel">Cancel</button>
+      <button class="primary" type="submit" id="smsSend">Send SMS</button>
+    </div>
+    <p id="smsMsg"></p>
+    <div class="sms-history-wrap">
+      <div class="sms-history-title">Recent texts for this transfer</div>
+      <div id="smsHistory" class="sms-history"><div class="sms-history-empty">No texts sent yet.</div></div>
+    </div>
+  </form>
+</div>
 <div id="login" class="login hidden">
   <form id="loginForm" class="loginbox"><h1>Transfers</h1><p>Sign in to the transfer board.</p><input id="loginEmail" type="email" placeholder="Email" required><input id="loginPassword" type="password" placeholder="Password" required><button class="primary">Sign In</button><p id="loginMsg"></p></form>
 </div>
-<script src="app.js?v=20260918-landing-guide"></script>
+<script src="app.js?v=20260918-sms1"></script>
 <script src="order-status.js"></script>
 <script src="recent-activity.js"></script>
 <script src="duplicate-transfer.js"></script>
 <script src="theme.js"></script>
 <script src="chat.js"></script>
+<script src="sms.js?v=20260918-sms1"></script>
 </body>
 </html>
