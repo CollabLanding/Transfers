@@ -4,7 +4,7 @@ main{grid-template-columns:380px minmax(0,1fr) 155px;align-items:start}
 .header-right{display:flex;align-items:center;gap:14px}
 .user-session{display:flex;align-items:center;gap:8px;color:#d9e2ea;white-space:nowrap}
 .user-session #me{font-weight:800}
-.user-session #email{color:#9fb0bf}
+.user-session #email{display:none}
 .user-session #signout{background:#1b2732;color:#fff;border-color:#3b4854;padding:7px 9px}
 .section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
 .section-heading h2{margin:0;font-size:18px}
