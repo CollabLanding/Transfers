@@ -1,29 +1,30 @@
 (()=>{
-  const button=document.getElementById("themeToggle");
-  if(!button)return;
+  const toggle=document.getElementById("themeToggle");
+  if(!toggle)return;
 
   const root=document.documentElement;
+  const body=document.body;
 
-  function currentTheme(){
-    return root.dataset.theme==="dark"?"dark":"light";
+  function savedTheme(){
+    try{return localStorage.getItem("transfers-theme")==="dark"?"dark":"light"}catch(_err){return root.dataset.theme==="dark"?"dark":"light"}
   }
 
-  function updateButton(){
-    const dark=currentTheme()==="dark";
-    button.textContent=dark?"☀ Light":"☾ Dark";
-    button.setAttribute("aria-pressed",String(dark));
-    button.title=dark?"Switch to light theme":"Switch to dark theme";
+  function apply(theme,persist=true){
+    const dark=theme==="dark";
+    root.dataset.theme=dark?"dark":"light";
+    body.dataset.theme=dark?"dark":"light";
+    body.classList.toggle("dark-theme",dark);
+    toggle.checked=dark;
+    toggle.setAttribute("aria-checked",String(dark));
+    toggle.title=dark?"Switch to light theme":"Switch to dark theme";
+    if(persist){
+      try{localStorage.setItem("transfers-theme",dark?"dark":"light")}catch(_err){}
+    }
   }
 
-  function apply(theme){
-    root.dataset.theme=theme;
-    try{localStorage.setItem("transfers-theme",theme)}catch(_err){}
-    updateButton();
-  }
-
-  button.addEventListener("click",()=>{
-    apply(currentTheme()==="dark"?"light":"dark");
+  toggle.addEventListener("change",()=>{
+    apply(toggle.checked?"dark":"light");
   });
 
-  updateButton();
+  apply(savedTheme(),false);
 })();
