@@ -111,6 +111,27 @@ Deno.serve(async (req) => {
     }, 503);
   }
 
+  const endpoint = `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(twilioSid)}/Messages.json`;
+  const authHeader = "Basic " + btoa(twilioSid + ":" + twilioToken);
+
+  async function sendTwilio(form: URLSearchParams) {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: authHeader,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: form.toString(),
+    });
+    let data: Record<string, unknown> = {};
+    try {
+      data = await response.json();
+    } catch {
+      // Keep an empty object if Twilio did not return JSON.
+    }
+    return { response, data };
+  }
+
   const form = new URLSearchParams();
   form.set("To", to);
   form.set("Body", message);
@@ -118,27 +139,29 @@ Deno.serve(async (req) => {
   else form.set("From", twilioFrom);
 
   let twilioResponse: Response;
+  let twilioData: Record<string, unknown>;
+  let trialTemplateUsed = false;
+  let providerBody = message;
+
   try {
-    twilioResponse = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(twilioSid)}/Messages.json`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: "Basic " + btoa(twilioSid + ":" + twilioToken),
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: form.toString(),
-      },
-    );
+    ({ response: twilioResponse, data: twilioData } = await sendTwilio(form));
+
+    const twilioMessage = String(twilioData.message || "");
+    const trialTemplateError =
+      !twilioResponse.ok &&
+      (twilioMessage.includes("Trial accounts can only use predefined SMS templates") ||
+       twilioMessage.includes("Invalid template name"));
+
+    if (trialTemplateError) {
+      const trialForm = new URLSearchParams();
+      trialForm.set("To", to);
+      trialForm.set("Body", "sms_internal_alerts");
+      ({ response: twilioResponse, data: twilioData } = await sendTwilio(trialForm));
+      trialTemplateUsed = twilioResponse.ok;
+      providerBody = trialTemplateUsed ? "sms_internal_alerts" : message;
+    }
   } catch {
     return json({ error: "Could not reach Twilio." }, 502);
-  }
-
-  let twilioData: Record<string, unknown> = {};
-  try {
-    twilioData = await twilioResponse.json();
-  } catch {
-    // Keep an empty object if Twilio did not return JSON.
   }
 
   if (!twilioResponse.ok) {
@@ -167,8 +190,8 @@ Deno.serve(async (req) => {
     transfer_id: transfer.id,
     driver: transfer.driver,
     to_number: to,
-    message,
-    message_type: messageType,
+    message: providerBody,
+    message_type: trialTemplateUsed ? "trial-test" : messageType,
     provider_message_sid: providerSid || null,
     provider_status: providerStatus,
     actor_id: user.id,
@@ -184,7 +207,7 @@ Deno.serve(async (req) => {
     actor_name: actorName,
     job_number: transfer.job_number,
     driver: transfer.driver,
-    details: messageType.charAt(0).toUpperCase() + messageType.slice(1) + " text sent to " + maskedPhone(to),
+    details: (trialTemplateUsed ? "Trial template test" : messageType.charAt(0).toUpperCase() + messageType.slice(1) + " text") + " sent to " + maskedPhone(to),
   });
 
   return json({
@@ -192,6 +215,8 @@ Deno.serve(async (req) => {
     sid: providerSid,
     status: providerStatus,
     to,
+    trial_template_used: trialTemplateUsed,
+    trial_template: trialTemplateUsed ? providerBody : null,
     log_warning: logError ? logError.message : null,
   });
 });
