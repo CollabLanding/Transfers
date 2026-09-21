@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Drivers | Transfers</title>
+  <script>
+    try{
+      const saved=localStorage.getItem("transfers-theme");
+      document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
+    }catch(_err){}
+  </script>
+  <link rel="stylesheet" href="styles.css?v=20260921-driver-scheduling">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+</head>
+<body>
+<header>
+  <div class="app-brand">
+    <small>INTERNAL FREIGHT SCHEDULING</small>
+    <nav class="app-tabs" aria-label="Main navigation">
+      <a href="index.html">Transfers</a>
+      <a class="active" href="drivers.html" aria-current="page">Drivers</a>
+    </nav>
+  </div>
+  <div class="header-right">
+    <div class="nav week-nav">
+      <button id="prevWeek" type="button">←</button>
+      <button id="thisWeek" type="button">This Week</button>
+      <input id="weekStart" type="date" aria-label="Week starting">
+      <button id="nextWeek" type="button">→</button>
+    </div>
+    <label class="theme-switch" for="themeToggle">
+      <span class="theme-label light-label">Light</span>
+      <input id="themeToggle" type="checkbox" role="switch" aria-label="Toggle dark theme">
+      <span class="switch-track"><span class="switch-thumb"></span></span>
+      <span class="theme-label dark-label">Dark</span>
+    </label>
+    <div class="user-session">
+      <span id="me"></span>
+      <small id="email"></small>
+      <button id="signout" class="hidden" type="button">Sign Out</button>
+    </div>
+  </div>
+</header>
+
+<main class="drivers-main">
+  <section class="panel driver-schedule-panel">
+    <div class="driver-schedule-heading">
+      <div>
+        <small>DRIVER SCHEDULING</small>
+        <h2 id="weekTitle">Driver Hours</h2>
+        <p>Set each driver's scheduled start and end time. Leave both fields blank for a day off.</p>
+      </div>
+      <button id="saveSchedule" class="primary" type="button">Save Schedule</button>
+    </div>
+
+    <div id="scheduleMsg" class="schedule-message" aria-live="polite"></div>
+
+    <div class="driver-schedule-scroll">
+      <table class="driver-schedule-table">
+        <thead>
+          <tr>
+            <th class="driver-name-col">Driver</th>
+            <th id="dayHead0"></th>
+            <th id="dayHead1"></th>
+            <th id="dayHead2"></th>
+            <th id="dayHead3"></th>
+            <th id="dayHead4"></th>
+            <th id="dayHead5"></th>
+            <th id="dayHead6"></th>
+            <th class="week-total-col">Weekly Hours</th>
+          </tr>
+        </thead>
+        <tbody id="scheduleBody">
+          <tr><td colspan="9" class="schedule-empty">Loading drivers…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<div id="login" class="login hidden">
+  <form id="loginForm" class="loginbox">
+    <h1>Transfers</h1>
+    <p>Sign in to manage driver schedules.</p>
+    <input id="loginEmail" type="email" placeholder="Email" required>
+    <input id="loginPassword" type="password" placeholder="Password" required>
+    <button class="primary">Sign In</button>
+    <p id="loginMsg"></p>
+  </form>
+</div>
+
+<script src="driver-schedule.js?v=20260921-1"></script>
+<script src="theme.js"></script>
+</body>
+</html>
