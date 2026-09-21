@@ -1,113 +1,59 @@
 # Driver SMS Setup
 
-The Transfers page now includes a **Text Driver** workflow backed by a Supabase Edge Function and Twilio.
+The Transfers page sends driver SMS through a Supabase Edge Function. **Infobip is now the primary provider.** Twilio remains available as a fallback if Infobip is not configured.
 
-## What is already in the app
+## Infobip trial setup
 
-- Text Driver button when a transfer is opened for editing
-- Driver phone number storage
-- Assignment / Update / Delay templates
-- Editable SMS body up to 1,600 characters
-- Recent SMS history per transfer
-- SMS events in Recent Activity
-- Secure server-side Twilio credentials (never placed in browser JavaScript)
+Infobip's current free trial lasts 60 days. During the trial, use the test sender `ServiceSMS` and send only to the phone number verified in your Infobip trial account.
 
-## One-time setup
+### 1. Create the Infobip API key
 
-### 1. Run the database migration
+In Infobip, create an API key that has the `sms:message:send` scope.
 
-In the **Transfers** Supabase project, open **SQL Editor** and run the contents of:
+### 2. Add Supabase Edge Function secrets
 
-`migration-v9.sql`
-
-This adds:
-- `phone_number` to `transfer_drivers`
-- `transfer_sms_log` for message history
-
-### 2. Prepare Twilio
-
-You need:
-- Twilio Account SID
-- Twilio Auth Token
-- A Twilio SMS-capable sender
-
-For production U.S. SMS from a normal local 10-digit number, complete Twilio's A2P 10DLC registration and associate the number with the approved Messaging Service.
-
-For initial testing on a Twilio trial account, Twilio requires the destination number to be verified first.
-
-### 3. Add Twilio secrets to Supabase
-
-In the **Transfers** Supabase project:
-
-**Edge Functions → Secrets**
-
-Add:
+In the **Transfers** Supabase project open **Edge Functions → Secrets** and add:
 
 ```
-TWILIO_ACCOUNT_SID=AC...
-TWILIO_AUTH_TOKEN=...
+INFOBIP_API_KEY=your_infobip_api_key
 ```
 
-Then use **one** of these sender options.
-
-Recommended for a registered A2P Messaging Service:
+Optional settings:
 
 ```
-TWILIO_MESSAGING_SERVICE_SID=MG...
+INFOBIP_BASE_URL=https://api.infobip.com
+INFOBIP_SENDER=ServiceSMS
 ```
 
-Or, for a specific Twilio sending number:
+`INFOBIP_BASE_URL` can also be your personalized Infobip base URL such as `xxxxx.api.infobip.com`. If omitted, the function uses `https://api.infobip.com`.
 
-```
-TWILIO_FROM_NUMBER=+1XXXXXXXXXX
-```
+Do not place the API key in `config.js`, `index.html`, GitHub, or any browser-visible file.
 
-Do not put these values in `config.js`, `index.html`, GitHub, or any other browser-visible file.
+### 3. Deploy / redeploy the Edge Function
 
-### 4. Deploy the Supabase Edge Function
+Open **Supabase → Transfers → Edge Functions → send-sms → Code**.
 
-The function source is:
+Replace the entire function with the current contents of:
 
-`supabase/functions/send-sms/index.ts`
+`send-sms-copy-paste.txt`
 
-#### Dashboard method
+Then click **Deploy updates**.
 
-1. Open the **Transfers** project in Supabase.
-2. Open **Edge Functions**.
-3. Choose **Deploy a new function → Via Editor**.
-4. Name it exactly: `send-sms`
-5. Replace the editor contents with `supabase/functions/send-sms/index.ts`.
-6. Deploy the function.
+### 4. Test from Transfers
 
-#### CLI method
-
-From a local copy of this repository:
-
-```bash
-supabase login
-supabase link --project-ref nqdadzlvtmsybcnntkny
-supabase functions deploy send-sms
-```
-
-The app calls the function by name, so there is no additional URL configuration required.
-
-## Testing
-
-1. Sign in to Transfers.
-2. Open an existing transfer.
+1. Make sure the destination cell phone is the verified number on the Infobip trial account.
+2. Open a transfer.
 3. Click **Text Driver**.
-4. Enter the driver's phone number.
-5. Choose Assignment, Update, or Delay.
-6. Edit the message if needed.
-7. Click **Send SMS**.
+4. Choose Assignment, Update, or Delay.
+5. Edit the custom message if desired.
+6. Click **Send SMS**.
 
-After a successful send:
-- the driver number is saved for future texts,
-- the SMS appears in the transfer's SMS history,
-- Recent Activity receives an **SMS sent** entry.
+On success, Transfers will show `Text queued via Infobip`, save the driver's phone number, add the SMS to message history, and log the action in Recent Activity.
 
-## Notes
+## Existing database requirement
 
-Twilio can split longer texts into multiple SMS segments, which can affect cost. Keep operational messages concise when practical.
+Run `migration-v9.sql` in the Transfers Supabase SQL Editor if it has not already been run. It adds driver phone storage and SMS history.
 
-Only send operational texts to drivers who have agreed to receive them. Production U.S. application-to-person SMS must follow carrier/Twilio registration and consent requirements.
+## Twilio fallback
+
+If `INFOBIP_API_KEY` is absent, the function can still use the existing Twilio secrets. Once an Infobip key is present, Infobip takes priority.
