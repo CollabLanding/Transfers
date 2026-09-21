@@ -125,6 +125,16 @@ function applyDriverScheduleOverlay(lane,driver,date){
   }
   // Overnight shifts (end <= start) remain available from start through the end of this board day.
 }
+function updateCurrentTimeLine(){
+  const line=E.grid?.querySelector(".current-time-line");
+  if(!line)return;
+  const now=new Date();
+  const minutes=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
+  const visible=E.boardDate.value===today()&&minutes>=GRID_START&&minutes<=GRID_END;
+  line.classList.toggle("hidden",!visible);
+  if(!visible)return;
+  line.style.top=(((minutes-GRID_START)/15)*PX15)+"px";
+}
 function renderBoard(){
  const date=E.boardDate.value,day=items.filter(x=>x.scheduled_date===date),laneDrivers=orderedUniq([...drivers,...day.map(x=>x.driver)]);
  E.title.textContent=new Date(date+"T12:00:00").toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});E.grid.innerHTML="";
@@ -134,7 +144,9 @@ function renderBoard(){
  const br=document.createElement("div");br.className="bodyrow";const times=document.createElement("div");times.className="times";times.style.height=GRID_HEIGHT+"px";
  const marks=[];for(let m=240;m<=GRID_END;m+=60)marks.push(m);marks.forEach(m=>{let t=document.createElement("div");t.className="tick";t.dataset.minute=String(m);t.style.top=(((m-GRID_START)/15)*PX15)+"px";t.textContent=fmt(minToTime(m));times.appendChild(t)});br.appendChild(times);
  if(!laneDrivers.length){let empty=document.createElement("div");empty.className="emptylane";empty.style.height=GRID_HEIGHT+"px";empty.textContent="Use the Driver dropdown to add your first driver.";br.appendChild(empty)}
- laneDrivers.forEach(d=>{let lane=document.createElement("div");lane.className="lane";lane.style.height=GRID_HEIGHT+"px";lane.dataset.driver=d;lane.addEventListener("dragover",transferLaneDragOver);lane.addEventListener("dragleave",transferLaneDragLeave);lane.addEventListener("drop",dropCard);applyDriverScheduleOverlay(lane,d,date);day.filter(x=>x.driver===d&&timeToMin(x.scheduled_time)>=GRID_START&&timeToMin(x.scheduled_time)<GRID_END).forEach(x=>lane.appendChild(makeCard(x)));br.appendChild(lane)});E.grid.appendChild(br)
+ laneDrivers.forEach(d=>{let lane=document.createElement("div");lane.className="lane";lane.style.height=GRID_HEIGHT+"px";lane.dataset.driver=d;lane.addEventListener("dragover",transferLaneDragOver);lane.addEventListener("dragleave",transferLaneDragLeave);lane.addEventListener("drop",dropCard);applyDriverScheduleOverlay(lane,d,date);day.filter(x=>x.driver===d&&timeToMin(x.scheduled_time)>=GRID_START&&timeToMin(x.scheduled_time)<GRID_END).forEach(x=>lane.appendChild(makeCard(x)));br.appendChild(lane)});
+ const nowLine=document.createElement("div");nowLine.className="current-time-line hidden";nowLine.setAttribute("aria-hidden","true");br.appendChild(nowLine);
+ E.grid.appendChild(br);updateCurrentTimeLine()
 }
 function driverHeaderDragStart(e){draggedDriver=e.currentTarget.dataset.driver;e.currentTarget.classList.add("dragging-driver");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("application/x-transfer-driver",draggedDriver)}
 function driverHeaderDragEnd(e){draggedDriver=null;e.currentTarget.classList.remove("dragging-driver");document.querySelectorAll(".driverhead.driver-dragover").forEach(x=>x.classList.remove("driver-dragover"))}
@@ -187,6 +199,7 @@ E.form.onsubmit=submit;E.del.onclick=remove;E.cancel.onclick=reset;E.driver.onch
 $("prev").onclick=()=>{E.boardDate.value=add(E.boardDate.value,-1);E.date.value=E.boardDate.value;loadBoardSchedule()};$("next").onclick=()=>{E.boardDate.value=add(E.boardDate.value,1);E.date.value=E.boardDate.value;loadBoardSchedule()};$("today").onclick=()=>{E.boardDate.value=today();E.date.value=E.boardDate.value;loadBoardSchedule()};E.boardDate.onchange=()=>{E.date.value=E.boardDate.value;loadBoardSchedule()};E.signout.onclick=()=>sb?.auth.signOut();
 document.addEventListener("pointerdown",unlockAudio,{once:true});
 document.addEventListener("keydown",unlockAudio,{once:true});
+setInterval(updateCurrentTimeLine,30000);
 E.loginForm.onsubmit=async e=>{e.preventDefault();E.loginMsg.textContent="Signing in…";let r=await sb.auth.signInWithPassword({email:E.loginEmail.value.trim(),password:E.loginPassword.value});E.loginMsg.textContent=r.error?r.error.message:""};
 (async()=>{E.boardDate.value=today();E.date.value=today();E.time.value="08:00";E.duration.value="120";if(!live){user={id:"demo-user",email:"Local preview mode",user_metadata:{display_name:"Demo User"}};profile={display_name:"Demo User"};renderUsers([{display_name:"Demo User"}]);loadLocal();renderOptions();renderBoard();return}E.mode.textContent="Live";let s=await sb.auth.getSession();await session(s.data.session);sb.auth.onAuthStateChange((_e,s)=>session(s))})();
 })();
