@@ -172,7 +172,19 @@
     message.disabled=false;
 
     if(error){
-      setMsg("Could not send SMS: "+error.message,"error");
+      const detail=String(error.message||"");
+      if(detail.includes("Failed to send a request to the Edge Function")){
+        setMsg("SMS service is not reachable. Redeploy the send-sms Edge Function in the Transfers Supabase project, then try again.","error");
+      }else{
+        let serverMessage="";
+        try{
+          if(error.context&&typeof error.context.clone==="function"){
+            const payload=await error.context.clone().json();
+            serverMessage=payload?.error||payload?.message||"";
+          }
+        }catch(_err){}
+        setMsg("Could not send SMS: "+(serverMessage||detail||"Unknown error"),"error");
+      }
       return;
     }
     if(!data?.ok){
