@@ -6,6 +6,11 @@
   const E={
     week:$("weekStart"),prev:$("prevWeek"),next:$("nextWeek"),thisWeek:$("thisWeek"),
     title:$("weekTitle"),body:$("scheduleBody"),save:$("saveSchedule"),msg:$("scheduleMsg"),
+    reports:$("runReports"),reportModal:$("reportModal"),reportForm:$("reportForm"),reportClose:$("reportClose"),reportCancel:$("reportCancel"),
+    reportDriverList:$("reportDriverList"),reportSelectAll:$("reportSelectAll"),reportClearAll:$("reportClearAll"),reportPeriod:$("reportPeriod"),
+    reportWeekFields:$("reportWeekFields"),reportMonthFields:$("reportMonthFields"),reportQuarterFields:$("reportQuarterFields"),reportCustomFields:$("reportCustomFields"),
+    reportWeekDate:$("reportWeekDate"),reportMonth:$("reportMonth"),reportQuarterYear:$("reportQuarterYear"),reportQuarter:$("reportQuarter"),
+    reportStartDate:$("reportStartDate"),reportEndDate:$("reportEndDate"),reportRun:$("reportRun"),reportMsg:$("reportMsg"),
     me:$("me"),email:$("email"),signout:$("signout"),login:$("login"),loginForm:$("loginForm"),
     loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg")
   };
@@ -49,6 +54,22 @@
   function fmtHours(n){
     const rounded=Math.round(n*4)/4;
     return Number.isInteger(rounded)?String(rounded):rounded.toFixed(2).replace(/0$/,"");
+  }
+
+  function time12(t){
+    if(!t)return "";
+    const [h,m]=String(t).slice(0,5).split(":").map(Number);
+    return (h%12||12)+":"+String(m).padStart(2,"0")+" "+(h>=12?"PM":"AM");
+  }
+  function reportShow(text,type=""){
+    E.reportMsg.textContent=text||"";
+    E.reportMsg.className="report-msg"+(type?" "+type:"");
+  }
+  function reportQuarterRange(year,quarter){
+    const y=Number(year),q=Number(quarter);
+    const start=localISO(new Date(y,(q-1)*3,1,12,0,0));
+    const next=localISO(new Date(y,q*3,1,12,0,0));
+    return {start,end:addDays(next,-1)};
   }
   function setDirty(value=true){
     dirty=value;
@@ -297,6 +318,238 @@
     show(driver+" "+period+" schedule copied forward.","ok");
   }
 
+
+  function renderReportDrivers(){
+    E.reportDriverList.innerHTML="";
+    drivers.forEach((driver,index)=>{
+      const label=document.createElement("label");
+      label.className="report-driver-option";
+      label.innerHTML='<input type="checkbox" value="'+esc(driver)+'" checked><span>'+esc(driver)+'</span>';
+      E.reportDriverList.appendChild(label);
+    });
+    if(!drivers.length)E.reportDriverList.innerHTML='<div class="report-driver-empty">No drivers available.</div>';
+  }
+
+  function toggleReportPeriod(){
+    const type=E.reportPeriod.value;
+    [E.reportWeekFields,E.reportMonthFields,E.reportQuarterFields,E.reportCustomFields].forEach(x=>x.classList.add("hidden"));
+    if(type==="week")E.reportWeekFields.classList.remove("hidden");
+    else if(type==="month")E.reportMonthFields.classList.remove("hidden");
+    else if(type==="quarter")E.reportQuarterFields.classList.remove("hidden");
+    else E.reportCustomFields.classList.remove("hidden");
+  }
+
+  function openReports(){
+    renderReportDrivers();
+    const current=E.week.value||mondayOf(new Date());
+    const currentDate=parseISO(current);
+    E.reportPeriod.value="week";
+    E.reportWeekDate.value=current;
+    E.reportMonth.value=current.slice(0,7);
+    E.reportQuarterYear.value=String(currentDate.getFullYear());
+    E.reportQuarter.value=String(Math.floor(currentDate.getMonth()/3)+1);
+    E.reportStartDate.value=current;
+    E.reportEndDate.value=addDays(current,6);
+    toggleReportPeriod();
+    reportShow("");
+    E.reportModal.classList.remove("hidden");
+  }
+
+  function closeReports(){
+    if(E.reportRun.disabled)return;
+    E.reportModal.classList.add("hidden");
+    reportShow("");
+  }
+
+  function selectedReportDrivers(){
+    return [...E.reportDriverList.querySelectorAll('input[type="checkbox"]:checked')].map(x=>x.value);
+  }
+
+  function getReportRange(){
+    const type=E.reportPeriod.value;
+    if(type==="week"){
+      if(!E.reportWeekDate.value)return null;
+      const start=mondayOf(E.reportWeekDate.value);
+      return {start,end:addDays(start,6),label:"Week of "+friendly(start,{month:"long",day:"numeric",year:"numeric"})};
+    }
+    if(type==="month"){
+      if(!E.reportMonth.value)return null;
+      const start=E.reportMonth.value+"-01";
+      const end=addDays(addMonths(start,1),-1);
+      return {start,end,label:friendly(start,{month:"long",year:"numeric"})};
+    }
+    if(type==="quarter"){
+      if(!E.reportQuarterYear.value||!E.reportQuarter.value)return null;
+      const range=reportQuarterRange(E.reportQuarterYear.value,E.reportQuarter.value);
+      return {...range,label:"Q"+E.reportQuarter.value+" "+E.reportQuarterYear.value};
+    }
+    if(!E.reportStartDate.value||!E.reportEndDate.value)return null;
+    if(parseISO(E.reportEndDate.value)<parseISO(E.reportStartDate.value))return {error:"End date must be on or after the start date."};
+    return {
+      start:E.reportStartDate.value,
+      end:E.reportEndDate.value,
+      label:friendly(E.reportStartDate.value,{month:"short",day:"numeric",year:"numeric"})+" – "+friendly(E.reportEndDate.value,{month:"short",day:"numeric",year:"numeric"})
+    };
+  }
+
+  function buildDriverPdf(selected,range,rows){
+    const JsPdf=window.jspdf?.jsPDF;
+    if(!JsPdf)throw new Error("PDF library did not load. Refresh the page and try again.");
+    const doc=new JsPdf({orientation:"portrait",unit:"pt",format:"letter"});
+    const pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
+    const margin=42,rowH=18;
+    let y=44;
+
+    function pageHeader(first=false){
+      if(!first)doc.addPage();
+      y=44;
+      doc.setTextColor(20,30,40);
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(18);
+      doc.text("Driver Hours Report",margin,y);
+      y+=18;
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(10);
+      doc.setTextColor(90,100,110);
+      doc.text(range.label+"  |  "+friendly(range.start,{month:"short",day:"numeric",year:"numeric"})+" to "+friendly(range.end,{month:"short",day:"numeric",year:"numeric"}),margin,y);
+      y+=14;
+      doc.text("Generated "+new Date().toLocaleString()+"  |  Daily overtime threshold: over 10 hours",margin,y);
+      y+=24;
+      doc.setDrawColor(210,216,222);
+      doc.line(margin,y-10,pageW-margin,y-10);
+    }
+
+    function ensure(space){
+      if(y+space>pageH-42)pageHeader(false);
+    }
+
+    function tableHeader(driver,continued=false){
+      ensure(58);
+      doc.setTextColor(20,30,40);
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(13);
+      doc.text(driver+(continued?" (continued)":""),margin,y);
+      y+=18;
+      doc.setFillColor(239,243,246);
+      doc.rect(margin,y-12,pageW-margin*2,rowH,"F");
+      doc.setFontSize(9);
+      doc.text("Date",margin+5,y);
+      doc.text("Day",margin+100,y);
+      doc.text("Start",margin+220,y);
+      doc.text("End",margin+300,y);
+      doc.text("Hours",margin+380,y);
+      y+=rowH;
+    }
+
+    pageHeader(true);
+
+    selected.forEach((driver,driverIndex)=>{
+      const list=rows.filter(r=>r.driver_name===driver).sort((a,b)=>String(a.schedule_date).localeCompare(String(b.schedule_date)));
+      const total=list.reduce((sum,r)=>sum+hoursBetween(r.start_time,r.end_time),0);
+      const overtimeDays=list.filter(r=>hoursBetween(r.start_time,r.end_time)>10).length;
+      const overtimeHours=list.reduce((sum,r)=>sum+Math.max(0,hoursBetween(r.start_time,r.end_time)-10),0);
+
+      if(driverIndex>0)y+=12;
+      tableHeader(driver,false);
+
+      if(!list.length){
+        ensure(rowH+34);
+        doc.setFont("helvetica","italic");
+        doc.setFontSize(9);
+        doc.setTextColor(110,120,130);
+        doc.text("No scheduled days in this date range.",margin+5,y);
+        y+=rowH+4;
+      }else{
+        list.forEach((r,index)=>{
+          if(y+rowH>pageH-72){
+            pageHeader(false);
+            tableHeader(driver,true);
+          }
+          const hrs=hoursBetween(r.start_time,r.end_time);
+          const day=friendly(r.schedule_date,{weekday:"long"});
+          doc.setFont("helvetica","normal");
+          doc.setFontSize(9);
+          doc.setTextColor(25,35,45);
+          doc.text(friendly(r.schedule_date,{month:"short",day:"numeric",year:"numeric"}),margin+5,y);
+          doc.text(day,margin+100,y);
+          if(hrs>10){
+            const dayWidth=doc.getTextWidth(day);
+            doc.setTextColor(200,35,35);
+            doc.setFont("helvetica","bold");
+            doc.text("!",margin+104+dayWidth,y);
+            doc.setTextColor(25,35,45);
+            doc.setFont("helvetica","normal");
+          }
+          doc.text(time12(r.start_time),margin+220,y);
+          doc.text(time12(r.end_time),margin+300,y);
+          doc.text(fmtHours(hrs),margin+380,y);
+          doc.setDrawColor(232,236,240);
+          doc.line(margin,y+5,pageW-margin,y+5);
+          y+=rowH;
+        });
+      }
+
+      ensure(42);
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(10);
+      doc.setTextColor(20,30,40);
+      doc.text("Total Hours: "+fmtHours(total),margin+5,y+5);
+      doc.setFont("helvetica","normal");
+      doc.setTextColor(90,100,110);
+      doc.text("Overtime Days: "+overtimeDays+"   Overtime Hours: "+fmtHours(overtimeHours),margin+150,y+5);
+      y+=28;
+    });
+
+    const pages=doc.getNumberOfPages();
+    for(let p=1;p<=pages;p++){
+      doc.setPage(p);
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(8);
+      doc.setTextColor(120,128,136);
+      doc.text("Page "+p+" of "+pages,pageW-margin, pageH-20,{align:"right"});
+    }
+
+    const safeStart=range.start.replace(/-/g,"");
+    const safeEnd=range.end.replace(/-/g,"");
+    doc.save("driver-hours_"+safeStart+"_to_"+safeEnd+".pdf");
+  }
+
+  async function runReport(e){
+    e.preventDefault();
+    if(!live||!user)return;
+    const selected=selectedReportDrivers();
+    if(!selected.length){reportShow("Select at least one driver.","error");return}
+    const range=getReportRange();
+    if(!range){reportShow("Choose a report period.","error");return}
+    if(range.error){reportShow(range.error,"error");return}
+
+    if(dirty){
+      reportShow("Saving current schedule first…");
+      const saved=await save(true);
+      if(!saved){reportShow("Could not save the current schedule before running the report.","error");return}
+    }
+
+    E.reportRun.disabled=true;
+    reportShow("Building PDF report…");
+    try{
+      const result=await sb.from("driver_schedules")
+        .select("driver_name,schedule_date,start_time,end_time")
+        .in("driver_name",selected)
+        .gte("schedule_date",range.start)
+        .lte("schedule_date",range.end)
+        .order("driver_name",{ascending:true})
+        .order("schedule_date",{ascending:true});
+
+      if(result.error){reportShow("Could not load report data: "+result.error.message,"error");return}
+      buildDriverPdf(selected,range,result.data||[]);
+      reportShow("PDF report generated.","ok");
+    }catch(err){
+      reportShow("Could not generate PDF: "+(err?.message||String(err)),"error");
+    }finally{
+      E.reportRun.disabled=false;
+    }
+  }
+
   async function subscribe(){
     if(!live)return;
     if(channel)await sb.removeChannel(channel);
@@ -327,6 +580,14 @@
   E.thisWeek.onclick=()=>{if(dirty&&!confirm("Discard unsaved schedule changes?"))return;E.week.value=mondayOf(new Date());lastWeekValue=E.week.value;loadWeek()};
   E.week.onchange=()=>{const next=mondayOf(E.week.value);if(dirty&&!confirm("Discard unsaved schedule changes?")){E.week.value=lastWeekValue;return}E.week.value=next;lastWeekValue=next;loadWeek()};
   E.save.onclick=save;
+  E.reports.onclick=openReports;
+  E.reportClose.onclick=closeReports;
+  E.reportCancel.onclick=closeReports;
+  E.reportPeriod.onchange=toggleReportPeriod;
+  E.reportSelectAll.onclick=()=>E.reportDriverList.querySelectorAll('input[type="checkbox"]').forEach(x=>x.checked=true);
+  E.reportClearAll.onclick=()=>E.reportDriverList.querySelectorAll('input[type="checkbox"]').forEach(x=>x.checked=false);
+  E.reportModal.addEventListener("click",e=>{if(e.target===E.reportModal)closeReports()});
+  E.reportForm.addEventListener("submit",runReport);
   E.signout.onclick=()=>sb?.auth.signOut();
   E.loginForm.onsubmit=async e=>{
     e.preventDefault();

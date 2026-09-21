@@ -723,3 +723,45 @@ header .brand-cluster>.company-logo{
   position:relative!important;
   z-index:5!important;
 }
+
+
+/* Driver reports */
+.schedule-heading-actions{display:flex;flex-direction:column;gap:8px;min-width:150px}
+.schedule-heading-actions button{width:100%}
+#runReports{font-weight:800}
+.report-modalbox{width:min(780px,calc(100vw - 32px));max-height:92vh;overflow:auto}
+.report-layout{display:grid;grid-template-columns:minmax(260px,.9fr) minmax(300px,1.1fr);gap:18px;margin-top:16px}
+.report-driver-section,.report-range-section{border:1px solid var(--line);border-radius:10px;padding:14px;background:#f8fafb}
+.report-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.report-section-head>div{display:flex;gap:6px}
+.report-section-head button{padding:5px 8px;font-size:10px}
+.report-driver-list{display:grid;grid-template-columns:1fr 1fr;gap:7px;max-height:285px;overflow:auto;padding-right:4px}
+.report-driver-option{display:flex;flex-direction:row;align-items:center;gap:8px;margin:0;padding:8px 9px;border:1px solid var(--line);border-radius:7px;background:#fff;font-size:12px;font-weight:700;cursor:pointer}
+.report-driver-option input{width:auto;min-height:0;margin:0}
+.report-driver-empty{grid-column:1/-1;padding:18px;text-align:center;color:var(--muted);font-size:12px}
+.report-range-section>label{margin-top:0}
+.report-period-fields{margin-top:12px}
+.report-quarter-fields,.report-custom-fields{grid-template-columns:1fr 1fr;gap:10px}
+.report-quarter-fields:not(.hidden),.report-custom-fields:not(.hidden){display:grid}
+.report-note{margin:14px 0 0;padding:10px 12px;border-radius:8px;background:#fff4f4;border:1px solid #efc5c5;color:#6f3333;font-size:11px}
+.report-note span{color:#c82323;font-weight:900;font-size:14px}
+.report-msg{min-height:18px;margin:8px 0 0;font-size:12px}
+.report-msg.error{color:#a43c3c}
+.report-msg.ok{color:#2f6f49}
+html[data-theme="dark"] .report-driver-section,
+html[data-theme="dark"] .report-range-section,
+body.dark-theme .report-driver-section,
+body.dark-theme .report-range-section{background:#151c23;border-color:#34404c}
+html[data-theme="dark"] .report-driver-option,
+body.dark-theme .report-driver-option{background:#1d2630;border-color:#3a4652}
+html[data-theme="dark"] .report-note,
+body.dark-theme .report-note{background:#2b1b1d;border-color:#6d3b3f;color:#efb9bd}
+html[data-theme="dark"] .report-msg.error,
+body.dark-theme .report-msg.error{color:#f0a2a2}
+html[data-theme="dark"] .report-msg.ok,
+body.dark-theme .report-msg.ok{color:#7ee2ae}
+@media(max-width:760px){
+  .report-layout{grid-template-columns:1fr}
+  .report-driver-list{grid-template-columns:1fr}
+  .schedule-heading-actions{width:100%}
+}

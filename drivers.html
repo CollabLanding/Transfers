@@ -10,8 +10,9 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260921-ui-fix7">
+  <link rel="stylesheet" href="styles.css?v=20260921-driver-reports">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="config.js"></script>
 </head>
 <body>
@@ -52,7 +53,7 @@
         <h2 id="weekTitle">Driver Hours</h2>
         <p>Set each driver's scheduled start and end time. Leave both fields blank for a day off.</p>
       </div>
-      <button id="saveSchedule" class="primary" type="button">Save Schedule</button>
+      <div class="schedule-heading-actions"><button id="saveSchedule" class="primary" type="button">Save Schedule</button><button id="runReports" type="button">Run Reports</button></div>
     </div>
 
     <div id="scheduleMsg" class="schedule-message" aria-live="polite"></div>
@@ -80,6 +81,70 @@
   </section>
 </main>
 
+
+<div id="reportModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
+  <form id="reportForm" class="modalbox report-modalbox">
+    <div class="modalhead">
+      <div><small>DRIVER REPORTS</small><h2 id="reportTitle">Run Driver Hours Report</h2></div>
+      <button type="button" id="reportClose" class="iconbtn" aria-label="Close">×</button>
+    </div>
+
+    <div class="report-layout">
+      <section class="report-driver-section">
+        <div class="report-section-head">
+          <strong>Drivers</strong>
+          <div><button type="button" id="reportSelectAll">Select All</button><button type="button" id="reportClearAll">Clear</button></div>
+        </div>
+        <div id="reportDriverList" class="report-driver-list"></div>
+      </section>
+
+      <section class="report-range-section">
+        <label>Report Period
+          <select id="reportPeriod">
+            <option value="week">Week</option>
+            <option value="month">Month</option>
+            <option value="quarter">Quarter</option>
+            <option value="custom">Custom Date Range</option>
+          </select>
+        </label>
+
+        <div id="reportWeekFields" class="report-period-fields">
+          <label>Week Of<input id="reportWeekDate" type="date"></label>
+        </div>
+
+        <div id="reportMonthFields" class="report-period-fields hidden">
+          <label>Month<input id="reportMonth" type="month"></label>
+        </div>
+
+        <div id="reportQuarterFields" class="report-period-fields hidden report-quarter-fields">
+          <label>Year<input id="reportQuarterYear" type="number" min="2020" max="2100" step="1"></label>
+          <label>Quarter
+            <select id="reportQuarter">
+              <option value="1">Q1 · Jan–Mar</option>
+              <option value="2">Q2 · Apr–Jun</option>
+              <option value="3">Q3 · Jul–Sep</option>
+              <option value="4">Q4 · Oct–Dec</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="reportCustomFields" class="report-period-fields hidden report-custom-fields">
+          <label>Start Date<input id="reportStartDate" type="date"></label>
+          <label>End Date<input id="reportEndDate" type="date"></label>
+        </div>
+      </section>
+    </div>
+
+    <p class="report-note"><strong>Overtime:</strong> Any scheduled day over 10 hours is marked with a red <span>!</span> in the PDF.</p>
+
+    <div class="modalactions">
+      <button type="button" id="reportCancel">Cancel</button>
+      <button class="primary" type="submit" id="reportRun">Run Report</button>
+    </div>
+    <p id="reportMsg" class="report-msg" aria-live="polite"></p>
+  </form>
+</div>
+
 <div id="login" class="login hidden">
   <form id="loginForm" class="loginbox">
     <h1>Transfers</h1>
@@ -91,7 +156,7 @@
   </form>
 </div>
 
-<script src="driver-schedule.js?v=20260921-no-copy-confirm"></script>
+<script src="driver-schedule.js?v=20260921-driver-reports"></script>
 <script src="theme.js"></script>
 </body>
 </html>
