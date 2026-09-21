@@ -25,6 +25,8 @@
     return localISO(d);
   }
   function addDays(iso,n){const d=parseISO(iso);d.setDate(d.getDate()+n);return localISO(d)}
+  function monthStart(iso){const d=parseISO(iso);d.setDate(1);return localISO(d)}
+  function addMonths(iso,n){const d=parseISO(iso);d.setDate(1);d.setMonth(d.getMonth()+n);return localISO(d)}
   function friendly(iso,opts={weekday:"short",month:"short",day:"numeric"}){return parseISO(iso).toLocaleDateString(undefined,opts)}
   function userName(){return profile?.display_name||user?.user_metadata?.display_name||user?.email?.split("@")[0]||"User"}
   function show(text,type=""){
@@ -92,7 +94,7 @@
       const name=document.createElement("th");
       name.scope="row";
       name.className="driver-name-cell";
-      name.textContent=driver;
+      name.innerHTML='<span class="driver-name-text">'+esc(driver)+'</span><div class="driver-period-copy"><button type="button" class="copy-week" title="Copy this driver\'s current week to next week">Week →</button><button type="button" class="copy-month" title="Copy this driver\'s current month to next month">Month →</button></div>';
       tr.appendChild(name);
 
       dates.forEach(date=>{
@@ -103,7 +105,7 @@
         td.innerHTML=
           '<label><span>Start</span><input class="shift-start" type="time" step="900" value="'+esc(row?.start_time?String(row.start_time).slice(0,5):"")+'" aria-label="'+esc(driver)+" "+esc(date)+' start"></label>'+
           '<label><span>End</span><input class="shift-end" type="time" step="900" value="'+esc(row?.end_time?String(row.end_time).slice(0,5):"")+'" aria-label="'+esc(driver)+" "+esc(date)+' end"></label>'+
-          '<button class="clear-shift" type="button" title="Clear shift">Off</button>';
+          '<div class="shift-actions"><button class="clear-shift" type="button" title="Clear shift">Off</button><button class="copy-day" type="button" title="Copy this day to the next day">Day →</button></div>';
         tr.appendChild(td);
       });
 
@@ -128,6 +130,15 @@
         recalcRow(btn.closest("tr"));
         setDirty(true);
       });
+    });
+    E.body.querySelectorAll(".copy-day").forEach(btn=>{
+      btn.addEventListener("click",()=>copyPeriod(btn.closest("tr").dataset.driver,"day",btn.closest(".schedule-day-cell").dataset.date));
+    });
+    E.body.querySelectorAll(".copy-week").forEach(btn=>{
+      btn.addEventListener("click",()=>copyPeriod(btn.closest("tr").dataset.driver,"week",E.week.value));
+    });
+    E.body.querySelectorAll(".copy-month").forEach(btn=>{
+      btn.addEventListener("click",()=>copyPeriod(btn.closest("tr").dataset.driver,"month",E.week.value));
     });
   }
   async function loadDriverList(){
@@ -194,31 +205,100 @@
     });
     return {rows,invalid};
   }
-  async function save(){
-    if(!live||!user)return;
+  async function save(quiet=false){
+    if(!live||!user)return false;
     const {rows,invalid}=collect();
     if(invalid){
       show("Enter both a start and end time for "+invalid+", or clear both fields.","error");
-      return;
+      return false;
     }
     E.save.disabled=true;
-    show("Saving driver schedule…");
+    if(!quiet)show("Saving driver schedule…");
     const start=E.week.value,end=addDays(start,6);
     try{
       const del=await sb.from("driver_schedules").delete().gte("schedule_date",start).lte("schedule_date",end);
-      if(del.error){show("Could not save schedule: "+del.error.message,"error");return}
+      if(del.error){show("Could not save schedule: "+del.error.message,"error");return false}
       if(rows.length){
         const ins=await sb.from("driver_schedules").insert(rows);
-        if(ins.error){show("Could not save schedule: "+ins.error.message,"error");return}
+        if(ins.error){show("Could not save schedule: "+ins.error.message,"error");return false}
       }
       setDirty(false);
-      show("Driver schedule saved.","ok");
       await loadWeek();
-      show("Driver schedule saved.","ok");
+      if(!quiet)show("Driver schedule saved.","ok");
+      return true;
     }finally{
       E.save.disabled=false;
     }
   }
+
+  async function copyPeriod(driver,period,sourceDate){
+    if(!live||!user)return;
+    if(dirty){
+      const saved=await save(true);
+      if(!saved)return;
+    }
+
+    let sourceStart,sourceEnd,targetStart,targetEnd,label;
+    if(period==="day"){
+      sourceStart=sourceEnd=sourceDate;
+      targetStart=targetEnd=addDays(sourceDate,1);
+      label=friendly(sourceDate,{weekday:"long",month:"short",day:"numeric"})+" to "+friendly(targetStart,{weekday:"long",month:"short",day:"numeric"});
+    }else if(period==="week"){
+      sourceStart=mondayOf(sourceDate);
+      sourceEnd=addDays(sourceStart,6);
+      targetStart=addDays(sourceStart,7);
+      targetEnd=addDays(targetStart,6);
+      label="this week to next week";
+    }else{
+      sourceStart=monthStart(sourceDate);
+      targetStart=addMonths(sourceStart,1);
+      sourceEnd=addDays(targetStart,-1);
+      targetEnd=addDays(addMonths(targetStart,1),-1);
+      label=friendly(sourceStart,{month:"long",year:"numeric"})+" to "+friendly(targetStart,{month:"long",year:"numeric"});
+    }
+
+    if(!confirm("Copy "+driver+"\'s "+period+" schedule "+label+"? Existing schedule in the destination will be replaced."))return;
+
+    show("Copying "+driver+"\'s "+period+" schedule…");
+    const src=await sb.from("driver_schedules")
+      .select("schedule_date,start_time,end_time")
+      .eq("driver_name",driver)
+      .gte("schedule_date",sourceStart)
+      .lte("schedule_date",sourceEnd);
+    if(src.error){show("Could not read source schedule: "+src.error.message,"error");return}
+
+    const del=await sb.from("driver_schedules")
+      .delete()
+      .eq("driver_name",driver)
+      .gte("schedule_date",targetStart)
+      .lte("schedule_date",targetEnd);
+    if(del.error){show("Could not replace destination schedule: "+del.error.message,"error");return}
+
+    const targetEndDate=parseISO(targetEnd);
+    const copies=(src.data||[]).map(row=>{
+      const offset=Math.round((parseISO(row.schedule_date)-parseISO(sourceStart))/86400000);
+      const targetDate=addDays(targetStart,offset);
+      if(parseISO(targetDate)>targetEndDate)return null;
+      return {
+        driver_name:driver,
+        schedule_date:targetDate,
+        start_time:String(row.start_time).slice(0,5),
+        end_time:String(row.end_time).slice(0,5),
+        updated_by:user.id,
+        updated_by_name:userName(),
+        updated_at:new Date().toISOString()
+      };
+    }).filter(Boolean);
+
+    if(copies.length){
+      const ins=await sb.from("driver_schedules").insert(copies);
+      if(ins.error){show("Could not copy schedule: "+ins.error.message,"error");return}
+    }
+
+    await loadWeek();
+    show(driver+" "+period+" schedule copied forward.","ok");
+  }
+
   async function subscribe(){
     if(!live)return;
     if(channel)await sb.removeChannel(channel);
