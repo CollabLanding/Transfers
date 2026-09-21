@@ -193,11 +193,7 @@
     }
 
     phone.value=displayPhone(data.to||rawPhone);
-    if(data.trial_template_used){
-      setMsg("Trial test sent using Twilio's predefined internal-alert template. Your custom dispatch message was not sent; upgrade Twilio to send custom text.","ok");
-    }else{
-      setMsg("Text queued to "+displayPhone(data.to||rawPhone)+".","ok");
-    }
+    setMsg("Text queued via "+(data.provider||"SMS provider")+" to "+displayPhone(data.to||rawPhone)+".","ok");
     await loadHistory();
   });
 
