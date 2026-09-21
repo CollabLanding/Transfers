@@ -257,8 +257,6 @@
       label=friendly(sourceStart,{month:"long",year:"numeric"})+" to "+friendly(targetStart,{month:"long",year:"numeric"});
     }
 
-    if(!confirm("Copy "+driver+"\'s "+period+" schedule "+label+"? Existing schedule in the destination will be replaced."))return;
-
     show("Copying "+driver+"\'s "+period+" schedule…");
     const src=await sb.from("driver_schedules")
       .select("schedule_date,start_time,end_time")
