@@ -659,9 +659,9 @@ body.dark-theme .schedule-message.error{color:#f0a2a2}
   white-space:nowrap
 }
 .driver-off-overlay{
-  background:rgba(177,34,34,.16);
-  border-left:1px solid rgba(255,130,130,.10);
-  border-right:1px solid rgba(255,130,130,.10)
+  background:rgba(177,34,34,.08);
+  border-left:1px solid rgba(255,130,130,.08);
+  border-right:1px solid rgba(255,130,130,.08)
 }
 .driver-off-overlay span{
   color:#fff;
@@ -707,4 +707,19 @@ body.dark-theme .copy-month{background:#20384a;color:#add8f2;border-color:#426b8
   visibility:visible!important;
   filter:none!important;
   mix-blend-mode:normal!important;
+}
+
+/* Final header logo enforcement */
+header .brand-cluster>.company-logo{
+  display:block!important;
+  width:166px!important;
+  min-width:166px!important;
+  max-width:166px!important;
+  height:50px!important;
+  opacity:1!important;
+  visibility:visible!important;
+  object-fit:contain!important;
+  object-position:left center!important;
+  position:relative!important;
+  z-index:5!important;
 }
