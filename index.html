@@ -10,14 +10,14 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260918-sms1">
+  <link rel="stylesheet" href="styles.css?v=20260921-duplicate-day">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
 </head>
 <body>
 <header>
   <div><small>INTERNAL FREIGHT SCHEDULING</small><h1>Transfers</h1></div>
-  <div class="header-right"><div class="nav"><button id="prev">←</button><button id="today">Today</button><input id="boardDate" type="date"><button id="next">→</button></div><label class="theme-switch" for="themeToggle"><span class="theme-label light-label">Light</span><input id="themeToggle" type="checkbox" role="switch" aria-label="Toggle dark theme"><span class="switch-track"><span class="switch-thumb"></span></span><span class="theme-label dark-label">Dark</span></label><div class="user-session"><span id="me"></span><small id="email"></small><button id="signout" class="hidden">Sign Out</button></div></div>
+  <div class="header-right"><div class="nav"><button id="duplicateDay" class="duplicate-day-btn" type="button">Duplicate Day</button><button id="prev">←</button><button id="today">Today</button><input id="boardDate" type="date"><button id="next">→</button></div><label class="theme-switch" for="themeToggle"><span class="theme-label light-label">Light</span><input id="themeToggle" type="checkbox" role="switch" aria-label="Toggle dark theme"><span class="switch-track"><span class="switch-thumb"></span></span><span class="theme-label dark-label">Dark</span></label><div class="user-session"><span id="me"></span><small id="email"></small><button id="signout" class="hidden">Sign Out</button></div></div>
 </header>
 <main>
   <aside>
@@ -85,6 +85,24 @@
     </section>
   </aside>
 </main>
+<div id="duplicateDayModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="duplicateDayTitle">
+  <form id="duplicateDayForm" class="modalbox duplicate-day-modalbox">
+    <div class="modalhead">
+      <div><small>DUPLICATE SCHEDULE</small><h2 id="duplicateDayTitle">Duplicate Day</h2></div>
+      <button type="button" id="duplicateDayClose" class="iconbtn" aria-label="Close">×</button>
+    </div>
+    <div class="duplicate-day-source">Copy all transfers from <strong id="duplicateDaySourceLabel"></strong></div>
+    <label>Duplicate To
+      <input id="duplicateDayTarget" type="date" required>
+    </label>
+    <p class="duplicate-day-help">Times, drivers, routes, pallet counts, notes, durations, and statuses will be copied. Each copied transfer will receive a new Move number.</p>
+    <div class="modalactions">
+      <button type="button" id="duplicateDayCancel">Cancel</button>
+      <button class="primary" type="submit" id="duplicateDayConfirm">Duplicate Day</button>
+    </div>
+    <p id="duplicateDayMsg" aria-live="polite"></p>
+  </form>
+</div>
 <div id="optionModal" class="modal hidden" role="dialog" aria-modal="true">
   <form id="optionForm" class="modalbox">
     <div class="modalhead"><div><small id="optionEyebrow">NEW OPTION</small><h2 id="optionTitle">Add a Driver</h2></div><button type="button" id="optionClose" class="iconbtn">×</button></div>
@@ -131,6 +149,7 @@
 <script src="order-status.js"></script>
 <script src="recent-activity.js"></script>
 <script src="duplicate-transfer.js"></script>
+<script src="duplicate-day.js?v=20260921-1"></script>
 <script src="theme.js"></script>
 <script src="chat.js"></script>
 <script src="sms.js?v=20260921-infobip"></script>
