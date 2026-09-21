@@ -130,6 +130,13 @@
       });
     });
   }
+  async function loadDriverList(){
+    let r=await sb.from("transfer_drivers").select("name,sort_order").neq("name","Planning").order("sort_order",{ascending:true}).order("name",{ascending:true});
+    if(r.error){
+      r=await sb.from("transfer_drivers").select("name").neq("name","Planning").order("name",{ascending:true});
+    }
+    return r;
+  }
   async function loadWeek(){
     if(!live||!user)return;
     setDirty(false);
@@ -137,7 +144,7 @@
     updateHeaders();
     const start=E.week.value,end=addDays(start,6);
     const [dr,sc]=await Promise.all([
-      sb.from("transfer_drivers").select("name,sort_order").neq("name","Planning").order("sort_order",{ascending:true}).order("name",{ascending:true}),
+      loadDriverList(),
       sb.from("driver_schedules").select("*").gte("schedule_date",start).lte("schedule_date",end)
     ]);
     if(dr.error){
