@@ -1,6 +1,6 @@
 (()=>{
 const C=window.TRANSFERS_CONFIG||{},live=!!(C.supabaseUrl&&C.supabaseAnonKey),sb=live?window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey):null;
-let user=null,profile=null,items=[],drivers=[],locations=[],presence=null,dataChannel=null,optionContext=null,ignoreClickUntil=0,draggedDriver=null,draggedTransferId=null;
+let user=null,profile=null,items=[],drivers=[],locations=[],presence=null,dataChannel=null,optionContext=null,ignoreClickUntil=0,draggedDriver=null,draggedTransferId=null,audioCtx=null,lastPlanningDing=0;
 const $=id=>document.getElementById(id),E={form:$("form"),edit:$("editId"),date:$("date"),time:$("time"),duration:$("duration"),driver:$("driver"),origin:$("origin"),destination:$("destination"),pallet:$("pallet"),job:$("job"),save:$("save"),del:$("delete"),cancel:$("cancel"),textDriver:$("textDriver"),msg:$("msg"),boardDate:$("boardDate"),grid:$("grid"),title:$("title"),mode:$("mode"),me:$("me"),email:$("email"),active:$("active"),login:$("login"),loginForm:$("loginForm"),loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg"),signout:$("signout"),formTitle:$("formTitle"),optionModal:$("optionModal"),optionForm:$("optionForm"),optionTitle:$("optionTitle"),optionLabel:$("optionLabel"),optionName:$("optionName"),optionMsg:$("optionMsg"),optionClose:$("optionClose"),optionCancel:$("optionCancel")};
 const key="transfers-demo-v2",driverKey="transfers-demo-drivers-v1",locationKey="transfers-demo-locations-v1",PX15=17,GRID_START=210,GRID_END=1320,GRID_HEIGHT=((GRID_END-GRID_START)/15)*PX15;
 const today=()=>{let d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)},add=(iso,n)=>{let d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)},fmt=t=>{let [h,m]=String(t).slice(0,5).split(":").map(Number);return (h%12||12)+":"+String(m).padStart(2,"0")+" "+(h>=12?"PM":"AM")};
@@ -9,6 +9,33 @@ function name(){return profile?.display_name||user?.user_metadata?.display_name|
 function msg(s,c){E.msg.textContent=s||"";E.msg.style.color=c==="error"?"#a43c3c":c==="ok"?"#2f6f49":""}
 function optionMsg(s,c){E.optionMsg.textContent=s||"";E.optionMsg.style.color=c==="error"?"#a43c3c":c==="ok"?"#2f6f49":""}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function unlockAudio(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC)return;
+    if(!audioCtx)audioCtx=new AC();
+    if(audioCtx.state==="suspended")audioCtx.resume();
+  }catch(_err){}
+}
+function planningDing(){
+  const now=Date.now();
+  if(now-lastPlanningDing<700)return;
+  lastPlanningDing=now;
+  try{
+    unlockAudio();
+    if(!audioCtx||audioCtx.state!=="running")return;
+    const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+    osc.type="sine";
+    osc.frequency.setValueAtTime(880,audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.14,audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+0.35);
+    osc.connect(gain);gain.connect(audioCtx.destination);
+    osc.start();osc.stop(audioCtx.currentTime+0.36);
+  }catch(_err){}
+}
+function handleNewTransfer(payload){
+  if(String(payload?.new?.driver||"").trim().toLowerCase()==="planning")planningDing();
+}
 function normalize(x){return{id:String(x.id),scheduled_date:x.scheduled_date,scheduled_time:String(x.scheduled_time||"00:00").slice(0,5),duration_minutes:Number(x.duration_minutes||60),driver:x.driver||"Unassigned",origin:x.origin||"",destination:x.destination||"",pallet_count:Number(x.pallet_count||0),job_number:x.job_number||"",order_status:x.order_status||"Loading",move_number:x.move_number==null?null:Number(x.move_number),created_by:x.created_by,created_by_name:x.created_by_name||"Unknown"}}
 function uniq(values){return [...new Set(values.filter(Boolean).map(v=>String(v).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b))}
 function orderedUniq(values){const out=[],seen=new Set();for(const raw of values){const v=String(raw||"").trim();if(v&&!seen.has(v)){seen.add(v);out.push(v)}}return out}
@@ -43,7 +70,7 @@ async function dropCard(e){e.preventDefault();const lane=e.currentTarget,id=e.da
 async function moveTransfer(x,newDriver,newTime){const old={driver:x.driver,scheduled_time:x.scheduled_time};x.driver=newDriver;x.scheduled_time=newTime;renderBoard();if(live){let r=await sb.from("transfers").update({driver:newDriver,scheduled_time:newTime,updated_at:new Date().toISOString()}).eq("id",x.id).select("*").single();if(r.error){x.driver=old.driver;x.scheduled_time=old.scheduled_time;renderBoard();msg("Could not move transfer: "+r.error.message,"error");return}replaceItem(r.data);renderBoard()}else saveLocal();msg("Transfer moved to "+fmt(newTime)+" with "+newDriver+".","ok")}
 function replaceItem(row){const n=normalize(row),i=items.findIndex(x=>x.id===n.id);if(i>=0)items[i]=n;else items.push(n)}
 async function loadData(){if(!live){loadLocal();renderOptions();renderBoard();return}const [tr,dr,lr]=await Promise.all([sb.from("transfers").select("*").order("scheduled_date").order("scheduled_time"),sb.from("transfer_drivers").select("name,sort_order").order("sort_order",{ascending:true}).order("name",{ascending:true}),sb.from("transfer_locations").select("name").order("name")]);if(tr.error){msg("Transfers could not load: "+tr.error.message,"error");items=[]}else items=(tr.data||[]).map(normalize);drivers=orderedUniq(["Planning",...(dr.error?[]:(dr.data||[]).map(x=>x.name)),...items.map(x=>x.driver)]);locations=uniq([...(lr.error?["Building 100","Building 200"]:(lr.data||[]).map(x=>x.name)),...items.flatMap(x=>[x.origin,x.destination]),"Building 100","Building 200"]);if(dr.error||lr.error)msg("Driver/location lists need the latest schema.sql migration.","error");renderOptions();renderBoard()}
-async function subscribe(){if(!live)return;if(dataChannel)await sb.removeChannel(dataChannel);if(presence)await sb.removeChannel(presence);dataChannel=sb.channel("transfers-data").on("postgres_changes",{event:"*",schema:"public",table:"transfers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_locations"},loadData).subscribe();presence=sb.channel("transfers-active",{config:{presence:{key:user.id}}}).on("presence",{event:"sync"},()=>{const unique=new Map();Object.values(presence.presenceState()).forEach(v=>v.forEach(x=>{const id=x.user_id||x.email;if(id&&!unique.has(id))unique.set(id,x)}));renderUsers([...unique.values()])}).subscribe(async s=>{if(s==="SUBSCRIBED")await presence.track({user_id:user.id,display_name:name(),email:user.email})})}
+async function subscribe(){if(!live)return;if(dataChannel)await sb.removeChannel(dataChannel);if(presence)await sb.removeChannel(presence);dataChannel=sb.channel("transfers-data").on("postgres_changes",{event:"INSERT",schema:"public",table:"transfers"},handleNewTransfer).on("postgres_changes",{event:"*",schema:"public",table:"transfers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_locations"},loadData).subscribe();presence=sb.channel("transfers-active",{config:{presence:{key:user.id}}}).on("presence",{event:"sync"},()=>{const unique=new Map();Object.values(presence.presenceState()).forEach(v=>v.forEach(x=>{const id=x.user_id||x.email;if(id&&!unique.has(id))unique.set(id,x)}));renderUsers([...unique.values()])}).subscribe(async s=>{if(s==="SUBSCRIBED")await presence.track({user_id:user.id,display_name:name(),email:user.email})})}
 function reset(){E.form.reset();E.edit.value="";E.date.value=E.boardDate.value;E.time.value="08:00";E.duration.value="120";E.formTitle.textContent="Build Transfer Load";E.save.textContent="Add Transfer";E.del.classList.add("hidden");E.cancel.classList.add("hidden");E.textDriver?.classList.add("hidden");renderOptions();msg("")}
 function edit(id){let x=items.find(i=>i.id===String(id));if(!x)return;E.edit.value=x.id;E.date.value=x.scheduled_date;E.time.value=x.scheduled_time;E.duration.value=String(x.duration_minutes);renderOptions();E.driver.value=x.driver;E.origin.value=x.origin;E.destination.value=x.destination;E.pallet.value=x.pallet_count;E.job.value=x.job_number;E.formTitle.textContent="Edit Transfer Load";E.save.textContent="Update Transfer";E.del.classList.remove("hidden");E.cancel.classList.remove("hidden");E.textDriver?.classList.remove("hidden");msg("Created by "+x.created_by_name)}
 async function submit(ev){ev.preventDefault();let p={scheduled_date:E.date.value,scheduled_time:E.time.value,duration_minutes:Number(E.duration.value),driver:E.driver.value,origin:E.origin.value,destination:E.destination.value,pallet_count:Number(E.pallet.value),job_number:E.job.value.trim(),created_by:user?.id||"demo-user",created_by_name:name()};if(!p.scheduled_date||!p.scheduled_time||!p.duration_minutes||!p.driver||p.driver.startsWith("__")||!p.origin||p.origin.startsWith("__")||!p.destination||p.destination.startsWith("__")||!p.job_number||Number.isNaN(p.pallet_count)){msg("Complete all fields.","error");return}if(p.origin.toLowerCase()===p.destination.toLowerCase()){msg("Origination and destination must be different.","error");return}let id=E.edit.value;
@@ -58,6 +85,8 @@ async function addOption(ev){ev.preventDefault();if(!optionContext)return;const 
 async function session(s){if(!s?.user){user=null;E.login.classList.remove("hidden");return}user=s.user;E.login.classList.add("hidden");E.signout.classList.remove("hidden");let r=await sb.from("profiles").select("display_name").eq("id",user.id).maybeSingle();profile=r.data||{display_name:user.email?.split("@")[0]||"User"};E.me.textContent=name();E.email.textContent=user.email||"";await loadData();await subscribe()}
 E.form.onsubmit=submit;E.del.onclick=remove;E.cancel.onclick=reset;E.driver.onchange=()=>managedChange("driver",E.driver);E.origin.onchange=()=>managedChange("location",E.origin);E.destination.onchange=()=>managedChange("location",E.destination);E.optionForm.onsubmit=addOption;E.optionClose.onclick=closeOption;E.optionCancel.onclick=closeOption;E.optionModal.addEventListener("click",e=>{if(e.target===E.optionModal)closeOption()});
 $("prev").onclick=()=>{E.boardDate.value=add(E.boardDate.value,-1);E.date.value=E.boardDate.value;renderBoard()};$("next").onclick=()=>{E.boardDate.value=add(E.boardDate.value,1);E.date.value=E.boardDate.value;renderBoard()};$("today").onclick=()=>{E.boardDate.value=today();E.date.value=E.boardDate.value;renderBoard()};E.boardDate.onchange=()=>{E.date.value=E.boardDate.value;renderBoard()};E.signout.onclick=()=>sb?.auth.signOut();
+document.addEventListener("pointerdown",unlockAudio,{once:true});
+document.addEventListener("keydown",unlockAudio,{once:true});
 E.loginForm.onsubmit=async e=>{e.preventDefault();E.loginMsg.textContent="Signing in…";let r=await sb.auth.signInWithPassword({email:E.loginEmail.value.trim(),password:E.loginPassword.value});E.loginMsg.textContent=r.error?r.error.message:""};
 (async()=>{E.boardDate.value=today();E.date.value=today();E.time.value="08:00";E.duration.value="120";if(!live){user={id:"demo-user",email:"Local preview mode",user_metadata:{display_name:"Demo User"}};profile={display_name:"Demo User"};renderUsers([{display_name:"Demo User"}]);loadLocal();renderOptions();renderBoard();return}E.mode.textContent="Live";let s=await sb.auth.getSession();await session(s.data.session);sb.auth.onAuthStateChange((_e,s)=>session(s))})();
 })();
