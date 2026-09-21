@@ -776,7 +776,7 @@ header .brand-cluster>.company-logo{
   max-width:54px!important;
   height:56px!important;
   flex:0 0 54px!important;
-  object-fit:cover!important;
+  object-fit:contain!important;
   object-position:center!important;
   border-radius:9px!important;
   opacity:1!important;
