@@ -421,3 +421,19 @@ body.dark-theme .sms-msg.error{color:#f0a2a2}
 @media(max-width:560px){
   .sms-presets{grid-template-columns:1fr}
 }
+
+
+/* Duplicate day */
+.duplicate-day-btn{white-space:nowrap;font-weight:800;background:#dfe5ea;color:#24313d;border-color:#bfc9d1}
+.duplicate-day-btn:hover{background:#d3dbe2}
+.duplicate-day-modalbox{width:min(440px,calc(100vw - 32px))}
+.duplicate-day-source{margin:18px 0 4px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#f7f9fa;color:var(--text)}
+.duplicate-day-help{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.45}
+#duplicateDayMsg{min-height:18px;margin-bottom:0}
+html[data-theme="dark"] .duplicate-day-btn,
+body.dark-theme .duplicate-day-btn{background:#2a3540;color:#e4ebf1;border-color:#46525e}
+html[data-theme="dark"] .duplicate-day-btn:hover,
+body.dark-theme .duplicate-day-btn:hover{background:#34414d}
+html[data-theme="dark"] .duplicate-day-source,
+body.dark-theme .duplicate-day-source{background:#151c23;border-color:#34404c}
+@media(max-width:900px){.nav{flex-wrap:wrap}.duplicate-day-btn{order:-1}}
