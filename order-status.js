@@ -12,7 +12,7 @@
   form.onsubmit=async function(ev){
     const snapshot={
       id:editId.value,
-      status:status.value||"Loading",
+      status:status.value||"Planned",
       date:document.getElementById("date").value,
       time:document.getElementById("time").value,
       driver:document.getElementById("driver").value,
@@ -53,7 +53,7 @@
     const id=card.dataset.id;
     setTimeout(async()=>{
       const r=await sb.from("transfers").select("order_status").eq("id",id).maybeSingle();
-      if(!r.error && r.data && editId.value===id) status.value=r.data.order_status||"Loading";
+      if(!r.error && r.data && editId.value===id) status.value=r.data.order_status||"Planned";
     },0);
   });
 })();
