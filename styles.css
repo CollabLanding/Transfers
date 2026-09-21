@@ -453,3 +453,163 @@ body.dark-theme .duplicate-day-source{background:#151c23;border-color:#34404c}
     flex:0 0 auto;
   }
 }
+
+
+/* Shared Transfers / Drivers navigation */
+.app-brand{display:flex;flex-direction:column;gap:4px;min-width:0}
+.app-tabs{display:flex;align-items:center;gap:16px;min-width:0}
+.app-tabs a{
+  color:#aebac5;
+  text-decoration:none;
+  font-size:24px;
+  line-height:1.15;
+  font-weight:800;
+  padding:2px 0 5px;
+  border-bottom:2px solid transparent;
+  transition:color .15s ease,border-color .15s ease
+}
+.app-tabs a:hover{color:#fff}
+.app-tabs a.active{color:#fff;border-bottom-color:#6fa7cd}
+html[data-theme="dark"] .app-tabs a.active,
+body.dark-theme .app-tabs a.active{border-bottom-color:#6fa7cd}
+
+/* Driver scheduling page */
+.drivers-main{
+  display:block;
+  padding:16px;
+}
+.driver-schedule-panel{
+  width:100%;
+  padding:0;
+  overflow:hidden;
+}
+.driver-schedule-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+  padding:18px;
+  border-bottom:1px solid var(--line)
+}
+.driver-schedule-heading small{letter-spacing:.12em;color:var(--muted)}
+.driver-schedule-heading h2{margin:4px 0}
+.driver-schedule-heading p{margin:5px 0 0;color:var(--muted);font-size:12px}
+.driver-schedule-heading .primary{min-width:140px}
+.schedule-message{
+  min-height:20px;
+  padding:10px 18px 0;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:700
+}
+.schedule-message.ok{color:#2f6f49}
+.schedule-message.error{color:#a43c3c}
+.driver-schedule-scroll{
+  overflow:auto;
+  padding:12px 18px 18px
+}
+.driver-schedule-table{
+  width:100%;
+  min-width:1320px;
+  border-collapse:separate;
+  border-spacing:0;
+  table-layout:fixed
+}
+.driver-schedule-table th,
+.driver-schedule-table td{
+  border-right:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  padding:10px;
+  vertical-align:top;
+  background:var(--panel)
+}
+.driver-schedule-table thead th{
+  position:sticky;
+  top:0;
+  z-index:3;
+  background:#f6f8fa;
+  text-align:center;
+  font-size:12px
+}
+.driver-schedule-table tr > :first-child{border-left:1px solid var(--line)}
+.driver-schedule-table thead tr:first-child > *{border-top:1px solid var(--line)}
+.driver-schedule-table thead th:first-child{border-top-left-radius:10px}
+.driver-schedule-table thead th:last-child{border-top-right-radius:10px}
+.driver-name-col{width:150px;text-align:left!important}
+.week-total-col{width:110px}
+.schedule-day-name,
+.schedule-day-date{display:block}
+.schedule-day-name{font-weight:900;font-size:13px}
+.schedule-day-date{margin-top:3px;color:var(--muted);font-size:10px}
+.driver-name-cell{
+  width:150px;
+  font-size:13px;
+  text-align:left;
+  position:sticky;
+  left:0;
+  z-index:2;
+  background:var(--panel)!important
+}
+.schedule-day-cell{
+  width:150px;
+  transition:background .15s ease
+}
+.schedule-day-cell.scheduled{background:#f3f8fc}
+.schedule-day-cell label{
+  margin:0 0 7px;
+  gap:3px;
+  font-size:10px;
+  color:var(--muted)
+}
+.schedule-day-cell input{
+  min-height:34px;
+  padding:0 7px;
+  font-size:12px
+}
+.clear-shift{
+  width:100%;
+  padding:5px 8px;
+  font-size:10px;
+  color:var(--muted);
+  background:#f4f6f8
+}
+.driver-week-total{
+  width:110px;
+  text-align:center;
+  vertical-align:middle!important;
+  font-size:15px;
+  font-weight:900;
+  white-space:nowrap
+}
+.schedule-empty{
+  padding:38px!important;
+  text-align:center;
+  color:var(--muted)
+}
+.week-nav input{min-width:140px}
+
+html[data-theme="dark"] .driver-schedule-heading,
+body.dark-theme .driver-schedule-heading{border-bottom-color:#34404c}
+html[data-theme="dark"] .driver-schedule-table thead th,
+body.dark-theme .driver-schedule-table thead th{background:#151c23}
+html[data-theme="dark"] .driver-schedule-table th,
+html[data-theme="dark"] .driver-schedule-table td,
+body.dark-theme .driver-schedule-table th,
+body.dark-theme .driver-schedule-table td{border-color:#34404c}
+html[data-theme="dark"] .driver-name-cell,
+body.dark-theme .driver-name-cell{background:#1a222b!important}
+html[data-theme="dark"] .schedule-day-cell.scheduled,
+body.dark-theme .schedule-day-cell.scheduled{background:#1d2a34}
+html[data-theme="dark"] .clear-shift,
+body.dark-theme .clear-shift{background:#202a34;color:#aab7c3;border-color:#46525e}
+html[data-theme="dark"] .schedule-message.ok,
+body.dark-theme .schedule-message.ok{color:#7ee2ae}
+html[data-theme="dark"] .schedule-message.error,
+body.dark-theme .schedule-message.error{color:#f0a2a2}
+
+@media(max-width:900px){
+  .app-tabs a{font-size:21px}
+  .driver-schedule-heading{flex-direction:column}
+  .driver-schedule-heading .primary{width:100%}
+  .week-nav{flex-wrap:wrap}
+}
