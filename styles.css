@@ -659,9 +659,9 @@ body.dark-theme .schedule-message.error{color:#f0a2a2}
   white-space:nowrap
 }
 .driver-off-overlay{
-  background:rgba(177,34,34,.36);
-  border-left:1px solid rgba(255,130,130,.22);
-  border-right:1px solid rgba(255,130,130,.22)
+  background:rgba(177,34,34,.16);
+  border-left:1px solid rgba(255,130,130,.10);
+  border-right:1px solid rgba(255,130,130,.10)
 }
 .driver-off-overlay span{
   color:#fff;
@@ -694,3 +694,17 @@ html[data-theme="dark"] .copy-month,
 body.dark-theme .copy-day,
 body.dark-theme .copy-week,
 body.dark-theme .copy-month{background:#20384a;color:#add8f2;border-color:#426b87}
+
+/* Force company logo visibility */
+.company-logo{
+  display:block!important;
+  width:166px!important;
+  height:50px!important;
+  flex:0 0 166px!important;
+  object-fit:contain!important;
+  object-position:left center!important;
+  opacity:1!important;
+  visibility:visible!important;
+  filter:none!important;
+  mix-blend-mode:normal!important;
+}
