@@ -816,3 +816,29 @@ html[data-theme="dark"] .current-time-line::before,
 body.dark-theme .current-time-line::before{
   box-shadow:0 0 0 2px rgba(15,22,29,.95)
 }
+
+
+/* Monthly Planning total in Daily Schedule header */
+.boardhead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px
+}
+.planning-month-total{
+  margin-left:auto;
+  white-space:nowrap;
+  font-size:13px;
+  color:var(--muted);
+  font-weight:700
+}
+.planning-month-total strong{
+  margin-left:4px;
+  color:var(--text);
+  font-size:18px;
+  font-weight:900
+}
+@media(max-width:760px){
+  .boardhead{align-items:flex-start;flex-direction:column;gap:8px}
+  .planning-month-total{margin-left:0;white-space:normal}
+}

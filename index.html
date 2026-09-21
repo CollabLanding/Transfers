@@ -10,7 +10,7 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260921-current-time-line">
+  <link rel="stylesheet" href="styles.css?v=20260921-planning-month-total">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
 </head>
@@ -66,7 +66,7 @@
     </section>
   </aside>
   <section class="panel board">
-    <div class="boardhead"><div><small>DAILY SCHEDULE</small><h2 id="title">Transfer Board</h2></div></div>
+    <div class="boardhead"><div><small>DAILY SCHEDULE</small><h2 id="title">Transfer Board</h2></div><div class="planning-month-total" id="planningMonthTotal">Total Orders in Planning: <strong>0</strong></div></div>
     <div id="gridWrap"><div id="grid"></div></div>
   </section>
   <aside class="right-sidebar">
@@ -145,7 +145,7 @@
 <div id="login" class="login hidden">
   <form id="loginForm" class="loginbox"><h1>Transfers</h1><p>Sign in to the transfer board.</p><input id="loginEmail" type="email" placeholder="Email" required><input id="loginPassword" type="password" placeholder="Password" required><button class="primary">Sign In</button><p id="loginMsg"></p></form>
 </div>
-<script src="app.js?v=20260921-short-edit-buttons"></script>
+<script src="app.js?v=20260921-planning-month-total"></script>
 <script src="order-status.js"></script>
 <script src="recent-activity.js"></script>
 <script src="duplicate-transfer.js"></script>

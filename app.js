@@ -137,7 +137,10 @@ function updateCurrentTimeLine(){
 }
 function renderBoard(){
  const date=E.boardDate.value,day=items.filter(x=>x.scheduled_date===date),laneDrivers=orderedUniq([...drivers,...day.map(x=>x.driver)]);
- E.title.textContent=new Date(date+"T12:00:00").toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});E.grid.innerHTML="";
+ E.title.textContent=new Date(date+"T12:00:00").toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+ const monthKey=date.slice(0,7),planningTotal=items.filter(x=>String(x.driver||"").trim().toLowerCase()==="planning"&&String(x.scheduled_date||"").slice(0,7)===monthKey).length;
+ const planningTotalEl=document.getElementById("planningMonthTotal");if(planningTotalEl)planningTotalEl.innerHTML='Total Orders in Planning: <strong>'+planningTotal+'</strong>';
+ E.grid.innerHTML="";
  const hr=document.createElement("div");hr.className="headrow";const c=document.createElement("div");c.className="corner";c.textContent="";hr.appendChild(c);
  if(!laneDrivers.length){let d=document.createElement("div");d.className="driverhead";d.textContent="Add a driver to begin";hr.appendChild(d)}
  laneDrivers.forEach(d=>{let h=document.createElement("div");h.className="driverhead";h.textContent=d;h.draggable=true;h.dataset.driver=d;h.title="Drag to reorder driver columns";h.addEventListener("dragstart",driverHeaderDragStart);h.addEventListener("dragend",driverHeaderDragEnd);h.addEventListener("dragover",driverHeaderDragOver);h.addEventListener("dragleave",()=>h.classList.remove("driver-dragover"));h.addEventListener("drop",driverHeaderDrop);hr.appendChild(h)});E.grid.appendChild(hr);
