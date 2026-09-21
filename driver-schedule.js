@@ -9,7 +9,7 @@
     me:$("me"),email:$("email"),signout:$("signout"),login:$("login"),loginForm:$("loginForm"),
     loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg")
   };
-  let user=null,profile=null,drivers=[],scheduleRows=[],channel=null,dirty=false;
+  let user=null,profile=null,drivers=[],scheduleRows=[],channel=null,dirty=false,lastWeekValue="";
 
   function localISO(d){
     const x=new Date(d);
@@ -237,10 +237,10 @@
     await subscribe();
   }
 
-  E.prev.onclick=()=>{if(dirty&&!confirm("Discard unsaved schedule changes?"))return;E.week.value=addDays(E.week.value,-7);loadWeek()};
-  E.next.onclick=()=>{if(dirty&&!confirm("Discard unsaved schedule changes?"))return;E.week.value=addDays(E.week.value,7);loadWeek()};
-  E.thisWeek.onclick=()=>{if(dirty&&!confirm("Discard unsaved schedule changes?"))return;E.week.value=mondayOf(new Date());loadWeek()};
-  E.week.onchange=()=>{if(dirty&&!confirm("Discard unsaved schedule changes?")){E.week.value=mondayOf(new Date());return}E.week.value=mondayOf(E.week.value);loadWeek()};
+  E.prev.onclick=()=>{if(dirty&&!confirm("Discard unsaved schedule changes?"))return;E.week.value=addDays(E.week.value,-7);lastWeekValue=E.week.value;loadWeek()};
+  E.next.onclick=()=>{if(dirty&&!confirm("Discard unsaved schedule changes?"))return;E.week.value=addDays(E.week.value,7);lastWeekValue=E.week.value;loadWeek()};
+  E.thisWeek.onclick=()=>{if(dirty&&!confirm("Discard unsaved schedule changes?"))return;E.week.value=mondayOf(new Date());lastWeekValue=E.week.value;loadWeek()};
+  E.week.onchange=()=>{const next=mondayOf(E.week.value);if(dirty&&!confirm("Discard unsaved schedule changes?")){E.week.value=lastWeekValue;return}E.week.value=next;lastWeekValue=next;loadWeek()};
   E.save.onclick=save;
   E.signout.onclick=()=>sb?.auth.signOut();
   E.loginForm.onsubmit=async e=>{
@@ -252,6 +252,7 @@
   window.addEventListener("beforeunload",e=>{if(!dirty)return;e.preventDefault();e.returnValue=""});
 
   E.week.value=mondayOf(new Date());
+  lastWeekValue=E.week.value;
   if(!live){
     E.body.innerHTML='<tr><td colspan="9" class="schedule-empty">Supabase is not configured.</td></tr>';
     show("Supabase is not configured.","error");
