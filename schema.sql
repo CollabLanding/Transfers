@@ -10,7 +10,7 @@ create table if not exists public.transfers(
   id uuid primary key default gen_random_uuid(),
   scheduled_date date not null,
   scheduled_time time not null,
-  duration_minutes int not null default 60,
+  duration_minutes int not null default 120,
   driver text not null,
   origin text not null,
   destination text not null,
@@ -23,7 +23,8 @@ create table if not exists public.transfers(
   updated_at timestamptz not null default now()
 );
 
-alter table public.transfers add column if not exists duration_minutes int not null default 60;
+alter table public.transfers add column if not exists duration_minutes int not null default 120;
+alter table public.transfers alter column duration_minutes set default 120;
 alter table public.transfers add column if not exists order_status text not null default 'Loading';
 
 do $$
@@ -51,6 +52,10 @@ alter table public.transfer_drivers
 
 alter table public.transfer_drivers
   add column if not exists phone_number text;
+
+insert into public.transfer_drivers(name,created_by_name,sort_order)
+values ('Planning','System',-1)
+on conflict(name) do nothing;
 
 create table if not exists public.transfer_locations(
   name text primary key,
