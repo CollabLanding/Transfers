@@ -26,9 +26,7 @@ function envKey(jsonName: string, legacyName: string) {
 function normalizePhone(raw: string) {
   const original = String(raw || "").trim();
   const digits = original.replace(/\D/g, "");
-  if (original.startsWith("+") && digits.length >= 8 && digits.length <= 15) {
-    return "+" + digits;
-  }
+  if (original.startsWith("+") && digits.length >= 8 && digits.length <= 15) return "+" + digits;
   if (digits.length === 10) return "+1" + digits;
   if (digits.length === 11 && digits.startsWith("1")) return "+" + digits;
   throw new Error("Enter a valid US cell number or an international number in E.164 format.");
@@ -37,6 +35,19 @@ function normalizePhone(raw: string) {
 function maskedPhone(value: string) {
   const digits = value.replace(/\D/g, "");
   return digits.length >= 4 ? "ending " + digits.slice(-4) : "driver number";
+}
+
+function infobipError(data: Record<string, unknown>) {
+  const requestError = data?.requestError as Record<string, unknown> | undefined;
+  const serviceException = requestError?.serviceException as Record<string, unknown> | undefined;
+  const exception = requestError?.serviceException as Record<string, unknown> | undefined;
+  return String(
+    serviceException?.text ||
+    exception?.messageId ||
+    data?.description ||
+    data?.message ||
+    "Infobip rejected the message."
+  );
 }
 
 Deno.serve(async (req) => {
@@ -77,9 +88,7 @@ Deno.serve(async (req) => {
   const rawPhone = String(payload.phone || "").trim();
   const message = String(payload.message || "").trim();
   const requestedType = String(payload.message_type || "custom").toLowerCase();
-  const messageType = ["assignment", "update", "delay"].includes(requestedType)
-    ? requestedType
-    : "custom";
+  const messageType = ["assignment", "update", "delay"].includes(requestedType) ? requestedType : "custom";
 
   if (!transferId) return json({ error: "Transfer ID is required." }, 400);
   if (!message) return json({ error: "Message cannot be empty." }, 400);
@@ -100,79 +109,109 @@ Deno.serve(async (req) => {
 
   if (transferError || !transfer) return json({ error: "Transfer not found." }, 404);
 
-  const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID") || "";
-  const twilioToken = Deno.env.get("TWILIO_AUTH_TOKEN") || "";
-  const twilioFrom = Deno.env.get("TWILIO_FROM_NUMBER") || "";
-  const messagingServiceSid = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID") || "";
+  let provider = "";
+  let providerMessageId = "";
+  let providerStatus = "queued";
 
-  if (!twilioSid || !twilioToken || (!twilioFrom && !messagingServiceSid)) {
-    return json({
-      error: "Twilio is not configured. Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and either TWILIO_MESSAGING_SERVICE_SID or TWILIO_FROM_NUMBER to Supabase Edge Function secrets.",
-    }, 503);
-  }
+  const infobipApiKey = Deno.env.get("INFOBIP_API_KEY") || "";
+  const infobipBaseUrl = (Deno.env.get("INFOBIP_BASE_URL") || "https://api.infobip.com").replace(/\/$/, "");
+  const infobipSender = Deno.env.get("INFOBIP_SENDER") || "ServiceSMS";
 
-  const endpoint = `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(twilioSid)}/Messages.json`;
-  const authHeader = "Basic " + btoa(twilioSid + ":" + twilioToken);
-
-  async function sendTwilio(form: URLSearchParams) {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        Authorization: authHeader,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: form.toString(),
-    });
+  if (infobipApiKey) {
+    provider = "Infobip";
+    let response: Response;
     let data: Record<string, unknown> = {};
     try {
-      data = await response.json();
+      response = await fetch(infobipBaseUrl + "/sms/3/messages", {
+        method: "POST",
+        headers: {
+          Authorization: "App " + infobipApiKey,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          messages: [{
+            sender: infobipSender,
+            destinations: [{ to: to.replace(/^\+/, "") }],
+            content: { text: message },
+          }],
+        }),
+      });
+      try {
+        data = await response.json();
+      } catch {
+        // Leave data empty if the provider returns non-JSON.
+      }
     } catch {
-      // Keep an empty object if Twilio did not return JSON.
+      return json({ error: "Could not reach Infobip." }, 502);
     }
-    return { response, data };
-  }
 
-  const form = new URLSearchParams();
-  form.set("To", to);
-  form.set("Body", message);
-  if (messagingServiceSid) form.set("MessagingServiceSid", messagingServiceSid);
-  else form.set("From", twilioFrom);
-
-  let twilioResponse: Response;
-  let twilioData: Record<string, unknown>;
-  let trialTemplateUsed = false;
-  let providerBody = message;
-
-  try {
-    ({ response: twilioResponse, data: twilioData } = await sendTwilio(form));
-
-    const twilioMessage = String(twilioData.message || "");
-    const trialTemplateError =
-      !twilioResponse.ok &&
-      (twilioMessage.includes("Trial accounts can only use predefined SMS templates") ||
-       twilioMessage.includes("Invalid template name"));
-
-    if (trialTemplateError) {
-      const trialForm = new URLSearchParams();
-      trialForm.set("To", to);
-      trialForm.set("Body", "sms_internal_alerts");
-      ({ response: twilioResponse, data: twilioData } = await sendTwilio(trialForm));
-      trialTemplateUsed = twilioResponse.ok;
-      providerBody = trialTemplateUsed ? "sms_internal_alerts" : message;
+    if (!response.ok) {
+      return json({
+        error: infobipError(data),
+        provider: "Infobip",
+        code: response.status,
+      }, 502);
     }
-  } catch {
-    return json({ error: "Could not reach Twilio." }, 502);
-  }
 
-  if (!twilioResponse.ok) {
-    return json({
-      error: String(twilioData.message || "Twilio rejected the message."),
-      code: twilioData.code || null,
-    }, 502);
-  }
+    const resultMessages = Array.isArray(data.messages) ? data.messages as Array<Record<string, unknown>> : [];
+    const first = resultMessages[0] || {};
+    const status = (first.status || {}) as Record<string, unknown>;
+    providerMessageId = String(first.messageId || data.bulkId || "");
+    providerStatus = String(status.name || status.groupName || "PENDING_ACCEPTED");
+  } else {
+    const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID") || "";
+    const twilioToken = Deno.env.get("TWILIO_AUTH_TOKEN") || "";
+    const twilioFrom = Deno.env.get("TWILIO_FROM_NUMBER") || "";
+    const messagingServiceSid = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID") || "";
 
-  const providerSid = String(twilioData.sid || "");
-  const providerStatus = String(twilioData.status || "queued");
+    if (!twilioSid || !twilioToken || (!twilioFrom && !messagingServiceSid)) {
+      return json({
+        error: "Infobip is not configured. Add INFOBIP_API_KEY to Supabase Edge Function secrets. INFOBIP_BASE_URL is optional and INFOBIP_SENDER defaults to ServiceSMS.",
+      }, 503);
+    }
+
+    provider = "Twilio";
+    const form = new URLSearchParams();
+    form.set("To", to);
+    form.set("Body", message);
+    if (messagingServiceSid) form.set("MessagingServiceSid", messagingServiceSid);
+    else form.set("From", twilioFrom);
+
+    let response: Response;
+    let data: Record<string, unknown> = {};
+    try {
+      response = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(twilioSid)}/Messages.json`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: "Basic " + btoa(twilioSid + ":" + twilioToken),
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: form.toString(),
+        },
+      );
+      try {
+        data = await response.json();
+      } catch {
+        // Leave data empty if the provider returns non-JSON.
+      }
+    } catch {
+      return json({ error: "Could not reach Twilio." }, 502);
+    }
+
+    if (!response.ok) {
+      return json({
+        error: String(data.message || "Twilio rejected the message."),
+        provider: "Twilio",
+        code: data.code || response.status,
+      }, 502);
+    }
+
+    providerMessageId = String(data.sid || "");
+    providerStatus = String(data.status || "queued");
+  }
 
   const { data: profile } = await admin
     .from("profiles")
@@ -190,16 +229,14 @@ Deno.serve(async (req) => {
     transfer_id: transfer.id,
     driver: transfer.driver,
     to_number: to,
-    message: providerBody,
-    message_type: trialTemplateUsed ? "trial-test" : messageType,
-    provider_message_sid: providerSid || null,
-    provider_status: providerStatus,
+    message,
+    message_type: messageType,
+    provider_message_sid: providerMessageId || null,
+    provider_status: provider + ": " + providerStatus,
     actor_id: user.id,
     actor_name: actorName,
   });
 
-  // Best-effort activity entry. This integrates with the existing Recent Activity feed
-  // when migration-v4.sql has created transfer_activity.
   await admin.from("transfer_activity").insert({
     transfer_id: transfer.id,
     action: "SMS sent",
@@ -207,16 +244,15 @@ Deno.serve(async (req) => {
     actor_name: actorName,
     job_number: transfer.job_number,
     driver: transfer.driver,
-    details: (trialTemplateUsed ? "Trial template test" : messageType.charAt(0).toUpperCase() + messageType.slice(1) + " text") + " sent to " + maskedPhone(to),
+    details: messageType.charAt(0).toUpperCase() + messageType.slice(1) + " text sent via " + provider + " to " + maskedPhone(to),
   });
 
   return json({
     ok: true,
-    sid: providerSid,
+    provider,
+    message_id: providerMessageId,
     status: providerStatus,
     to,
-    trial_template_used: trialTemplateUsed,
-    trial_template: trialTemplateUsed ? providerBody : null,
     log_warning: logError ? logError.message : null,
   });
 });
