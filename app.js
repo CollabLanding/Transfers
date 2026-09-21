@@ -19,18 +19,56 @@ function unlockAudio(){
 }
 function planningDing(){
   const now=Date.now();
-  if(now-lastPlanningDing<700)return;
+  if(now-lastPlanningDing<900)return;
   lastPlanningDing=now;
   try{
     unlockAudio();
     if(!audioCtx||audioCtx.state!=="running")return;
-    const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
-    osc.type="sine";
-    osc.frequency.setValueAtTime(880,audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.14,audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+0.35);
-    osc.connect(gain);gain.connect(audioCtx.destination);
-    osc.start();osc.stop(audioCtx.currentTime+0.36);
+
+    const start=audioCtx.currentTime;
+    const master=audioCtx.createGain();
+    const compressor=audioCtx.createDynamicsCompressor();
+    compressor.threshold.setValueAtTime(-12,start);
+    compressor.knee.setValueAtTime(18,start);
+    compressor.ratio.setValueAtTime(4,start);
+    compressor.attack.setValueAtTime(0.003,start);
+    compressor.release.setValueAtTime(0.35,start);
+
+    master.gain.setValueAtTime(0.9,start);
+    master.gain.exponentialRampToValueAtTime(0.0001,start+1.25);
+    master.connect(compressor);
+    compressor.connect(audioCtx.destination);
+
+    const partials=[
+      {freq:784,level:0.34,type:"sine",decay:1.15},
+      {freq:1176,level:0.24,type:"sine",decay:0.95},
+      {freq:1568,level:0.14,type:"triangle",decay:0.72}
+    ];
+
+    partials.forEach(p=>{
+      const osc=audioCtx.createOscillator();
+      const gain=audioCtx.createGain();
+      osc.type=p.type;
+      osc.frequency.setValueAtTime(p.freq,start);
+      gain.gain.setValueAtTime(p.level,start);
+      gain.gain.exponentialRampToValueAtTime(0.0001,start+p.decay);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(start);
+      osc.stop(start+p.decay+0.05);
+    });
+
+    const echo=audioCtx.createOscillator();
+    const echoGain=audioCtx.createGain();
+    echo.type="sine";
+    echo.frequency.setValueAtTime(1176,start+0.13);
+    echoGain.gain.setValueAtTime(0.0001,start);
+    echoGain.gain.setValueAtTime(0.16,start+0.13);
+    echoGain.gain.exponentialRampToValueAtTime(0.0001,start+0.82);
+    echo.connect(echoGain);
+    echoGain.connect(master);
+    echo.start(start+0.13);
+    echo.stop(start+0.84);
   }catch(_err){}
 }
 function handleNewTransfer(payload){
