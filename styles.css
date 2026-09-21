@@ -632,3 +632,65 @@ body.dark-theme .schedule-message.error{color:#f0a2a2}
   .brand-cluster{width:100%}
   .company-logo{width:116px;height:35px;flex-basis:116px}
 }
+
+
+/* Driver availability shown on Transfers board */
+.driver-schedule-overlay{
+  position:absolute;
+  left:0;
+  right:0;
+  z-index:1;
+  pointer-events:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden
+}
+.driver-unavailable-overlay{
+  background:rgba(8,12,16,.88);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),inset 0 -1px 0 rgba(255,255,255,.04)
+}
+.driver-unavailable-overlay span{
+  color:#d6dde3;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.08em;
+  transform:rotate(-90deg);
+  white-space:nowrap
+}
+.driver-off-overlay{
+  background:rgba(177,34,34,.72);
+  border-left:1px solid rgba(255,130,130,.45);
+  border-right:1px solid rgba(255,130,130,.45)
+}
+.driver-off-overlay span{
+  color:#fff;
+  font-size:18px;
+  font-weight:900;
+  letter-spacing:.18em;
+  text-shadow:0 1px 3px rgba(0,0,0,.5)
+}
+.lane .card{z-index:3}
+.lane .drop-preview{z-index:20}
+
+/* Per-driver schedule copying */
+.driver-name-cell{min-width:175px}
+.driver-name-text{display:block;font-weight:900;margin-bottom:8px}
+.driver-period-copy{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.driver-period-copy button,
+.shift-actions button{
+  min-height:28px;
+  padding:5px 6px;
+  border-radius:6px;
+  font-size:9px;
+  font-weight:800;
+  white-space:nowrap
+}
+.shift-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.copy-day,.copy-week,.copy-month{background:#e9f2f8;color:#205c83;border-color:#bfd5e3}
+html[data-theme="dark"] .copy-day,
+html[data-theme="dark"] .copy-week,
+html[data-theme="dark"] .copy-month,
+body.dark-theme .copy-day,
+body.dark-theme .copy-week,
+body.dark-theme .copy-month{background:#20384a;color:#add8f2;border-color:#426b87}
