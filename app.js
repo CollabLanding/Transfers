@@ -1,6 +1,6 @@
 (()=>{
 const C=window.TRANSFERS_CONFIG||{},live=!!(C.supabaseUrl&&C.supabaseAnonKey),sb=live?window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey):null;
-let user=null,profile=null,items=[],drivers=[],locations=[],presence=null,dataChannel=null,optionContext=null,ignoreClickUntil=0,draggedDriver=null,draggedTransferId=null,audioCtx=null,lastPlanningDing=0;
+let user=null,profile=null,items=[],drivers=[],locations=[],driverSchedule=[],presence=null,dataChannel=null,optionContext=null,ignoreClickUntil=0,draggedDriver=null,draggedTransferId=null,audioCtx=null,lastPlanningDing=0;
 const $=id=>document.getElementById(id),E={form:$("form"),edit:$("editId"),date:$("date"),time:$("time"),duration:$("duration"),driver:$("driver"),origin:$("origin"),destination:$("destination"),pallet:$("pallet"),job:$("job"),save:$("save"),del:$("delete"),cancel:$("cancel"),textDriver:$("textDriver"),msg:$("msg"),boardDate:$("boardDate"),grid:$("grid"),title:$("title"),mode:$("mode"),me:$("me"),email:$("email"),active:$("active"),login:$("login"),loginForm:$("loginForm"),loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg"),signout:$("signout"),formTitle:$("formTitle"),optionModal:$("optionModal"),optionForm:$("optionForm"),optionTitle:$("optionTitle"),optionLabel:$("optionLabel"),optionName:$("optionName"),optionMsg:$("optionMsg"),optionClose:$("optionClose"),optionCancel:$("optionCancel")};
 const key="transfers-demo-v2",driverKey="transfers-demo-drivers-v1",locationKey="transfers-demo-locations-v1",PX15=17,GRID_START=210,GRID_END=1320,GRID_HEIGHT=((GRID_END-GRID_START)/15)*PX15;
 const today=()=>{let d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)},add=(iso,n)=>{let d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)},fmt=t=>{let [h,m]=String(t).slice(0,5).split(":").map(Number);return (h%12||12)+":"+String(m).padStart(2,"0")+" "+(h>=12?"PM":"AM")};
@@ -82,6 +82,49 @@ function loadLocal(){try{items=(JSON.parse(localStorage.getItem(key)||"[]")||[])
 function fillSelect(select,values,placeholder,addText,sentinel,preserve){let current=preserve??select.value;select.innerHTML='<option value="" disabled>'+esc(placeholder)+'</option>'+values.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("")+'<option value="'+sentinel+'">＋ '+esc(addText)+'</option>';if(values.includes(current))select.value=current;else select.value=""}
 function renderOptions(){let dv=E.driver.value||"Planning",ov=E.origin.value,tv=E.destination.value;fillSelect(E.driver,drivers,"Select driver","Add a Driver…","__add_driver__",dv);fillSelect(E.origin,locations,"Select origin","Add a Location…","__add_location__",ov);fillSelect(E.destination,locations,"Select destination","Add a Location…","__add_location__",tv)}
 function renderUsers(list){E.active.innerHTML="";(list||[]).forEach(u=>{let d=document.createElement("div");d.className="activeRow";d.textContent=u.display_name||u.email||"User";E.active.appendChild(d)})}
+function scheduleOverlay(lane,top,height,kind,label=""){
+  if(height<=0)return;
+  const block=document.createElement("div");
+  block.className="driver-schedule-overlay "+kind;
+  block.style.top=Math.max(0,top)+"px";
+  block.style.height=Math.max(0,height)+"px";
+  if(label)block.innerHTML='<span>'+esc(label)+'</span>';
+  lane.appendChild(block);
+}
+function applyDriverScheduleOverlay(lane,driver,date){
+  if(String(driver).trim().toLowerCase()==="planning")return;
+  const row=driverSchedule.find(r=>String(r.driver_name)===String(driver)&&String(r.schedule_date)===String(date));
+  if(!row){
+    lane.classList.add("driver-off-lane");
+    scheduleOverlay(lane,0,GRID_HEIGHT,"driver-off-overlay","OFF");
+    return;
+  }
+
+  const start=timeToMin(String(row.start_time||"00:00").slice(0,5));
+  const end=timeToMin(String(row.end_time||"00:00").slice(0,5));
+  const px=m=>((m-GRID_START)/15)*PX15;
+
+  // Shift starts outside/after the visible board: unavailable for the full visible day.
+  if(start>=GRID_END){
+    scheduleOverlay(lane,0,GRID_HEIGHT,"driver-unavailable-overlay","NOT SCHEDULED");
+    return;
+  }
+
+  if(start>GRID_START){
+    scheduleOverlay(lane,0,Math.min(GRID_HEIGHT,px(start)),"driver-unavailable-overlay");
+  }
+
+  // Normal same-day shift: black out everything after clock-out.
+  if(end>start){
+    if(end<=GRID_START){
+      scheduleOverlay(lane,0,GRID_HEIGHT,"driver-unavailable-overlay","NOT SCHEDULED");
+    }else if(end<GRID_END){
+      const top=Math.max(0,px(end));
+      scheduleOverlay(lane,top,GRID_HEIGHT-top,"driver-unavailable-overlay");
+    }
+  }
+  // Overnight shifts (end <= start) remain available from start through the end of this board day.
+}
 function renderBoard(){
  const date=E.boardDate.value,day=items.filter(x=>x.scheduled_date===date),laneDrivers=orderedUniq([...drivers,...day.map(x=>x.driver)]);
  E.title.textContent=new Date(date+"T12:00:00").toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});E.grid.innerHTML="";
@@ -91,7 +134,7 @@ function renderBoard(){
  const br=document.createElement("div");br.className="bodyrow";const times=document.createElement("div");times.className="times";times.style.height=GRID_HEIGHT+"px";
  const marks=[];for(let m=240;m<=GRID_END;m+=60)marks.push(m);marks.forEach(m=>{let t=document.createElement("div");t.className="tick";t.dataset.minute=String(m);t.style.top=(((m-GRID_START)/15)*PX15)+"px";t.textContent=fmt(minToTime(m));times.appendChild(t)});br.appendChild(times);
  if(!laneDrivers.length){let empty=document.createElement("div");empty.className="emptylane";empty.style.height=GRID_HEIGHT+"px";empty.textContent="Use the Driver dropdown to add your first driver.";br.appendChild(empty)}
- laneDrivers.forEach(d=>{let lane=document.createElement("div");lane.className="lane";lane.style.height=GRID_HEIGHT+"px";lane.dataset.driver=d;lane.addEventListener("dragover",transferLaneDragOver);lane.addEventListener("dragleave",transferLaneDragLeave);lane.addEventListener("drop",dropCard);day.filter(x=>x.driver===d&&timeToMin(x.scheduled_time)>=GRID_START&&timeToMin(x.scheduled_time)<GRID_END).forEach(x=>lane.appendChild(makeCard(x)));br.appendChild(lane)});E.grid.appendChild(br)
+ laneDrivers.forEach(d=>{let lane=document.createElement("div");lane.className="lane";lane.style.height=GRID_HEIGHT+"px";lane.dataset.driver=d;lane.addEventListener("dragover",transferLaneDragOver);lane.addEventListener("dragleave",transferLaneDragLeave);lane.addEventListener("drop",dropCard);applyDriverScheduleOverlay(lane,d,date);day.filter(x=>x.driver===d&&timeToMin(x.scheduled_time)>=GRID_START&&timeToMin(x.scheduled_time)<GRID_END).forEach(x=>lane.appendChild(makeCard(x)));br.appendChild(lane)});E.grid.appendChild(br)
 }
 function driverHeaderDragStart(e){draggedDriver=e.currentTarget.dataset.driver;e.currentTarget.classList.add("dragging-driver");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("application/x-transfer-driver",draggedDriver)}
 function driverHeaderDragEnd(e){draggedDriver=null;e.currentTarget.classList.remove("dragging-driver");document.querySelectorAll(".driverhead.driver-dragover").forEach(x=>x.classList.remove("driver-dragover"))}
@@ -118,8 +161,16 @@ async function loadLocationsWithFallback(){
   let r=await sb.from("transfer_locations").select("name").order("name");
   return r;
 }
-async function loadData(){if(!live){loadLocal();renderOptions();renderBoard();return}const [tr,dr,lr]=await Promise.all([sb.from("transfers").select("*").order("scheduled_date").order("scheduled_time"),loadDriversWithFallback(),loadLocationsWithFallback()]);if(tr.error){msg("Transfers could not load: "+tr.error.message,"error");items=[]}else items=(tr.data||[]).map(normalize);drivers=orderedUniq(["Planning",...(dr.error?[]:(dr.data||[]).map(x=>x.name)),...items.map(x=>x.driver)]);locations=uniq([...(lr.error?["Building 100","Building 200"]:(lr.data||[]).map(x=>x.name)),...items.flatMap(x=>[x.origin,x.destination]),"Building 100","Building 200"]);if(dr.error||lr.error){const details=[dr.error?"Drivers: "+dr.error.message:"",lr.error?"Locations: "+lr.error.message:""].filter(Boolean).join(" · ");msg("Could not load driver/location lists. "+details,"error")}renderOptions();renderBoard()}
-async function subscribe(){if(!live)return;if(dataChannel)await sb.removeChannel(dataChannel);if(presence)await sb.removeChannel(presence);dataChannel=sb.channel("transfers-data").on("postgres_changes",{event:"INSERT",schema:"public",table:"transfers"},handleNewTransfer).on("postgres_changes",{event:"*",schema:"public",table:"transfers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_locations"},loadData).subscribe();presence=sb.channel("transfers-active",{config:{presence:{key:user.id}}}).on("presence",{event:"sync"},()=>{const unique=new Map();Object.values(presence.presenceState()).forEach(v=>v.forEach(x=>{const id=x.user_id||x.email;if(id&&!unique.has(id))unique.set(id,x)}));renderUsers([...unique.values()])}).subscribe(async s=>{if(s==="SUBSCRIBED")await presence.track({user_id:user.id,display_name:name(),email:user.email})})}
+async function loadBoardSchedule(){
+  if(!live){driverSchedule=[];renderBoard();return}
+  const r=await sb.from("driver_schedules")
+    .select("driver_name,schedule_date,start_time,end_time")
+    .eq("schedule_date",E.boardDate.value);
+  driverSchedule=r.error?[]:(r.data||[]);
+  renderBoard();
+}
+async function loadData(){if(!live){loadLocal();driverSchedule=[];renderOptions();renderBoard();return}const [tr,dr,lr,sc]=await Promise.all([sb.from("transfers").select("*").order("scheduled_date").order("scheduled_time"),loadDriversWithFallback(),loadLocationsWithFallback(),sb.from("driver_schedules").select("driver_name,schedule_date,start_time,end_time").eq("schedule_date",E.boardDate.value)]);if(tr.error){msg("Transfers could not load: "+tr.error.message,"error");items=[]}else items=(tr.data||[]).map(normalize);drivers=orderedUniq(["Planning",...(dr.error?[]:(dr.data||[]).map(x=>x.name)),...items.map(x=>x.driver)]);locations=uniq([...(lr.error?["Building 100","Building 200"]:(lr.data||[]).map(x=>x.name)),...items.flatMap(x=>[x.origin,x.destination]),"Building 100","Building 200"]);driverSchedule=sc.error?[]:(sc.data||[]);if(dr.error||lr.error){const details=[dr.error?"Drivers: "+dr.error.message:"",lr.error?"Locations: "+lr.error.message:""].filter(Boolean).join(" · ");msg("Could not load driver/location lists. "+details,"error")}renderOptions();renderBoard()}
+async function subscribe(){if(!live)return;if(dataChannel)await sb.removeChannel(dataChannel);if(presence)await sb.removeChannel(presence);dataChannel=sb.channel("transfers-data").on("postgres_changes",{event:"INSERT",schema:"public",table:"transfers"},handleNewTransfer).on("postgres_changes",{event:"*",schema:"public",table:"transfers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_locations"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"driver_schedules"},loadBoardSchedule).subscribe();presence=sb.channel("transfers-active",{config:{presence:{key:user.id}}}).on("presence",{event:"sync"},()=>{const unique=new Map();Object.values(presence.presenceState()).forEach(v=>v.forEach(x=>{const id=x.user_id||x.email;if(id&&!unique.has(id))unique.set(id,x)}));renderUsers([...unique.values()])}).subscribe(async s=>{if(s==="SUBSCRIBED")await presence.track({user_id:user.id,display_name:name(),email:user.email})})}
 function reset(){E.form.reset();E.edit.value="";E.date.value=E.boardDate.value;E.time.value="08:00";E.duration.value="120";E.formTitle.textContent="Build Transfer Load";E.save.textContent="Add Transfer";E.del.classList.add("hidden");E.cancel.classList.add("hidden");E.textDriver?.classList.add("hidden");renderOptions();msg("")}
 function edit(id){let x=items.find(i=>i.id===String(id));if(!x)return;E.edit.value=x.id;E.date.value=x.scheduled_date;E.time.value=x.scheduled_time;E.duration.value=String(x.duration_minutes);renderOptions();E.driver.value=x.driver;E.origin.value=x.origin;E.destination.value=x.destination;E.pallet.value=x.pallet_count;E.job.value=x.job_number;E.formTitle.textContent="Edit Transfer Load";E.save.textContent="Update Transfer";E.del.classList.remove("hidden");E.cancel.classList.remove("hidden");E.textDriver?.classList.remove("hidden");msg("Created by "+x.created_by_name)}
 async function submit(ev){ev.preventDefault();let p={scheduled_date:E.date.value,scheduled_time:E.time.value,duration_minutes:Number(E.duration.value),driver:E.driver.value,origin:E.origin.value,destination:E.destination.value,pallet_count:Number(E.pallet.value),job_number:E.job.value.trim(),created_by:user?.id||"demo-user",created_by_name:name()};if(!p.scheduled_date||!p.scheduled_time||!p.duration_minutes||!p.driver||p.driver.startsWith("__")||!p.origin||p.origin.startsWith("__")||!p.destination||p.destination.startsWith("__")||!p.job_number||Number.isNaN(p.pallet_count)){msg("Complete all fields.","error");return}if(p.origin.toLowerCase()===p.destination.toLowerCase()){msg("Origination and destination must be different.","error");return}let id=E.edit.value;
@@ -133,7 +184,7 @@ function closeOption(){if(optionContext?.select&&optionContext.select.value.star
 async function addOption(ev){ev.preventDefault();if(!optionContext)return;const value=E.optionName.value.trim(),kind=optionContext.kind,list=kind==="driver"?drivers:locations;if(!value){optionMsg("Enter a name.","error");return}const existing=list.find(x=>x.toLowerCase()===value.toLowerCase());if(existing){renderOptions();optionContext.select.value=existing;closeOption();return}if(live){const table=kind==="driver"?"transfer_drivers":"transfer_locations",payload={name:value,created_by:user.id,created_by_name:name()};if(kind==="driver")payload.sort_order=drivers.length;const r=await sb.from(table).insert(payload).select("name").single();if(r.error){optionMsg("Could not add option: "+r.error.message,"error");return}}if(kind==="driver")drivers=orderedUniq([...drivers,value]);else locations=uniq([...locations,value]);if(!live)saveLocal();const target=optionContext.select;renderOptions();target.value=value;closeOption();renderBoard()}
 async function session(s){if(!s?.user){user=null;E.login.classList.remove("hidden");return}user=s.user;E.login.classList.add("hidden");E.signout.classList.remove("hidden");let r=await sb.from("profiles").select("display_name").eq("id",user.id).maybeSingle();profile=r.data||{display_name:user.email?.split("@")[0]||"User"};E.me.textContent=name();E.email.textContent=user.email||"";await loadData();await subscribe()}
 E.form.onsubmit=submit;E.del.onclick=remove;E.cancel.onclick=reset;E.driver.onchange=()=>managedChange("driver",E.driver);E.origin.onchange=()=>managedChange("location",E.origin);E.destination.onchange=()=>managedChange("location",E.destination);E.optionForm.onsubmit=addOption;E.optionClose.onclick=closeOption;E.optionCancel.onclick=closeOption;E.optionModal.addEventListener("click",e=>{if(e.target===E.optionModal)closeOption()});
-$("prev").onclick=()=>{E.boardDate.value=add(E.boardDate.value,-1);E.date.value=E.boardDate.value;renderBoard()};$("next").onclick=()=>{E.boardDate.value=add(E.boardDate.value,1);E.date.value=E.boardDate.value;renderBoard()};$("today").onclick=()=>{E.boardDate.value=today();E.date.value=E.boardDate.value;renderBoard()};E.boardDate.onchange=()=>{E.date.value=E.boardDate.value;renderBoard()};E.signout.onclick=()=>sb?.auth.signOut();
+$("prev").onclick=()=>{E.boardDate.value=add(E.boardDate.value,-1);E.date.value=E.boardDate.value;loadBoardSchedule()};$("next").onclick=()=>{E.boardDate.value=add(E.boardDate.value,1);E.date.value=E.boardDate.value;loadBoardSchedule()};$("today").onclick=()=>{E.boardDate.value=today();E.date.value=E.boardDate.value;loadBoardSchedule()};E.boardDate.onchange=()=>{E.date.value=E.boardDate.value;loadBoardSchedule()};E.signout.onclick=()=>sb?.auth.signOut();
 document.addEventListener("pointerdown",unlockAudio,{once:true});
 document.addEventListener("keydown",unlockAudio,{once:true});
 E.loginForm.onsubmit=async e=>{e.preventDefault();E.loginMsg.textContent="Signing in…";let r=await sb.auth.signInWithPassword({email:E.loginEmail.value.trim(),password:E.loginPassword.value});E.loginMsg.textContent=r.error?r.error.message:""};
