@@ -842,3 +842,53 @@ body.dark-theme .current-time-line::before{
   .boardhead{align-items:flex-start;flex-direction:column;gap:8px}
   .planning-month-total{margin-left:0;white-space:normal}
 }
+
+
+/* Drag-to-resize transfer blocks */
+.card .resize-handle{
+  position:absolute;
+  left:8px;
+  right:8px;
+  height:10px;
+  z-index:8;
+  cursor:ns-resize;
+  touch-action:none
+}
+.card .resize-top{top:0}
+.card .resize-bottom{bottom:0}
+.card .resize-handle::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  width:30px;
+  height:3px;
+  border-radius:999px;
+  background:currentColor;
+  opacity:0;
+  transform:translateX(-50%);
+  transition:opacity .12s ease
+}
+.card .resize-top::after{top:2px}
+.card .resize-bottom::after{bottom:2px}
+.card:hover .resize-handle::after,
+.card .resize-handle:hover::after,
+.card.resizing .resize-handle::after{opacity:.42}
+.card.resizing{
+  cursor:ns-resize!important;
+  z-index:9;
+  box-shadow:0 7px 18px rgba(0,0,0,.22)
+}
+.card.resizing::after{
+  content:attr(data-resize-label);
+  position:absolute;
+  right:6px;
+  bottom:12px;
+  padding:3px 6px;
+  border-radius:5px;
+  background:rgba(15,22,29,.86);
+  color:#fff;
+  font-size:9px;
+  font-weight:800;
+  line-height:1;
+  pointer-events:none
+}

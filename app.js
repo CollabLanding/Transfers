@@ -161,7 +161,86 @@ function landingMinutes(e,lane,x){const rect=lane.getBoundingClientRect(),pointe
 function transferLaneDragOver(e){if(!draggedTransferId)return;e.preventDefault();const lane=e.currentTarget,x=items.find(i=>i.id===draggedTransferId);if(!x)return;document.querySelectorAll(".drop-preview").forEach(p=>{if(p.parentElement!==lane)p.remove()});document.querySelectorAll(".lane.dragover").forEach(l=>{if(l!==lane)l.classList.remove("dragover")});lane.classList.add("dragover");const minutes=landingMinutes(e,lane,x);let p=lane.querySelector(".drop-preview");if(!p){p=document.createElement("div");p.className="drop-preview";lane.appendChild(p)}p.style.top=(((minutes-GRID_START)/15)*PX15+2)+"px";p.style.height=Math.max(22,(x.duration_minutes/15)*PX15-4)+"px";p.innerHTML='<span class="drop-preview-time">'+fmt(minToTime(minutes))+'</span><span class="drop-preview-label">Drop here</span>'}
 function transferLaneDragLeave(e){const lane=e.currentTarget;if(e.relatedTarget&&lane.contains(e.relatedTarget))return;lane.classList.remove("dragover");lane.querySelector(".drop-preview")?.remove()}
 function statusClass(s){return "status-"+String(s||"Planned").toLowerCase().replace(/\s+/g,"-")}
-function makeCard(x){let m=timeToMin(x.scheduled_time),b=document.createElement("button");b.type="button";b.className="card "+statusClass(x.order_status);b.draggable=true;b.dataset.id=x.id;b.style.top=(((m-GRID_START)/15)*PX15+2)+"px";b.style.height=Math.max(22,(x.duration_minutes/15)*PX15-4)+"px";b.innerHTML='<span class="draghint">↕</span><span class="card-status">'+esc(x.order_status||"Planned")+'</span><b>Move #'+esc(x.move_number??"—")+' · '+fmt(x.scheduled_time)+' · Job '+esc(x.job_number)+'</b><small>'+esc(x.origin)+' → '+esc(x.destination)+'</small><small>'+x.pallet_count+' pallets · '+durationLabel(x.duration_minutes)+' · 53\' dry van</small><small>Built by '+esc(x.created_by_name)+'</small>';b.addEventListener("dragstart",e=>{ignoreClickUntil=Date.now()+500;draggedTransferId=x.id;const rect=b.getBoundingClientRect();dragGrabOffsetPx=Math.max(0,Math.min(rect.height,e.clientY-rect.top));b.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",x.id)});b.addEventListener("dragend",()=>{draggedTransferId=null;dragGrabOffsetPx=0;b.classList.remove("dragging");clearDropPreviews()});b.onclick=()=>{if(Date.now()<ignoreClickUntil)return;edit(x.id)};return b}
+function makeCard(x){
+ let m=timeToMin(x.scheduled_time),b=document.createElement("button");
+ b.type="button";b.className="card "+statusClass(x.order_status);b.draggable=true;b.dataset.id=x.id;
+ b.style.top=(((m-GRID_START)/15)*PX15+2)+"px";
+ b.style.height=Math.max(22,(x.duration_minutes/15)*PX15-4)+"px";
+ b.innerHTML='<span class="draghint">↕</span><span class="card-status">'+esc(x.order_status||"Planned")+'</span><b>Move #'+esc(x.move_number??"—")+' · '+fmt(x.scheduled_time)+' · Job '+esc(x.job_number)+'</b><small>'+esc(x.origin)+' → '+esc(x.destination)+'</small><small>'+x.pallet_count+' pallets · '+durationLabel(x.duration_minutes)+' · 53\' dry van</small><small>Built by '+esc(x.created_by_name)+'</small>';
+ ["top","bottom"].forEach(edge=>{const h=document.createElement("span");h.className="resize-handle resize-"+edge;h.dataset.edge=edge;h.title=edge==="top"?"Drag to change start time and duration":"Drag to change duration";h.addEventListener("pointerdown",e=>beginTransferResize(e,x,b,edge));b.appendChild(h)});
+ b.addEventListener("dragstart",e=>{if(e.target.closest?.(".resize-handle")){e.preventDefault();return}ignoreClickUntil=Date.now()+500;draggedTransferId=x.id;const rect=b.getBoundingClientRect();dragGrabOffsetPx=Math.max(0,Math.min(rect.height,e.clientY-rect.top));b.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",x.id)});
+ b.addEventListener("dragend",()=>{draggedTransferId=null;dragGrabOffsetPx=0;b.classList.remove("dragging");clearDropPreviews()});
+ b.onclick=()=>{if(Date.now()<ignoreClickUntil)return;edit(x.id)};
+ return b
+}
+function beginTransferResize(e,x,b,edge){
+ if(e.button!==0)return;
+ e.preventDefault();e.stopPropagation();
+ ignoreClickUntil=Date.now()+900;
+ const handle=e.currentTarget,lane=b.parentElement;
+ if(!lane?.classList.contains("lane"))return;
+ const originalStart=timeToMin(x.scheduled_time),originalDuration=Number(x.duration_minutes),originalEnd=originalStart+originalDuration;
+ let nextStart=originalStart,nextDuration=originalDuration,finished=false;
+ b.draggable=false;b.classList.add("resizing");
+ handle.setPointerCapture?.(e.pointerId);
+
+ const pointerMinutes=clientY=>{
+   const rect=lane.getBoundingClientRect();
+   const raw=GRID_START+((clientY-rect.top)/PX15)*15;
+   return Math.round(raw/15)*15
+ };
+ const paint=()=>{
+   b.style.top=(((nextStart-GRID_START)/15)*PX15+2)+"px";
+   b.style.height=Math.max(22,(nextDuration/15)*PX15-4)+"px";
+   b.dataset.resizeLabel=fmt(minToTime(nextStart))+" · "+durationLabel(nextDuration)
+ };
+ const move=ev=>{
+   ev.preventDefault();
+   const point=pointerMinutes(ev.clientY);
+   if(edge==="top"){
+     const minStart=Math.max(GRID_START,originalEnd-720);
+     nextStart=Math.max(minStart,Math.min(originalEnd-15,point));
+     nextDuration=originalEnd-nextStart
+   }else{
+     const maxEnd=Math.min(GRID_END,originalStart+720);
+     const nextEnd=Math.max(originalStart+15,Math.min(maxEnd,point));
+     nextStart=originalStart;nextDuration=nextEnd-originalStart
+   }
+   paint()
+ };
+ const cleanup=()=>{
+   handle.removeEventListener("pointermove",move);
+   handle.removeEventListener("pointerup",finish);
+   handle.removeEventListener("pointercancel",cancel);
+   try{handle.releasePointerCapture?.(e.pointerId)}catch(_err){}
+   b.draggable=true;b.classList.remove("resizing");delete b.dataset.resizeLabel
+ };
+ const finish=ev=>{
+   if(finished)return;finished=true;ev.preventDefault();ev.stopPropagation();cleanup();
+   if(nextStart===originalStart&&nextDuration===originalDuration){renderBoard();return}
+   resizeTransfer(x,nextStart,nextDuration)
+ };
+ const cancel=ev=>{
+   if(finished)return;finished=true;ev.preventDefault();cleanup();renderBoard()
+ };
+ handle.addEventListener("pointermove",move);
+ handle.addEventListener("pointerup",finish);
+ handle.addEventListener("pointercancel",cancel)
+}
+async function resizeTransfer(x,newStartMinutes,newDuration){
+ const old={scheduled_time:x.scheduled_time,duration_minutes:x.duration_minutes};
+ const newTime=minToTime(newStartMinutes);
+ x.scheduled_time=newTime;x.duration_minutes=newDuration;renderBoard();
+ if(live){
+   const r=await sb.from("transfers").update({scheduled_time:newTime,duration_minutes:newDuration,updated_at:new Date().toISOString()}).eq("id",x.id).select("*").single();
+   if(r.error){
+     x.scheduled_time=old.scheduled_time;x.duration_minutes=old.duration_minutes;renderBoard();
+     msg("Could not resize transfer: "+r.error.message,"error");return
+   }
+   replaceItem(r.data);renderBoard()
+ }else saveLocal();
+ msg("Transfer resized to "+fmt(newTime)+" · "+durationLabel(newDuration)+".","ok")
+}
 function durationLabel(n){if(n<60)return n+" min";let h=Math.floor(n/60),m=n%60;return h+" hr"+(h!==1?"s":"")+(m?" "+m+" min":"")}
 async function dropCard(e){e.preventDefault();const lane=e.currentTarget,id=e.dataTransfer.getData("text/plain")||draggedTransferId,x=items.find(i=>i.id===id);if(!x){clearDropPreviews();return}const minutes=landingMinutes(e,lane,x),newTime=minToTime(minutes),newDriver=lane.dataset.driver;draggedTransferId=null;dragGrabOffsetPx=0;clearDropPreviews();await moveTransfer(x,newDriver,newTime)}
 async function moveTransfer(x,newDriver,newTime){const old={driver:x.driver,scheduled_time:x.scheduled_time};x.driver=newDriver;x.scheduled_time=newTime;renderBoard();if(live){let r=await sb.from("transfers").update({driver:newDriver,scheduled_time:newTime,updated_at:new Date().toISOString()}).eq("id",x.id).select("*").single();if(r.error){x.driver=old.driver;x.scheduled_time=old.scheduled_time;renderBoard();msg("Could not move transfer: "+r.error.message,"error");return}replaceItem(r.data);renderBoard()}else saveLocal();msg("Transfer moved to "+fmt(newTime)+" with "+newDriver+".","ok")}
@@ -188,7 +267,7 @@ async function loadBoardSchedule(){
 async function loadData(){if(!live){loadLocal();driverSchedule=[];renderOptions();renderBoard();return}const [tr,dr,lr,sc]=await Promise.all([sb.from("transfers").select("*").order("scheduled_date").order("scheduled_time"),loadDriversWithFallback(),loadLocationsWithFallback(),sb.from("driver_schedules").select("driver_name,schedule_date,start_time,end_time").eq("schedule_date",E.boardDate.value)]);if(tr.error){msg("Transfers could not load: "+tr.error.message,"error");items=[]}else items=(tr.data||[]).map(normalize);drivers=orderedUniq(["Planning",...(dr.error?[]:(dr.data||[]).map(x=>x.name)),...items.map(x=>x.driver)]);locations=uniq([...(lr.error?["Building 100","Building 200"]:(lr.data||[]).map(x=>x.name)),...items.flatMap(x=>[x.origin,x.destination]),"Building 100","Building 200"]);driverSchedule=sc.error?[]:(sc.data||[]);if(dr.error||lr.error){const details=[dr.error?"Drivers: "+dr.error.message:"",lr.error?"Locations: "+lr.error.message:""].filter(Boolean).join(" · ");msg("Could not load driver/location lists. "+details,"error")}renderOptions();renderBoard()}
 async function subscribe(){if(!live)return;if(dataChannel)await sb.removeChannel(dataChannel);if(presence)await sb.removeChannel(presence);dataChannel=sb.channel("transfers-data").on("postgres_changes",{event:"INSERT",schema:"public",table:"transfers"},handleNewTransfer).on("postgres_changes",{event:"*",schema:"public",table:"transfers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_locations"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"driver_schedules"},loadBoardSchedule).subscribe();presence=sb.channel("transfers-active",{config:{presence:{key:user.id}}}).on("presence",{event:"sync"},()=>{const unique=new Map();Object.values(presence.presenceState()).forEach(v=>v.forEach(x=>{const id=x.user_id||x.email;if(id&&!unique.has(id))unique.set(id,x)}));renderUsers([...unique.values()])}).subscribe(async s=>{if(s==="SUBSCRIBED")await presence.track({user_id:user.id,display_name:name(),email:user.email})})}
 function reset(){E.form.reset();E.edit.value="";E.date.value=E.boardDate.value;E.time.value="08:00";E.duration.value="120";if(E.status)E.status.value="Planned";E.formTitle.textContent="Build Transfer Load";E.save.textContent="Add Transfer";E.del.classList.add("hidden");E.cancel.classList.add("hidden");E.textDriver?.classList.add("hidden");renderOptions();msg("")}
-function edit(id){let x=items.find(i=>i.id===String(id));if(!x)return;E.edit.value=x.id;E.date.value=x.scheduled_date;E.time.value=x.scheduled_time;E.duration.value=String(x.duration_minutes);renderOptions();E.driver.value=x.driver;E.origin.value=x.origin;E.destination.value=x.destination;E.pallet.value=x.pallet_count;E.job.value=x.job_number;E.status.value=x.order_status||"Planned";E.formTitle.textContent="Edit Transfer Load";E.save.textContent="Update";E.del.classList.remove("hidden");E.cancel.classList.remove("hidden");E.textDriver?.classList.remove("hidden");msg("Created by "+x.created_by_name)}
+function edit(id){let x=items.find(i=>i.id===String(id));if(!x)return;E.edit.value=x.id;E.date.value=x.scheduled_date;E.time.value=x.scheduled_time;if(![...E.duration.options].some(o=>Number(o.value)===Number(x.duration_minutes))){const o=document.createElement("option");o.value=String(x.duration_minutes);o.textContent=durationLabel(x.duration_minutes);E.duration.appendChild(o)}E.duration.value=String(x.duration_minutes);renderOptions();E.driver.value=x.driver;E.origin.value=x.origin;E.destination.value=x.destination;E.pallet.value=x.pallet_count;E.job.value=x.job_number;E.status.value=x.order_status||"Planned";E.formTitle.textContent="Edit Transfer Load";E.save.textContent="Update";E.del.classList.remove("hidden");E.cancel.classList.remove("hidden");E.textDriver?.classList.remove("hidden");msg("Created by "+x.created_by_name)}
 async function submit(ev){ev.preventDefault();let p={scheduled_date:E.date.value,scheduled_time:E.time.value,duration_minutes:Number(E.duration.value),driver:E.driver.value,origin:E.origin.value,destination:E.destination.value,pallet_count:Number(E.pallet.value),job_number:E.job.value.trim(),order_status:E.status?.value||"Planned",created_by:user?.id||"demo-user",created_by_name:name()};if(!p.scheduled_date||!p.scheduled_time||!p.duration_minutes||!p.driver||p.driver.startsWith("__")||!p.origin||p.origin.startsWith("__")||!p.destination||p.destination.startsWith("__")||!p.job_number||Number.isNaN(p.pallet_count)){msg("Complete all fields.","error");return}if(p.origin.toLowerCase()===p.destination.toLowerCase()){msg("Origination and destination must be different.","error");return}let id=E.edit.value;
  if(live){let r;if(id){r=await sb.from("transfers").update({scheduled_date:p.scheduled_date,scheduled_time:p.scheduled_time,duration_minutes:p.duration_minutes,driver:p.driver,origin:p.origin,destination:p.destination,pallet_count:p.pallet_count,job_number:p.job_number,order_status:p.order_status,updated_at:new Date().toISOString()}).eq("id",id).select("*").single()}else{r=await sb.from("transfers").insert(p).select("*").single()}if(r.error){msg("Could not save transfer: "+r.error.message,"error");return}replaceItem(r.data)}else{if(id){let i=items.findIndex(x=>x.id===id);if(i>=0)items[i]={...items[i],...p}}else items.push(normalize({...p,id:crypto.randomUUID?crypto.randomUUID():String(Date.now())}));drivers=uniq([...drivers,p.driver]);locations=uniq([...locations,p.origin,p.destination]);saveLocal()}
  E.boardDate.value=p.scheduled_date;renderOptions();renderBoard();reset();msg(id?"Transfer updated.":"Transfer added.","ok")
