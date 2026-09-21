@@ -437,3 +437,19 @@ body.dark-theme .duplicate-day-btn:hover{background:#34414d}
 html[data-theme="dark"] .duplicate-day-source,
 body.dark-theme .duplicate-day-source{background:#151c23;border-color:#34404c}
 @media(max-width:900px){.nav{flex-wrap:wrap}.duplicate-day-btn{order:-1}}
+
+
+/* Active Users fills the available right rail width but remains content-height */
+@media(min-width:1181px){
+  .right-sidebar .active-users-panel{
+    width:100%;
+    align-self:stretch;
+    flex:0 0 auto;
+  }
+}
+@media(max-width:1180px) and (min-width:901px){
+  .right-sidebar .active-users-panel{
+    width:270px;
+    flex:0 0 auto;
+  }
+}
