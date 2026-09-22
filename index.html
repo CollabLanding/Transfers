@@ -10,7 +10,7 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260922-schedule-clock">
+  <link rel="stylesheet" href="styles.css?v=20260922-clock-2x-swap">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
 </head>
@@ -75,7 +75,7 @@
     </section>
   </aside>
   <section class="panel board">
-    <div class="boardhead"><h2 id="title" class="schedule-date">Transfer Board</h2><div id="scheduleCurrentTime" class="schedule-current-time" aria-live="off"></div><div class="planning-month-total" id="planningMonthTotal">Orders in Planning: <strong>0</strong></div></div>
+    <div class="boardhead"><div class="planning-month-total" id="planningMonthTotal">Orders in Planning: <strong>0</strong></div><div id="scheduleCurrentTime" class="schedule-current-time" aria-live="off"></div><h2 id="title" class="schedule-date">Transfer Board</h2></div>
     <div id="gridWrap"><div id="grid"></div></div>
   </section>
   <aside class="right-sidebar">

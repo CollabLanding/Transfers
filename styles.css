@@ -1281,3 +1281,27 @@ body.dark-theme .card-move{
     text-align:left
   }
 }
+
+
+/* Larger center clock with planning left and date right */
+.schedule-current-time{
+  font-size:36px!important;
+}
+.schedule-date{
+  justify-self:end;
+  text-align:right
+}
+.planning-month-total{
+  justify-self:start;
+  text-align:left
+}
+@media(max-width:700px){
+  .schedule-date{
+    justify-self:end;
+    text-align:right
+  }
+  .planning-month-total{
+    justify-self:start;
+    text-align:left
+  }
+}
