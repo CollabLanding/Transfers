@@ -190,7 +190,7 @@ function makeCard(x){
    '<span class="draghint">↕</span>'+
    '<span class="card-topline"><span class="card-status">'+esc(x.order_status||"Planned")+'</span><span class="card-move">Move #'+esc(x.move_number??"—")+'</span></span>'+
    '<small class="card-route">'+esc(x.origin)+' → '+esc(x.destination)+'</small>'+
-   '<b class="card-job">Job '+esc(x.job_number)+'</b>'+
+   '<b class="card-job">'+esc(x.job_number)+'</b>'+
    '<small class="card-creator">'+esc(x.created_by_name)+'</small>';
  ["top","bottom"].forEach(edge=>{const h=document.createElement("span");h.className="resize-handle resize-"+edge;h.dataset.edge=edge;h.title=edge==="top"?"Drag to change start time and duration":"Drag to change duration";h.addEventListener("pointerdown",e=>beginTransferResize(e,x,b,edge));b.appendChild(h)});
  b.addEventListener("dragstart",e=>{if(e.target.closest?.(".resize-handle")){e.preventDefault();return}ignoreClickUntil=Date.now()+500;draggedTransferId=x.id;const rect=b.getBoundingClientRect();dragGrabOffsetPx=Math.max(0,Math.min(rect.height,e.clientY-rect.top));b.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",x.id)});
