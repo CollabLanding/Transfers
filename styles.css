@@ -979,3 +979,16 @@ html[data-theme="dark"] .urgent-toggle:has(input:checked) .urgent-toggle-label,
 body.dark-theme .urgent-toggle:has(input:checked) .urgent-toggle-label{
   color:#f87171
 }
+
+
+/* Transfer form action spacing */
+.transfer-actions{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+  margin-top:4px
+}
+.transfer-actions button{
+  margin:0
+}
