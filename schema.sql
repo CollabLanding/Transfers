@@ -17,6 +17,7 @@ create table if not exists public.transfers(
   pallet_count int not null default 0 check(pallet_count>=0),
   job_number text not null,
   order_status text not null default 'Loading',
+  urgent boolean not null default false,
   created_by uuid not null references auth.users(id),
   created_by_name text not null,
   created_at timestamptz not null default now(),
@@ -26,6 +27,7 @@ create table if not exists public.transfers(
 alter table public.transfers add column if not exists duration_minutes int not null default 120;
 alter table public.transfers alter column duration_minutes set default 120;
 alter table public.transfers add column if not exists order_status text not null default 'Loading';
+alter table public.transfers add column if not exists urgent boolean not null default false;
 
 do $$
 begin

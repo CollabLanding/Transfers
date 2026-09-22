@@ -83,10 +83,11 @@
         destination:source.destination,
         pallet_count:source.pallet_count,
         job_number:source.job_number,
-        order_status:source.order_status||"Loading",
+        order_status:source.order_status||"Planned",
         created_by:currentUser.id,
         created_by_name:creatorName
       };
+      if(Object.prototype.hasOwnProperty.call(source,"urgent"))copy.urgent=Boolean(source.urgent);
 
       const insertResult=await sb.from("transfers").insert(copy).select("*").single();
       if(insertResult.error){

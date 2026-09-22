@@ -10,7 +10,7 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260921-roomier-schedule">
+  <link rel="stylesheet" href="styles.css?v=20260922-urgent">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
 </head>
@@ -22,7 +22,14 @@
 <main>
   <aside>
     <section class="panel">
-      <h2 id="formTitle">Build Transfer Load</h2>
+      <div class="transfer-form-head">
+        <h2 id="formTitle">Build Transfer Load</h2>
+        <label class="urgent-toggle" title="Mark this transfer as urgent">
+          <span class="urgent-toggle-label">Urgent</span>
+          <input id="urgent" type="checkbox" form="form" aria-label="Mark transfer urgent">
+          <span class="urgent-toggle-track" aria-hidden="true"><span class="urgent-toggle-thumb"></span></span>
+        </label>
+      </div>
       <form id="form">
         <input id="editId" type="hidden">
         <div class="row three">
@@ -145,11 +152,11 @@
 <div id="login" class="login hidden">
   <form id="loginForm" class="loginbox"><h1>Transfers</h1><p>Sign in to the transfer board.</p><input id="loginEmail" type="email" placeholder="Email" required><input id="loginPassword" type="password" placeholder="Password" required><button class="primary">Sign In</button><p id="loginMsg"></p></form>
 </div>
-<script src="app.js?v=20260921-roomier-schedule"></script>
+<script src="app.js?v=20260922-urgent"></script>
 <script src="order-status.js?v=20260921-planned-default"></script>
 <script src="recent-activity.js"></script>
-<script src="duplicate-transfer.js"></script>
-<script src="duplicate-day.js?v=20260921-1"></script>
+<script src="duplicate-transfer.js?v=20260922-urgent"></script>
+<script src="duplicate-day.js?v=20260922-urgent"></script>
 <script src="theme.js"></script>
 <script src="chat.js"></script>
 <script src="sms.js?v=20260921-infobip"></script>

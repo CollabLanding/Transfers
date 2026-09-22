@@ -87,7 +87,7 @@
       }
 
       const sourceResult=await sb.from("transfers")
-        .select("scheduled_time,duration_minutes,driver,origin,destination,pallet_count,job_number,order_status")
+        .select("*")
         .eq("scheduled_date",sourceDate)
         .order("scheduled_time",{ascending:true});
 
@@ -111,19 +111,23 @@
         creatorName=profileResult.data.display_name;
       }
 
-      const copies=rows.map(row=>({
-        scheduled_date:destination,
-        scheduled_time:row.scheduled_time,
-        duration_minutes:Number(row.duration_minutes||120),
-        driver:row.driver,
-        origin:row.origin,
-        destination:row.destination,
-        pallet_count:Number(row.pallet_count||0),
-        job_number:row.job_number,
-        order_status:row.order_status||"Loading",
-        created_by:currentUser.id,
-        created_by_name:creatorName
-      }));
+      const copies=rows.map(row=>{
+        const copy={
+          scheduled_date:destination,
+          scheduled_time:row.scheduled_time,
+          duration_minutes:Number(row.duration_minutes||60),
+          driver:row.driver,
+          origin:row.origin,
+          destination:row.destination,
+          pallet_count:Number(row.pallet_count||0),
+          job_number:row.job_number,
+          order_status:row.order_status||"Planned",
+          created_by:currentUser.id,
+          created_by_name:creatorName
+        };
+        if(Object.prototype.hasOwnProperty.call(row,"urgent"))copy.urgent=Boolean(row.urgent);
+        return copy
+      });
 
       show("Duplicating "+copies.length+" transfer"+(copies.length===1?"":"s")+"…");
 
