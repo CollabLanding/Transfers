@@ -14,7 +14,7 @@
     me:$("me"),email:$("email"),signout:$("signout"),login:$("login"),loginForm:$("loginForm"),
     loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg")
   };
-  let user=null,profile=null,drivers=[],scheduleRows=[],channel=null,dirty=false,lastWeekValue="";
+  let user=null,profile=null,drivers=[],scheduleRows=[],weekTransfers=[],channel=null,dirty=false,lastWeekValue="";
 
   function localISO(d){
     const x=new Date(d);
@@ -54,6 +54,42 @@
   function fmtHours(n){
     const rounded=Math.round(n*4)/4;
     return Number.isInteger(rounded)?String(rounded):rounded.toFixed(2).replace(/0$/,"");
+  }
+
+  function transferSpillsOutsideShift(transfer,start,end){
+    const jobStart=minutes(transfer?.scheduled_time);
+    const duration=Number(transfer?.duration_minutes||0);
+    if(jobStart==null||!duration)return false;
+    const jobEnd=jobStart+duration;
+    let shiftStart=minutes(start),shiftEnd=minutes(end);
+    if(shiftStart==null||shiftEnd==null)return true;
+    if(shiftEnd<=shiftStart)shiftEnd+=1440;
+    return jobStart<shiftStart||jobEnd>shiftEnd;
+  }
+  function updateOverrunWarnings(){
+    E.body.querySelectorAll("tr[data-driver]").forEach(tr=>{
+      const driver=tr.dataset.driver;
+      tr.querySelectorAll(".schedule-day-cell").forEach(cell=>{
+        cell.querySelector(".schedule-overrun-warning")?.remove();
+        cell.classList.remove("has-schedule-overrun");
+        cell.removeAttribute("title");
+        const date=cell.dataset.date;
+        const start=cell.querySelector(".shift-start")?.value||"";
+        const end=cell.querySelector(".shift-end")?.value||"";
+        const spill=weekTransfers.some(t=>
+          String(t.driver||"")===driver&&
+          String(t.scheduled_date||"")===date&&
+          transferSpillsOutsideShift(t,start,end)
+        );
+        if(!spill)return;
+        cell.classList.add("has-schedule-overrun");
+        cell.title="One or more transfers extend outside this driver's scheduled hours.";
+        const warning=document.createElement("span");
+        warning.className="schedule-overrun-warning";
+        warning.setAttribute("aria-hidden","true");
+        cell.appendChild(warning);
+      });
+    });
   }
 
   function time12(t){
@@ -140,6 +176,7 @@
     E.body.querySelectorAll('input[type="time"]').forEach(input=>{
       input.addEventListener("change",()=>{
         recalcRow(input.closest("tr"));
+        updateOverrunWarnings();
         setDirty(true);
       });
     });
@@ -149,6 +186,7 @@
         cell.querySelector(".shift-start").value="";
         cell.querySelector(".shift-end").value="";
         recalcRow(btn.closest("tr"));
+        updateOverrunWarnings();
         setDirty(true);
       });
     });
@@ -161,6 +199,7 @@
     E.body.querySelectorAll(".copy-month").forEach(btn=>{
       btn.addEventListener("click",()=>copyPeriod(btn.closest("tr").dataset.driver,"month",E.week.value));
     });
+    updateOverrunWarnings();
   }
   async function loadDriverList(){
     let r=await sb.from("transfer_drivers").select("name,sort_order").neq("name","Planning").order("sort_order",{ascending:true}).order("name",{ascending:true});
@@ -175,9 +214,10 @@
     show("Loading schedule…");
     updateHeaders();
     const start=E.week.value,end=addDays(start,6);
-    const [dr,sc]=await Promise.all([
+    const [dr,sc,tr]=await Promise.all([
       loadDriverList(),
-      sb.from("driver_schedules").select("*").gte("schedule_date",start).lte("schedule_date",end)
+      sb.from("driver_schedules").select("*").gte("schedule_date",start).lte("schedule_date",end),
+      sb.from("transfers").select("driver,scheduled_date,scheduled_time,duration_minutes").gte("scheduled_date",start).lte("scheduled_date",end)
     ]);
     if(dr.error){
       show("Could not load drivers: "+dr.error.message,"error");
@@ -196,8 +236,26 @@
       return;
     }
     scheduleRows=sc.data||[];
+    if(tr.error){
+      weekTransfers=[];
+      render();
+      show("Schedule loaded, but transfer overrun warnings could not load: "+tr.error.message,"error");
+      return;
+    }
+    weekTransfers=tr.data||[];
     render();
     show("");
+  }
+  async function refreshTransferWarnings(){
+    if(!live||!user)return;
+    const start=E.week.value,end=addDays(start,6);
+    const r=await sb.from("transfers")
+      .select("driver,scheduled_date,scheduled_time,duration_minutes")
+      .gte("scheduled_date",start)
+      .lte("scheduled_date",end);
+    if(r.error)return;
+    weekTransfers=r.data||[];
+    updateOverrunWarnings();
   }
   function collect(){
     const rows=[];
@@ -556,6 +614,7 @@
     channel=sb.channel("driver-schedule-data")
       .on("postgres_changes",{event:"*",schema:"public",table:"driver_schedules"},()=>{if(!dirty)loadWeek()})
       .on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},()=>{if(!dirty)loadWeek()})
+      .on("postgres_changes",{event:"*",schema:"public",table:"transfers"},()=>refreshTransferWarnings())
       .subscribe();
   }
   async function session(s){

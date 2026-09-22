@@ -1362,3 +1362,24 @@ body.dark-theme .card-move{
     transform:none
   }
 }
+
+
+/* Driver schedule warning when a transfer falls outside scheduled hours */
+.schedule-day-cell{
+  position:relative
+}
+.schedule-overrun-warning{
+  position:absolute;
+  top:0;
+  right:0;
+  width:0;
+  height:0;
+  border-top:20px solid #d62828;
+  border-left:20px solid transparent;
+  z-index:2;
+  pointer-events:none
+}
+html[data-theme="dark"] .schedule-overrun-warning,
+body.dark-theme .schedule-overrun-warning{
+  border-top-color:#ff4d4d
+}
