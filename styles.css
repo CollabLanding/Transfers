@@ -1225,3 +1225,17 @@ body.dark-theme .card-move{
   width:auto;
   margin-right:18px
 }
+
+
+/* Header link to Live Trailer Board */
+.live-board-link{
+  color:inherit;
+  text-decoration:none;
+  font:inherit;
+  letter-spacing:inherit;
+  text-transform:inherit
+}
+.live-board-link:hover,
+.live-board-link:focus-visible{
+  text-decoration:underline
+}
