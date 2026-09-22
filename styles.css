@@ -1305,3 +1305,60 @@ body.dark-theme .card-move{
     text-align:left
   }
 }
+
+
+/* Anchor schedule header items to the screen edges while keeping clock centered */
+.boardhead{
+  position:relative;
+  display:block!important;
+  min-height:54px
+}
+.schedule-current-time{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  margin:0
+}
+.planning-month-total{
+  position:absolute;
+  left:18px;
+  top:50%;
+  transform:translateY(-50%);
+  margin:0;
+  text-align:left;
+  font-size:inherit;
+  font-weight:700
+}
+.planning-month-total strong{
+  font-size:inherit;
+  font-weight:inherit
+}
+.schedule-date{
+  position:absolute;
+  right:18px;
+  top:50%;
+  transform:translateY(-50%);
+  margin:0;
+  text-align:right
+}
+@media(max-width:700px){
+  .boardhead{
+    min-height:92px
+  }
+  .schedule-current-time{
+    top:32px
+  }
+  .planning-month-total{
+    left:12px;
+    top:auto;
+    bottom:8px;
+    transform:none
+  }
+  .schedule-date{
+    right:12px;
+    top:auto;
+    bottom:8px;
+    transform:none
+  }
+}
