@@ -1217,3 +1217,11 @@ body.dark-theme .card-move{
   overflow:visible;
   text-overflow:clip
 }
+
+
+/* Keep Status left and align Move # to the right on the same row */
+.card-topline{
+  justify-content:space-between!important;
+  width:auto;
+  margin-right:18px
+}
