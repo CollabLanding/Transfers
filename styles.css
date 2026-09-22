@@ -1128,3 +1128,22 @@ body.dark-theme .tick{
   width:auto!important;
   box-sizing:border-box
 }
+
+
+/* Transfer card detail emphasis */
+.card-route{
+  font-size:calc(1em + 1pt)!important;
+  font-weight:800!important;
+}
+.card-creator{
+  position:absolute;
+  right:7px;
+  bottom:5px;
+  font-size:calc(1em - 1pt)!important;
+  line-height:1;
+  color:var(--muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:55%
+}
