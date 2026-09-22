@@ -1166,3 +1166,33 @@ html[data-theme="dark"] .card-move,
 body.dark-theme .card-move{
   color:#c1ccd5
 }
+
+
+/* Compact transfer card alignment */
+.lane .card{
+  padding-top:4px
+}
+.card-status,
+.card-move{
+  font-size:10px!important;
+  font-weight:800!important;
+  letter-spacing:.04em!important;
+  text-transform:uppercase!important;
+  line-height:normal!important;
+  white-space:nowrap
+}
+.card-status{
+  margin-bottom:0!important
+}
+.card-move{
+  top:4px
+}
+.card-route{
+  margin-top:1px!important
+}
+.card-job{
+  font-weight:400!important
+}
+.card-creator{
+  font-size:calc(1em - 2pt)!important
+}
