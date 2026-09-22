@@ -145,10 +145,30 @@ function renderBoard(){
  const hr=document.createElement("div");hr.className="headrow";const c=document.createElement("div");c.className="corner";c.textContent="";hr.appendChild(c);
  if(!laneDrivers.length){let d=document.createElement("div");d.className="driverhead";d.textContent="Add a driver to begin";hr.appendChild(d)}
  laneDrivers.forEach(d=>{let h=document.createElement("div");h.className="driverhead";h.textContent=d;h.draggable=true;h.dataset.driver=d;h.title="Drag to reorder driver columns";h.addEventListener("dragstart",driverHeaderDragStart);h.addEventListener("dragend",driverHeaderDragEnd);h.addEventListener("dragover",driverHeaderDragOver);h.addEventListener("dragleave",()=>h.classList.remove("driver-dragover"));h.addEventListener("drop",driverHeaderDrop);hr.appendChild(h)});E.grid.appendChild(hr);
- const br=document.createElement("div");br.className="bodyrow";const times=document.createElement("div");times.className="times";times.style.height=GRID_HEIGHT+"px";
- const marks=[];for(let m=240;m<=GRID_END;m+=60)marks.push(m);marks.forEach(m=>{let t=document.createElement("div");t.className="tick";t.dataset.minute=String(m);t.style.top=(((m-GRID_START)/15)*PX15)+"px";t.textContent=fmt(minToTime(m));times.appendChild(t)});br.appendChild(times);
- if(!laneDrivers.length){let empty=document.createElement("div");empty.className="emptylane";empty.style.height=GRID_HEIGHT+"px";empty.textContent="Use the Driver dropdown to add your first driver.";br.appendChild(empty)}
- laneDrivers.forEach(d=>{let lane=document.createElement("div");lane.className="lane";lane.style.height=GRID_HEIGHT+"px";lane.dataset.driver=d;lane.addEventListener("dragover",transferLaneDragOver);lane.addEventListener("dragleave",transferLaneDragLeave);lane.addEventListener("drop",dropCard);applyDriverScheduleOverlay(lane,d,date);day.filter(x=>x.driver===d&&timeToMin(x.scheduled_time)>=GRID_START&&timeToMin(x.scheduled_time)<GRID_END).forEach(x=>lane.appendChild(makeCard(x)));br.appendChild(lane)});
+ const br=document.createElement("div");br.className="bodyrow";
+ const addGridLines=container=>{
+   for(let m=GRID_START;m<=GRID_END;m+=15){
+     const line=document.createElement("div");
+     line.className="schedule-grid-line"+(m%60===0?" hour":m%30===0?" half":" quarter");
+     line.style.top=(((m-GRID_START)/15)*PX15)+"px";
+     line.dataset.minute=String(m);
+     container.appendChild(line)
+   }
+ };
+ const times=document.createElement("div");times.className="times";times.style.height=GRID_HEIGHT+"px";
+ addGridLines(times);
+ const marks=[];for(let m=240;m<=GRID_END;m+=60)marks.push(m);
+ marks.forEach(m=>{let t=document.createElement("div");t.className="tick";t.dataset.minute=String(m);t.style.top=(((m-GRID_START)/15)*PX15)+"px";t.textContent=fmt(minToTime(m));times.appendChild(t)});
+ br.appendChild(times);
+ if(!laneDrivers.length){let empty=document.createElement("div");empty.className="emptylane";empty.style.height=GRID_HEIGHT+"px";addGridLines(empty);empty.textContent="Use the Driver dropdown to add your first driver.";br.appendChild(empty)}
+ laneDrivers.forEach(d=>{
+   let lane=document.createElement("div");lane.className="lane";lane.style.height=GRID_HEIGHT+"px";lane.dataset.driver=d;
+   addGridLines(lane);
+   lane.addEventListener("dragover",transferLaneDragOver);lane.addEventListener("dragleave",transferLaneDragLeave);lane.addEventListener("drop",dropCard);
+   applyDriverScheduleOverlay(lane,d,date);
+   day.filter(x=>x.driver===d&&timeToMin(x.scheduled_time)>=GRID_START&&timeToMin(x.scheduled_time)<GRID_END).forEach(x=>lane.appendChild(makeCard(x)));
+   br.appendChild(lane)
+ });
  const nowLine=document.createElement("div");nowLine.className="current-time-line hidden";nowLine.setAttribute("aria-hidden","true");br.appendChild(nowLine);
  E.grid.appendChild(br);updateCurrentTimeLine()
 }

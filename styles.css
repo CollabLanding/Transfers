@@ -1032,3 +1032,79 @@ body.dark-theme .chat-clear:hover{
   background:#2a3642;
   color:#e2e8ee
 }
+
+
+/* Exact schedule grid: generated from the same coordinates as time labels */
+.times,
+.corner{
+  background:#fafbfc!important;
+}
+.lane,
+.emptylane{
+  background:#fff!important;
+}
+.schedule-grid-line{
+  position:absolute;
+  left:0;
+  right:0;
+  height:1px;
+  z-index:0;
+  pointer-events:none;
+  background:#edf0f2
+}
+.schedule-grid-line.half{background:#e2e6e9}
+.schedule-grid-line.hour{background:#cbd2d9}
+.times .schedule-grid-line{
+  left:0;
+  right:0
+}
+.tick{
+  z-index:2;
+  padding:1px 3px;
+  line-height:1;
+  background:#fafbfc;
+  border-radius:2px
+}
+.lane>*:not(.schedule-grid-line),
+.emptylane>*:not(.schedule-grid-line){
+  position:relative;
+  z-index:1
+}
+.card{
+  z-index:3!important
+}
+.driver-unavailable-overlay,
+.driver-off-overlay{
+  z-index:1
+}
+.drop-preview{
+  z-index:20!important
+}
+html[data-theme="dark"] .times,
+html[data-theme="dark"] .corner,
+body.dark-theme .times,
+body.dark-theme .corner{
+  background:#151c23!important
+}
+html[data-theme="dark"] .lane,
+html[data-theme="dark"] .emptylane,
+body.dark-theme .lane,
+body.dark-theme .emptylane{
+  background:#171f27!important
+}
+html[data-theme="dark"] .schedule-grid-line,
+body.dark-theme .schedule-grid-line{
+  background:#222c36
+}
+html[data-theme="dark"] .schedule-grid-line.half,
+body.dark-theme .schedule-grid-line.half{
+  background:#2a3540
+}
+html[data-theme="dark"] .schedule-grid-line.hour,
+body.dark-theme .schedule-grid-line.hour{
+  background:#3a4652
+}
+html[data-theme="dark"] .tick,
+body.dark-theme .tick{
+  background:#151c23
+}
