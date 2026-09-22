@@ -164,8 +164,8 @@ function statusClass(s){return "status-"+String(s||"Planned").toLowerCase().repl
 function makeCard(x){
  let m=timeToMin(x.scheduled_time),b=document.createElement("button");
  b.type="button";b.className="card "+statusClass(x.order_status)+(x.urgent?" urgent":"");b.draggable=true;b.dataset.id=x.id;
- b.style.top=(((m-GRID_START)/15)*PX15+2)+"px";
- b.style.height=Math.max(22,(x.duration_minutes/15)*PX15-4)+"px";
+ b.style.top=(((m-GRID_START)/15)*PX15)+"px";
+ b.style.height=Math.max(22,(x.duration_minutes/15)*PX15)+"px";
  b.innerHTML=(x.urgent?'<span class="urgent-tape" aria-hidden="true"></span>':'')+'<span class="draghint">↕</span><span class="card-status">'+esc(x.order_status||"Planned")+'</span><b>Move #'+esc(x.move_number??"—")+' · '+fmt(x.scheduled_time)+' · Job '+esc(x.job_number)+'</b><small>'+esc(x.origin)+' → '+esc(x.destination)+'</small><small>'+x.pallet_count+' pallets · '+durationLabel(x.duration_minutes)+' · 53\' dry van</small><small>Built by '+esc(x.created_by_name)+'</small>';
  ["top","bottom"].forEach(edge=>{const h=document.createElement("span");h.className="resize-handle resize-"+edge;h.dataset.edge=edge;h.title=edge==="top"?"Drag to change start time and duration":"Drag to change duration";h.addEventListener("pointerdown",e=>beginTransferResize(e,x,b,edge));b.appendChild(h)});
  b.addEventListener("dragstart",e=>{if(e.target.closest?.(".resize-handle")){e.preventDefault();return}ignoreClickUntil=Date.now()+500;draggedTransferId=x.id;const rect=b.getBoundingClientRect();dragGrabOffsetPx=Math.max(0,Math.min(rect.height,e.clientY-rect.top));b.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",x.id)});
@@ -190,8 +190,8 @@ function beginTransferResize(e,x,b,edge){
    return Math.round(raw/15)*15
  };
  const paint=()=>{
-   b.style.top=(((nextStart-GRID_START)/15)*PX15+2)+"px";
-   b.style.height=Math.max(22,(nextDuration/15)*PX15-4)+"px";
+   b.style.top=(((nextStart-GRID_START)/15)*PX15)+"px";
+   b.style.height=Math.max(22,(nextDuration/15)*PX15)+"px";
    b.dataset.resizeLabel=fmt(minToTime(nextStart))+" · "+durationLabel(nextDuration)
  };
  const move=ev=>{
