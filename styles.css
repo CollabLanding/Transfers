@@ -1133,7 +1133,7 @@ body.dark-theme .tick{
 /* Transfer card detail emphasis */
 .card-route{
   font-size:calc(1em + 1pt)!important;
-  font-weight:800!important;
+  font-weight:400!important;
 }
 .card-creator{
   position:absolute;
@@ -1154,9 +1154,15 @@ body.dark-theme .tick{
   position:absolute;
   top:7px;
   right:24px;
-  font-size:inherit;
-  font-weight:inherit;
-  line-height:inherit;
-  color:inherit;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  line-height:normal;
+  color:#315c79;
   white-space:nowrap
+}
+html[data-theme="dark"] .card-move,
+body.dark-theme .card-move{
+  color:#c1ccd5
 }
