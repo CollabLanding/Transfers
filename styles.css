@@ -1147,3 +1147,16 @@ body.dark-theme .tick{
   text-overflow:ellipsis;
   max-width:55%
 }
+
+
+/* Move number mirrors Status styling in the top-right */
+.card-move{
+  position:absolute;
+  top:7px;
+  right:24px;
+  font-size:inherit;
+  font-weight:inherit;
+  line-height:inherit;
+  color:inherit;
+  white-space:nowrap
+}
