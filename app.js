@@ -188,8 +188,7 @@ function makeCard(x){
  b.style.height=Math.max(22,(x.duration_minutes/15)*PX15)+"px";
  b.innerHTML=(x.urgent?'<span class="urgent-tape" aria-hidden="true"></span>':'')+
    '<span class="draghint">↕</span>'+
-   '<span class="card-status">'+esc(x.order_status||"Planned")+'</span>'+
-   '<span class="card-move">Move #'+esc(x.move_number??"—")+'</span>'+
+   '<span class="card-topline"><span class="card-status">'+esc(x.order_status||"Planned")+'</span><span class="card-move">Move #'+esc(x.move_number??"—")+'</span></span>'+
    '<small class="card-route">'+esc(x.origin)+' → '+esc(x.destination)+'</small>'+
    '<b class="card-job">Job '+esc(x.job_number)+'</b>'+
    '<small class="card-creator">'+esc(x.created_by_name)+'</small>';
