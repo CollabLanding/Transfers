@@ -10,7 +10,7 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260922-action-spacing">
+  <link rel="stylesheet" href="styles.css?v=20260922-chat-sound-clear">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
 </head>
@@ -80,7 +80,7 @@
   </section>
   <aside class="right-sidebar">
     <section class="panel chat-panel" aria-label="Team chat">
-      <div class="chat-heading"><h2>Team Chat</h2><small>LIVE</small></div>
+      <div class="chat-heading"><div class="chat-title-row"><h2>Team Chat</h2><button id="clearChat" class="chat-clear hidden" type="button">Clear Chat</button></div><small>LIVE</small></div>
       <div id="chatList" class="chat-list" aria-live="polite"><div class="chat-empty">Loading chat…</div></div>
       <div id="chatNote" class="chat-note" aria-live="polite"></div>
       <form id="chatForm" class="chat-form">
@@ -160,7 +160,7 @@
 <script src="duplicate-transfer.js?v=20260922-urgent"></script>
 <script src="duplicate-day.js?v=20260922-urgent"></script>
 <script src="theme.js"></script>
-<script src="chat.js"></script>
+<script src="chat.js?v=20260922-chat-sound-clear"></script>
 <script src="sms.js?v=20260921-infobip"></script>
 </body>
 </html>

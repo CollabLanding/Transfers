@@ -992,3 +992,43 @@ body.dark-theme .urgent-toggle:has(input:checked) .urgent-toggle-label{
 .transfer-actions button{
   margin:0
 }
+
+
+/* Team Chat incoming sound + owner-only clear control */
+.chat-title-row{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0
+}
+.chat-clear{
+  min-height:0;
+  padding:3px 6px;
+  border-radius:5px;
+  border:1px solid #d4dae0;
+  background:#f1f3f5;
+  color:#6b7280;
+  font-size:8px;
+  font-weight:800;
+  line-height:1.15;
+  white-space:nowrap
+}
+.chat-clear:hover{
+  background:#e5e7eb;
+  color:#374151
+}
+.chat-clear:disabled{
+  opacity:.55;
+  cursor:wait
+}
+html[data-theme="dark"] .chat-clear,
+body.dark-theme .chat-clear{
+  background:#202a34;
+  border-color:#46525e;
+  color:#aab7c3
+}
+html[data-theme="dark"] .chat-clear:hover,
+body.dark-theme .chat-clear:hover{
+  background:#2a3642;
+  color:#e2e8ee
+}
