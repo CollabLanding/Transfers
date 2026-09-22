@@ -1065,11 +1065,6 @@ body.dark-theme .chat-clear:hover{
   background:#fafbfc;
   border-radius:2px
 }
-.lane>*:not(.schedule-grid-line),
-.emptylane>*:not(.schedule-grid-line){
-  position:relative;
-  z-index:1
-}
 .card{
   z-index:3!important
 }
@@ -1107,4 +1102,20 @@ body.dark-theme .schedule-grid-line.hour{
 html[data-theme="dark"] .tick,
 body.dark-theme .tick{
   background:#151c23
+}
+
+
+/* Preserve lane coordinate system for drag/drop */
+.lane .card{
+  position:absolute!important;
+  z-index:3!important
+}
+.lane .drop-preview{
+  position:absolute!important;
+  z-index:20!important
+}
+.lane .driver-unavailable-overlay,
+.lane .driver-off-overlay{
+  position:absolute!important;
+  z-index:1
 }
