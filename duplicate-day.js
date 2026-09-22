@@ -35,16 +35,6 @@
     return (parts[0]||0)*60+(parts[1]||0);
   }
 
-  function overlapTooHigh(candidate,rows){
-    const start=timeToMinutes(candidate.scheduled_time),duration=Number(candidate.duration_minutes||60),end=start+duration;
-    return (rows||[]).some(row=>{
-      if(row.driver!==candidate.driver)return false;
-      const otherStart=timeToMinutes(row.scheduled_time),otherDuration=Number(row.duration_minutes||60),otherEnd=otherStart+otherDuration;
-      const overlap=Math.max(0,Math.min(end,otherEnd)-Math.max(start,otherStart));
-      return overlap>Math.min(duration,otherDuration)*0.75+0.001;
-    });
-  }
-
   function show(text,type=""){
     note.textContent=text||"";
     note.style.color=type==="error"?"#a43c3c":type==="ok"?"#2f6f49":"";
@@ -143,22 +133,6 @@
         if(Object.prototype.hasOwnProperty.call(row,"urgent"))copy.urgent=Boolean(row.urgent);
         return copy
       });
-
-      const destinationResult=await sb.from("transfers")
-        .select("driver,scheduled_time,duration_minutes")
-        .eq("scheduled_date",destination);
-      if(destinationResult.error){
-        show("Could not check destination schedule: "+destinationResult.error.message,"error");
-        return;
-      }
-      const combined=[...(destinationResult.data||[])];
-      for(const copy of copies){
-        if(overlapTooHigh(copy,combined)){
-          show("Duplicate Day would create jobs overlapping by more than 75%. Move the conflicting jobs first.","error");
-          return;
-        }
-        combined.push(copy);
-      }
 
       show("Duplicating "+copies.length+" transfer"+(copies.length===1?"":"s")+"…");
 

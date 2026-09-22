@@ -5,28 +5,45 @@ const $=id=>document.getElementById(id),E={form:$("form"),edit:$("editId"),date:
 const key="transfers-demo-v2",driverKey="transfers-demo-drivers-v1",locationKey="transfers-demo-locations-v1",PX15=20,GRID_START=210,GRID_END=1320,GRID_HEIGHT=((GRID_END-GRID_START)/15)*PX15;
 const today=()=>{let d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)},add=(iso,n)=>{let d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)},fmt=t=>{let [h,m]=String(t).slice(0,5).split(":").map(Number);return (h%12||12)+":"+String(m).padStart(2,"0")+" "+(h>=12?"PM":"AM")};
 const minToTime=m=>String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"),timeToMin=t=>{let [h,m]=String(t).slice(0,5).split(":").map(Number);return h*60+m};
-function overlapViolation(candidate,pool=items){
-  const start=timeToMin(candidate.scheduled_time),duration=Number(candidate.duration_minutes||0),end=start+duration;
-  if(!candidate.scheduled_date||!candidate.driver||!duration)return false;
-  return pool.some(other=>{
-    if(!other||String(other.id)===String(candidate.id||""))return false;
-    if(other.scheduled_date!==candidate.scheduled_date||other.driver!==candidate.driver)return false;
-    const otherStart=timeToMin(other.scheduled_time),otherDuration=Number(other.duration_minutes||0),otherEnd=otherStart+otherDuration;
-    const overlap=Math.max(0,Math.min(end,otherEnd)-Math.max(start,otherStart));
-    const allowed=Math.min(duration,otherDuration)*0.75;
-    return overlap>allowed+0.001
+function cardBaseTopPx(x){return ((timeToMin(x.scheduled_time)-GRID_START)/15)*PX15}
+function cardHeightPx(x){return Math.max(22,(Number(x.duration_minutes||60)/15)*PX15)}
+function cardSortStamp(x){
+  const stamp=Date.parse(x.updated_at||x.created_at||"");
+  return Number.isFinite(stamp)?stamp:0
+}
+function layoutLaneCards(laneItems,activeLastId=null){
+  const ordered=[...laneItems].sort((a,b)=>{
+    const am=timeToMin(a.scheduled_time),bm=timeToMin(b.scheduled_time);
+    if(am!==bm)return am-bm;
+    if(activeLastId&&String(a.id)!==String(b.id)){
+      if(String(a.id)===String(activeLastId))return 1;
+      if(String(b.id)===String(activeLastId))return -1
+    }
+    const at=cardSortStamp(a),bt=cardSortStamp(b);
+    if(at!==bt)return at-bt;
+    const an=Number(a.move_number||0),bn=Number(b.move_number||0);
+    if(an!==bn)return an-bn;
+    return String(a.id||"").localeCompare(String(b.id||""))
+  });
+  const placed=[];
+  return ordered.map(x=>{
+    const base=cardBaseTopPx(x),height=cardHeightPx(x);
+    let top=base;
+    for(const prior of placed){
+      const overlap=Math.max(0,Math.min(top+height,prior.top+prior.height)-Math.max(top,prior.top));
+      const maxOverlap=height*0.5;
+      if(overlap>maxOverlap)top=prior.top+prior.height-maxOverlap
+    }
+    const entry={x,top,height,stacked:top>base+0.1};
+    placed.push(entry);
+    return entry
   })
 }
-function nearestAllowedStart(x,driver,date,preferred){
-  const duration=Number(x.duration_minutes||0),max=Math.max(GRID_START,GRID_END-duration);
-  const clamped=Math.max(GRID_START,Math.min(max,preferred));
-  let best=null,bestDistance=Infinity;
-  for(let m=GRID_START;m<=max;m+=15){
-    if(overlapViolation({id:x.id,scheduled_date:date,driver,scheduled_time:minToTime(m),duration_minutes:duration}))continue;
-    const distance=Math.abs(m-clamped);
-    if(distance<bestDistance){best=m;bestDistance=distance}
-  }
-  return best==null?clamped:best
+function candidateVisualTop(x,driver,date,minutes){
+  const candidate={...x,driver,scheduled_date:date,scheduled_time:minToTime(minutes),updated_at:new Date().toISOString()};
+  const siblings=items.filter(other=>String(other.id)!==String(x.id)&&other.driver===driver&&other.scheduled_date===date&&timeToMin(other.scheduled_time)>=GRID_START&&timeToMin(other.scheduled_time)<GRID_END);
+  const layout=layoutLaneCards([...siblings,candidate],candidate.id);
+  return layout.find(entry=>String(entry.x.id)===String(candidate.id))?.top??cardBaseTopPx(candidate)
 }
 function name(){return profile?.display_name||user?.user_metadata?.display_name||user?.email?.split("@")[0]||"User"}
 function msg(s,c){E.msg.textContent=s||"";E.msg.style.color=c==="error"?"#a43c3c":c==="ok"?"#2f6f49":""}
@@ -97,7 +114,7 @@ function planningDing(){
 function handleNewTransfer(payload){
   if(String(payload?.new?.driver||"").trim().toLowerCase()==="planning")planningDing();
 }
-function normalize(x){return{id:String(x.id),scheduled_date:x.scheduled_date,scheduled_time:String(x.scheduled_time||"00:00").slice(0,5),duration_minutes:Number(x.duration_minutes||60),driver:x.driver||"Unassigned",origin:x.origin||"",destination:x.destination||"",pallet_count:Number(x.pallet_count||0),job_number:x.job_number||"",order_status:x.order_status||"Planned",urgent:Boolean(x.urgent),move_number:x.move_number==null?null:Number(x.move_number),created_by:x.created_by,created_by_name:x.created_by_name||"Unknown"}}
+function normalize(x){return{id:String(x.id),scheduled_date:x.scheduled_date,scheduled_time:String(x.scheduled_time||"00:00").slice(0,5),duration_minutes:Number(x.duration_minutes||60),driver:x.driver||"Unassigned",origin:x.origin||"",destination:x.destination||"",pallet_count:Number(x.pallet_count||0),job_number:x.job_number||"",order_status:x.order_status||"Planned",urgent:Boolean(x.urgent),move_number:x.move_number==null?null:Number(x.move_number),created_by:x.created_by,created_by_name:x.created_by_name||"Unknown",created_at:x.created_at||"",updated_at:x.updated_at||x.created_at||""}}
 function uniq(values){return [...new Set(values.filter(Boolean).map(v=>String(v).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b))}
 function orderedUniq(values){const out=[],seen=new Set();for(const raw of values){const v=String(raw||"").trim();if(v&&!seen.has(v)){seen.add(v);out.push(v)}}return out}
 function saveLocal(){localStorage.setItem(key,JSON.stringify(items));localStorage.setItem(driverKey,JSON.stringify(drivers));localStorage.setItem(locationKey,JSON.stringify(locations))}
@@ -194,7 +211,8 @@ function renderBoard(){
    addGridLines(lane);
    lane.addEventListener("dragover",transferLaneDragOver);lane.addEventListener("dragleave",transferLaneDragLeave);lane.addEventListener("drop",dropCard);
    applyDriverScheduleOverlay(lane,d,date);
-   day.filter(x=>x.driver===d&&timeToMin(x.scheduled_time)>=GRID_START&&timeToMin(x.scheduled_time)<GRID_END).forEach(x=>lane.appendChild(makeCard(x)));
+   const laneItems=day.filter(x=>x.driver===d&&timeToMin(x.scheduled_time)>=GRID_START&&timeToMin(x.scheduled_time)<GRID_END);
+   layoutLaneCards(laneItems).forEach(entry=>lane.appendChild(makeCard(entry.x,entry.top,entry.height,entry.stacked)));
    br.appendChild(lane)
  });
  const nowLine=document.createElement("div");nowLine.className="current-time-line hidden";nowLine.setAttribute("aria-hidden","true");br.appendChild(nowLine);
@@ -205,15 +223,15 @@ function driverHeaderDragEnd(e){draggedDriver=null;e.currentTarget.classList.rem
 function driverHeaderDragOver(e){if(!draggedDriver||draggedDriver===e.currentTarget.dataset.driver)return;e.preventDefault();e.dataTransfer.dropEffect="move";e.currentTarget.classList.add("driver-dragover")}
 async function driverHeaderDrop(e){e.preventDefault();const target=e.currentTarget.dataset.driver,source=draggedDriver||e.dataTransfer.getData("application/x-transfer-driver");e.currentTarget.classList.remove("driver-dragover");if(!source||!target||source===target)return;const old=drivers.slice(),next=drivers.filter(d=>d!==source),rect=e.currentTarget.getBoundingClientRect(),after=e.clientX>rect.left+rect.width/2;let index=next.indexOf(target);if(index<0)return;if(after)index++;next.splice(index,0,source);drivers=orderedUniq(next);renderOptions();renderBoard();if(!live){saveLocal();return}const r=await sb.rpc("reorder_transfer_drivers",{p_names:drivers});if(r.error){drivers=old;renderOptions();renderBoard();msg("Could not reorder drivers: "+r.error.message,"error");return}msg("Driver column order updated.","ok")}
 function clearDropPreviews(){document.querySelectorAll(".drop-preview").forEach(x=>x.remove());document.querySelectorAll(".lane.dragover").forEach(x=>x.classList.remove("dragover"))}
-function landingMinutes(e,lane,x){const rect=lane.getBoundingClientRect(),pointerTop=e.clientY-rect.top-dragGrabOffsetPx,raw=GRID_START+Math.round(pointerTop/PX15)*15,max=Math.max(GRID_START,GRID_END-x.duration_minutes),preferred=Math.max(GRID_START,Math.min(max,raw));return nearestAllowedStart(x,lane.dataset.driver,E.boardDate.value,preferred)}
-function transferLaneDragOver(e){if(!draggedTransferId)return;e.preventDefault();const lane=e.currentTarget,x=items.find(i=>i.id===draggedTransferId);if(!x)return;document.querySelectorAll(".drop-preview").forEach(p=>{if(p.parentElement!==lane)p.remove()});document.querySelectorAll(".lane.dragover").forEach(l=>{if(l!==lane)l.classList.remove("dragover")});lane.classList.add("dragover");const minutes=landingMinutes(e,lane,x);let p=lane.querySelector(".drop-preview");if(!p){p=document.createElement("div");p.className="drop-preview";lane.appendChild(p)}p.style.top=(((minutes-GRID_START)/15)*PX15)+"px";p.style.height=Math.max(22,(x.duration_minutes/15)*PX15)+"px";p.innerHTML='<span class="drop-preview-time">'+fmt(minToTime(minutes))+'</span><span class="drop-preview-label">Drop here</span>'}
+function landingMinutes(e,lane,x){const rect=lane.getBoundingClientRect(),pointerTop=e.clientY-rect.top-dragGrabOffsetPx,raw=GRID_START+Math.round(pointerTop/PX15)*15,max=Math.max(GRID_START,GRID_END-x.duration_minutes);return Math.max(GRID_START,Math.min(max,raw))}
+function transferLaneDragOver(e){if(!draggedTransferId)return;e.preventDefault();const lane=e.currentTarget,x=items.find(i=>i.id===draggedTransferId);if(!x)return;document.querySelectorAll(".drop-preview").forEach(p=>{if(p.parentElement!==lane)p.remove()});document.querySelectorAll(".lane.dragover").forEach(l=>{if(l!==lane)l.classList.remove("dragover")});lane.classList.add("dragover");const minutes=landingMinutes(e,lane,x),visualTop=candidateVisualTop(x,lane.dataset.driver,E.boardDate.value,minutes);let p=lane.querySelector(".drop-preview");if(!p){p=document.createElement("div");p.className="drop-preview";lane.appendChild(p)}p.style.top=visualTop+"px";p.style.height=cardHeightPx(x)+"px";p.innerHTML='<span class="drop-preview-time">'+fmt(minToTime(minutes))+'</span><span class="drop-preview-label">Drop here</span>'}
 function transferLaneDragLeave(e){const lane=e.currentTarget;if(e.relatedTarget&&lane.contains(e.relatedTarget))return;lane.classList.remove("dragover");lane.querySelector(".drop-preview")?.remove()}
 function statusClass(s){return "status-"+String(s||"Planned").toLowerCase().replace(/\s+/g,"-")}
-function makeCard(x){
- let m=timeToMin(x.scheduled_time),b=document.createElement("button");
- b.type="button";b.className="card "+statusClass(x.order_status)+(x.urgent?" urgent":"");b.draggable=true;b.dataset.id=x.id;
- b.style.top=(((m-GRID_START)/15)*PX15)+"px";
- b.style.height=Math.max(22,(x.duration_minutes/15)*PX15)+"px";
+function makeCard(x,visualTop=null,visualHeight=null,stacked=false){
+ let b=document.createElement("button");
+ b.type="button";b.className="card "+statusClass(x.order_status)+(x.urgent?" urgent":"")+(stacked?" visually-stacked":"");b.draggable=true;b.dataset.id=x.id;
+ b.style.top=(Number.isFinite(visualTop)?visualTop:cardBaseTopPx(x))+"px";
+ b.style.height=(Number.isFinite(visualHeight)?visualHeight:cardHeightPx(x))+"px";
  b.innerHTML=(x.urgent?'<span class="urgent-tape" aria-hidden="true"></span>':'')+
    '<span class="draghint">↕</span>'+
    '<span class="card-topline"><span class="card-status">'+esc(x.order_status||"Planned")+'</span><span class="card-move">Move #'+esc(x.move_number??"—")+'</span></span>'+
@@ -283,10 +301,7 @@ function beginTransferResize(e,x,b,edge){
 async function resizeTransfer(x,newStartMinutes,newDuration){
  const old={scheduled_time:x.scheduled_time,duration_minutes:x.duration_minutes};
  const newTime=minToTime(newStartMinutes);
- if(overlapViolation({...x,scheduled_time:newTime,duration_minutes:newDuration,id:x.id})){
-   renderBoard();msg("Jobs for the same driver can overlap by no more than 75%.","error");return
- }
- x.scheduled_time=newTime;x.duration_minutes=newDuration;renderBoard();
+ x.scheduled_time=newTime;x.duration_minutes=newDuration;x.updated_at=new Date().toISOString();renderBoard();
  if(live){
    const r=await sb.from("transfers").update({scheduled_time:newTime,duration_minutes:newDuration,updated_at:new Date().toISOString()}).eq("id",x.id).select("*").single();
    if(r.error){
@@ -299,7 +314,7 @@ async function resizeTransfer(x,newStartMinutes,newDuration){
 }
 function durationLabel(n){if(n<60)return n+" min";let h=Math.floor(n/60),m=n%60;return h+" hr"+(h!==1?"s":"")+(m?" "+m+" min":"")}
 async function dropCard(e){e.preventDefault();const lane=e.currentTarget,id=e.dataTransfer.getData("text/plain")||draggedTransferId,x=items.find(i=>i.id===id);if(!x){clearDropPreviews();return}const minutes=landingMinutes(e,lane,x),newTime=minToTime(minutes),newDriver=lane.dataset.driver;draggedTransferId=null;dragGrabOffsetPx=0;clearDropPreviews();await moveTransfer(x,newDriver,newTime)}
-async function moveTransfer(x,newDriver,newTime){if(overlapViolation({...x,driver:newDriver,scheduled_time:newTime,id:x.id})){renderBoard();msg("Jobs for the same driver can overlap by no more than 75%.","error");return}const old={driver:x.driver,scheduled_time:x.scheduled_time};x.driver=newDriver;x.scheduled_time=newTime;renderBoard();if(live){let r=await sb.from("transfers").update({driver:newDriver,scheduled_time:newTime,updated_at:new Date().toISOString()}).eq("id",x.id).select("*").single();if(r.error){x.driver=old.driver;x.scheduled_time=old.scheduled_time;renderBoard();msg("Could not move transfer: "+r.error.message,"error");return}replaceItem(r.data);renderBoard()}else saveLocal();msg("Transfer moved to "+fmt(newTime)+" with "+newDriver+".","ok")}
+async function moveTransfer(x,newDriver,newTime){const old={driver:x.driver,scheduled_time:x.scheduled_time,updated_at:x.updated_at};x.driver=newDriver;x.scheduled_time=newTime;x.updated_at=new Date().toISOString();renderBoard();if(live){let r=await sb.from("transfers").update({driver:newDriver,scheduled_time:newTime,updated_at:new Date().toISOString()}).eq("id",x.id).select("*").single();if(r.error){x.driver=old.driver;x.scheduled_time=old.scheduled_time;x.updated_at=old.updated_at;renderBoard();msg("Could not move transfer: "+r.error.message,"error");return}replaceItem(r.data);renderBoard()}else saveLocal();msg("Transfer moved to "+fmt(newTime)+" with "+newDriver+".","ok")}
 function replaceItem(row){const n=normalize(row),i=items.findIndex(x=>x.id===n.id);if(i>=0)items[i]=n;else items.push(n)}
 async function loadDriversWithFallback(){
   let r=await sb.from("transfer_drivers").select("name,sort_order").order("sort_order",{ascending:true}).order("name",{ascending:true});
@@ -350,9 +365,6 @@ async function submit(ev){
   }
   if(p.origin.toLowerCase()===p.destination.toLowerCase()){
     msg("Origination and destination must be different.","error");return
-  }
-  if(overlapViolation({...p,id:E.edit.value||null})){
-    msg("Jobs for the same driver can overlap by no more than 75%.","error");return
   }
 
   let id=E.edit.value,urgentFallback=false;

@@ -33,16 +33,6 @@
     return (h%12||12)+":"+String(m).padStart(2,"0")+" "+(h>=12?"PM":"AM");
   }
 
-  function overlapTooHigh(start,duration,rows,excludeId){
-    const end=start+duration;
-    return (rows||[]).some(row=>{
-      if(String(row.id)===String(excludeId||""))return false;
-      const otherStart=timeToMinutes(row.scheduled_time),otherDuration=Number(row.duration_minutes||60),otherEnd=otherStart+otherDuration;
-      const overlap=Math.max(0,Math.min(end,otherEnd)-Math.max(start,otherStart));
-      return overlap>Math.min(duration,otherDuration)*0.75+0.001;
-    });
-  }
-
   function show(text,type){
     if(!msg)return;
     msg.textContent=text;
@@ -82,19 +72,6 @@
       let creatorName=currentUser.email?currentUser.email.split("@")[0]:"User";
       const profileResult=await sb.from("profiles").select("display_name").eq("id",currentUser.id).maybeSingle();
       if(!profileResult.error&&profileResult.data?.display_name)creatorName=profileResult.data.display_name;
-
-      const existingResult=await sb.from("transfers")
-        .select("id,scheduled_time,duration_minutes")
-        .eq("scheduled_date",source.scheduled_date)
-        .eq("driver",source.driver);
-      if(existingResult.error){
-        show("Could not check schedule overlap: "+existingResult.error.message,"error");
-        return;
-      }
-      if(overlapTooHigh(nextStart,duration,existingResult.data||[],source.id)){
-        show("Cannot duplicate here because jobs may overlap by no more than 75%.","error");
-        return;
-      }
 
       const newTime=minutesToTime(nextStart);
       const copy={
