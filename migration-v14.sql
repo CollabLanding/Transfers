@@ -1,4 +1,4 @@
--- Transfers v13: owner-only Team Chat clearing
+-- Transfers v14: fix Team Chat clear-all for safe-update databases
 -- Safe to run more than once.
 
 do $$
@@ -14,15 +14,16 @@ returns void
 language plpgsql
 security definer
 set search_path = public
-as $$
+as $clear_chat$
 begin
   if lower(coalesce(auth.jwt() ->> 'email','')) <> 'psaverchenko@collectfanatics.com' then
     raise exception 'Not authorized to clear Team Chat';
   end if;
 
-  delete from public.transfer_chat_messages where id is not null;
+  delete from public.transfer_chat_messages
+  where id is not null;
 end;
-$$;
+$clear_chat$;
 
 revoke all on function public.clear_transfer_chat() from public;
 grant execute on function public.clear_transfer_chat() to authenticated;
