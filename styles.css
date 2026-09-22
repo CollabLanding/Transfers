@@ -1239,3 +1239,45 @@ body.dark-theme .card-move{
 .live-board-link:focus-visible{
   text-decoration:underline
 }
+
+
+/* Schedule header: date left, live clock centered, planning count right */
+.boardhead{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  align-items:center;
+  gap:12px
+}
+.schedule-date{
+  margin:0;
+  font-size:24px;
+  line-height:1.15;
+  min-width:0
+}
+.schedule-current-time{
+  justify-self:center;
+  font-size:18px;
+  font-weight:800;
+  line-height:1;
+  white-space:nowrap;
+  color:var(--text);
+  font-variant-numeric:tabular-nums
+}
+.planning-month-total{
+  justify-self:end;
+  text-align:right
+}
+@media(max-width:700px){
+  .boardhead{
+    grid-template-columns:1fr auto
+  }
+  .schedule-current-time{
+    grid-column:2;
+    grid-row:1
+  }
+  .planning-month-total{
+    grid-column:1/-1;
+    justify-self:start;
+    text-align:left
+  }
+}

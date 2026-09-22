@@ -1,7 +1,7 @@
 (()=>{
 const C=window.TRANSFERS_CONFIG||{},live=!!(C.supabaseUrl&&C.supabaseAnonKey),sb=live?window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey):null;
 let user=null,profile=null,items=[],drivers=[],locations=[],driverSchedule=[],presence=null,dataChannel=null,optionContext=null,ignoreClickUntil=0,draggedDriver=null,draggedTransferId=null,dragGrabOffsetPx=0,audioCtx=null,lastPlanningDing=0;
-const $=id=>document.getElementById(id),E={form:$("form"),edit:$("editId"),date:$("date"),time:$("time"),duration:$("duration"),driver:$("driver"),origin:$("origin"),destination:$("destination"),pallet:$("pallet"),job:$("job"),status:$("status"),urgent:$("urgent"),save:$("save"),del:$("delete"),cancel:$("cancel"),textDriver:$("textDriver"),msg:$("msg"),boardDate:$("boardDate"),grid:$("grid"),title:$("title"),mode:$("mode"),me:$("me"),email:$("email"),active:$("active"),login:$("login"),loginForm:$("loginForm"),loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg"),signout:$("signout"),formTitle:$("formTitle"),optionModal:$("optionModal"),optionForm:$("optionForm"),optionTitle:$("optionTitle"),optionLabel:$("optionLabel"),optionName:$("optionName"),optionMsg:$("optionMsg"),optionClose:$("optionClose"),optionCancel:$("optionCancel")};
+const $=id=>document.getElementById(id),E={form:$("form"),edit:$("editId"),date:$("date"),time:$("time"),duration:$("duration"),driver:$("driver"),origin:$("origin"),destination:$("destination"),pallet:$("pallet"),job:$("job"),status:$("status"),urgent:$("urgent"),save:$("save"),del:$("delete"),cancel:$("cancel"),textDriver:$("textDriver"),msg:$("msg"),boardDate:$("boardDate"),grid:$("grid"),title:$("title"),currentTime:$("scheduleCurrentTime"),mode:$("mode"),me:$("me"),email:$("email"),active:$("active"),login:$("login"),loginForm:$("loginForm"),loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg"),signout:$("signout"),formTitle:$("formTitle"),optionModal:$("optionModal"),optionForm:$("optionForm"),optionTitle:$("optionTitle"),optionLabel:$("optionLabel"),optionName:$("optionName"),optionMsg:$("optionMsg"),optionClose:$("optionClose"),optionCancel:$("optionCancel")};
 const key="transfers-demo-v2",driverKey="transfers-demo-drivers-v1",locationKey="transfers-demo-locations-v1",PX15=20,GRID_START=210,GRID_END=1320,GRID_HEIGHT=((GRID_END-GRID_START)/15)*PX15;
 const today=()=>{let d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)},add=(iso,n)=>{let d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)},fmt=t=>{let [h,m]=String(t).slice(0,5).split(":").map(Number);return (h%12||12)+":"+String(m).padStart(2,"0")+" "+(h>=12?"PM":"AM")};
 const minToTime=m=>String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"),timeToMin=t=>{let [h,m]=String(t).slice(0,5).split(":").map(Number);return h*60+m};
@@ -125,6 +125,11 @@ function applyDriverScheduleOverlay(lane,driver,date){
   }
   // Overnight shifts (end <= start) remain available from start through the end of this board day.
 }
+function updateScheduleClock(){
+  if(!E.currentTime)return;
+  const now=new Date();
+  E.currentTime.textContent=now.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+}
 function updateCurrentTimeLine(){
   const line=E.grid?.querySelector(".current-time-line");
   if(!line)return;
@@ -170,7 +175,7 @@ function renderBoard(){
    br.appendChild(lane)
  });
  const nowLine=document.createElement("div");nowLine.className="current-time-line hidden";nowLine.setAttribute("aria-hidden","true");br.appendChild(nowLine);
- E.grid.appendChild(br);updateCurrentTimeLine()
+ E.grid.appendChild(br);updateScheduleClock();updateCurrentTimeLine()
 }
 function driverHeaderDragStart(e){draggedDriver=e.currentTarget.dataset.driver;e.currentTarget.classList.add("dragging-driver");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("application/x-transfer-driver",draggedDriver)}
 function driverHeaderDragEnd(e){draggedDriver=null;e.currentTarget.classList.remove("dragging-driver");document.querySelectorAll(".driverhead.driver-dragover").forEach(x=>x.classList.remove("driver-dragover"))}
@@ -384,6 +389,8 @@ E.form.onsubmit=submit;E.del.onclick=remove;E.cancel.onclick=reset;E.driver.onch
 $("prev").onclick=()=>{E.boardDate.value=add(E.boardDate.value,-1);E.date.value=E.boardDate.value;loadBoardSchedule()};$("next").onclick=()=>{E.boardDate.value=add(E.boardDate.value,1);E.date.value=E.boardDate.value;loadBoardSchedule()};$("today").onclick=()=>{E.boardDate.value=today();E.date.value=E.boardDate.value;loadBoardSchedule()};E.boardDate.onchange=()=>{E.date.value=E.boardDate.value;loadBoardSchedule()};E.signout.onclick=()=>sb?.auth.signOut();
 document.addEventListener("pointerdown",unlockAudio,{once:true});
 document.addEventListener("keydown",unlockAudio,{once:true});
+updateScheduleClock();
+setInterval(updateScheduleClock,1000);
 setInterval(updateCurrentTimeLine,30000);
 E.loginForm.onsubmit=async e=>{e.preventDefault();E.loginMsg.textContent="Signing in…";let r=await sb.auth.signInWithPassword({email:E.loginEmail.value.trim(),password:E.loginPassword.value});E.loginMsg.textContent=r.error?r.error.message:""};
 (async()=>{E.boardDate.value=today();E.date.value=today();E.time.value="08:00";E.duration.value="60";if(!live){user={id:"demo-user",email:"Local preview mode",user_metadata:{display_name:"Demo User"}};profile={display_name:"Demo User"};renderUsers([{display_name:"Demo User"}]);loadLocal();renderOptions();renderBoard();return}E.mode.textContent="Live";let s=await sb.auth.getSession();await session(s.data.session);sb.auth.onAuthStateChange((_e,s)=>session(s))})();
