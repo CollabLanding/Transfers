@@ -49,7 +49,18 @@
           <legend>Deliver By:</legend>
           <div class="row"><label><input id="deliverByTime" type="time" aria-label="Deliver By time"></label><label><input id="deliverByDate" type="date" aria-label="Deliver By day"></label></div>
         </fieldset>
-        <label>Driver<select id="driver" required></select></label>
+        <div class="row driver-status-row">
+          <label>Driver<select id="driver" required></select></label>
+          <label>Order Status
+            <select id="status" required>
+              <option value="Planned" selected>Planned</option>
+              <option value="Loading">Loading</option>
+              <option value="Loaded">Loaded</option>
+              <option value="In Transit">In Transit</option>
+              <option value="Delivered">Delivered</option>
+            </select>
+          </label>
+        </div>
         <div class="row">
           <label>Load Origination<select id="origin" required></select></label>
           <label>Load Destination<select id="destination" required></select></label>
@@ -58,15 +69,6 @@
           <label>Pallet Count<input id="pallet" type="number" min="0" max="999" required></label>
           <label>Job Number / Notes<input id="job" required></label>
         </div>
-        <label>Order Status
-          <select id="status" required>
-            <option value="Planned" selected>Planned</option>
-            <option value="Loading">Loading</option>
-            <option value="Loaded">Loaded</option>
-            <option value="In Transit">In Transit</option>
-            <option value="Delivered">Delivered</option>
-          </select>
-        </label>
         <div class="transfer-actions">
           <button class="primary" type="submit" id="save">Add Transfer</button>
           <button type="button" class="hidden" id="duplicate">Duplicate</button>
