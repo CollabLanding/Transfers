@@ -46,9 +46,19 @@
     list.innerHTML=rows.map(row=>{
       const when=new Date(row.created_at);
       const stamp=Number.isFinite(when.getTime())?when.toLocaleString():"";
-      return '<div class="activity-item"><div class="activity-title">'+actionText(row)+'</div><div class="activity-time">'+esc(stamp)+' · '+esc(row.actor_name||"User")+'</div></div>';
+      return '<div class="activity-item" data-transfer-id="'+esc(row.transfer_id||"")+'" data-activity-action="'+esc(row.action||"")+'"><div class="activity-title">'+actionText(row)+'</div><div class="activity-time">'+esc(stamp)+' · '+esc(row.actor_name||"User")+'</div></div>';
     }).join("");
   }
+
+  window.focusTransferActivity=function(transferId,action="Created"){
+    const target=Array.from(list.querySelectorAll(".activity-item")).find(item=>String(item.dataset.transferId)===String(transferId)&&String(item.dataset.activityAction).toLowerCase()===String(action).toLowerCase());
+    if(!target)return;
+    target.scrollIntoView({behavior:"smooth",block:"center"});
+    target.classList.remove("activity-focus");
+    void target.offsetWidth;
+    target.classList.add("activity-focus");
+    setTimeout(()=>target.classList.remove("activity-focus"),1800);
+  };
 
   function mergeRow(row){
     if(!row||row.id==null)return;
