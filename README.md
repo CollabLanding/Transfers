@@ -51,3 +51,9 @@ GitHub Pages is enabled for this repository and deploys from `main`.
 - Building 100 and Building 200 are included as typing suggestions, but Origination/Destination remain free-text fields so additional buildings can be used without code changes.
 - Driver names are remembered as suggestions after they have been used on a transfer.
 - The visible schedule block is currently one hour long because the requested transfer fields include a scheduled time but no duration field. The underlying transfer record does not pretend the move itself takes exactly one hour; this is just its display footprint on the board.
+
+
+## Pickup and delivery deadlines
+Run `migration-v16.sql` in the existing Supabase SQL Editor before deploying this update. It adds four nullable fields and records deadline edits in Recent Activity.
+
+Pickup By and Deliver By each accept an optional hour and/or calendar day. Populated values appear at the bottom of the transfer as PU: and DL:. Clearing fields removes those labels. Duplicating a transfer preserves its deadlines; Duplicate Day shifts deadline days by the same number of calendar days as the schedule, retaining the time and relative day offset. Dragging or resizing a job does not change its deadlines.
