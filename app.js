@@ -399,7 +399,11 @@ async function submit(ev){
   if(!p.scheduled_date||!p.scheduled_time||!p.duration_minutes||!p.driver||p.driver.startsWith("__")||!p.origin||p.origin.startsWith("__")||!p.destination||p.destination.startsWith("__")||!p.job_number||Number.isNaN(p.pallet_count)){
     msg("Complete all fields.","error");return
   }
-  const scheduledMinutes=timeToMin(p.scheduled_time);\n  if(scheduledMinutes<240||scheduledMinutes>1200){\n    msg("Scheduled time must be between 4:00 AM and 8:00 PM.","error");return\n  }\n  if(p.origin.toLowerCase()===p.destination.toLowerCase()){
+  const scheduledMinutes=timeToMin(p.scheduled_time);
+  if(scheduledMinutes<240||scheduledMinutes>1200){
+    msg("Scheduled time must be between 4:00 AM and 8:00 PM.","error");return
+  }
+  if(p.origin.toLowerCase()===p.destination.toLowerCase()){
     msg("Origination and destination must be different.","error");return
   }
 
