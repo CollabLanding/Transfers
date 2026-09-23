@@ -30,6 +30,9 @@
   let rows=[];
   let reconnectTimer=null;
   let fallbackTimer=null;
+  let oldestCreatedAt=null;
+  let loadingOlder=false;
+  let hasMore=true;
 
   function actionText(row){
     const job=row.job_number?("Job "+row.job_number):"Transfer";
@@ -50,23 +53,70 @@
     }).join("");
   }
 
-  window.focusTransferActivity=function(transferId,action="Created"){
+  function focusRenderedActivity(transferId,action="Created"){
     const target=Array.from(list.querySelectorAll(".activity-item")).find(item=>String(item.dataset.transferId)===String(transferId)&&String(item.dataset.activityAction).toLowerCase()===String(action).toLowerCase());
-    if(!target)return;
+    if(!target)return false;
     target.scrollIntoView({behavior:"smooth",block:"center"});
     target.classList.remove("activity-focus");
     void target.offsetWidth;
     target.classList.add("activity-focus");
     setTimeout(()=>target.classList.remove("activity-focus"),1800);
-  };
+    return true;
+  }
+
+  async function loadActivityForTransfer(transferId,action="Created"){
+    if(!sessionUserId||!transferId)return false;
+    if(focusRenderedActivity(transferId,action))return true;
+    const {data,error}=await sb.from("transfer_activity")
+      .select("id,transfer_id,action,actor_name,job_number,driver,details,created_at")
+      .eq("transfer_id",transferId)
+      .eq("action",action)
+      .order("created_at",{ascending:true})
+      .limit(1)
+      .maybeSingle();
+    if(error||!data)return false;
+    const existing=rows.findIndex(x=>String(x.id)===String(data.id));
+    if(existing>=0)rows[existing]=data;else rows.push(data);
+    rows.sort((a,b)=>Date.parse(b.created_at||0)-Date.parse(a.created_at||0));
+    oldestCreatedAt=rows[rows.length-1]?.created_at||oldestCreatedAt;
+    render();
+    return focusRenderedActivity(transferId,action);
+  }
+
+  window.focusTransferActivity=loadActivityForTransfer;
 
   function mergeRow(row){
     if(!row||row.id==null)return;
     const i=rows.findIndex(x=>String(x.id)===String(row.id));
     if(i>=0)rows[i]=row;else rows.push(row);
     rows.sort((a,b)=>Date.parse(b.created_at||0)-Date.parse(a.created_at||0));
+    oldestCreatedAt=rows[rows.length-1]?.created_at||oldestCreatedAt;
     if(rows.length>40)rows=rows.slice(0,40);
     render();
+  }
+
+  async function loadOlder(){
+    if(!sessionUserId||loadingOlder||!hasMore||!oldestCreatedAt)return;
+    loadingOlder=true;
+    const before=oldestCreatedAt;
+    const twelveHours=new Date(Date.parse(before)-12*60*60*1000).toISOString();
+    const {data,error}=await sb.from("transfer_activity")
+      .select("id,transfer_id,action,actor_name,job_number,driver,details,created_at")
+      .lt("created_at",before)
+      .gte("created_at",twelveHours)
+      .order("created_at",{ascending:false})
+      .limit(40);
+    if(!error&&data?.length){
+      const existing=new Set(rows.map(x=>String(x.id)));
+      rows=[...rows,...data.filter(x=>!existing.has(String(x.id)))];
+      rows.sort((a,b)=>Date.parse(b.created_at||0)-Date.parse(a.created_at||0));
+      oldestCreatedAt=rows[rows.length-1]?.created_at||oldestCreatedAt;
+      hasMore=data.length>=40;
+      render();
+    }else if(!error){
+      hasMore=false;
+    }
+    loadingOlder=false;
   }
 
   function removeRow(row){
@@ -89,6 +139,8 @@
     }
 
     rows=data||[];
+    oldestCreatedAt=rows.length?rows[rows.length-1].created_at:null;
+    hasMore=rows.length>=40;
     render();
     return true;
   }
@@ -145,6 +197,10 @@
       },60000);
     }
   }
+
+  list.addEventListener("scroll",()=>{
+    if(list.scrollTop+list.clientHeight>=list.scrollHeight-40)loadOlder();
+  });
 
   document.addEventListener("visibilitychange",()=>{
     if(!document.hidden&&sessionUserId)load();
