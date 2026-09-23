@@ -1383,3 +1383,18 @@ html[data-theme="dark"] .schedule-overrun-warning,
 body.dark-theme .schedule-overrun-warning{
   border-top-color:#ff4d4d
 }
+
+/* Optional pickup/delivery deadlines */
+.deadline-fields{border:0;padding:0;margin:10px 0 0;min-width:0}
+.deadline-fields legend{font-size:12px;font-weight:700;padding:0}
+.deadline-fields legend span{font-weight:400;color:var(--muted)}
+.deadline-fields .row{grid-template-columns:1fr 1fr}
+.deadline-fields label{margin:5px 0}
+.deadline-fields input{min-width:0}
+.card.has-deadlines{display:flex;flex-direction:column;gap:0;padding-bottom:4px}
+.card.has-deadlines .card-topline{flex-shrink:0}
+.card.has-deadlines .card-route{font-size:11px!important;flex-shrink:1;min-height:0}
+.card.has-deadlines .card-job{font-size:12px;overflow:hidden;min-height:0;white-space:nowrap;text-overflow:ellipsis}
+.card.has-deadlines .card-creator{position:static;align-self:flex-end;flex-shrink:1;min-height:0;font-size:9px!important;margin:0;line-height:10px}
+.card-deadlines{display:flex;flex-direction:column;flex-shrink:0;margin-top:auto;font-size:10px;line-height:11px;font-weight:700}
+.card-deadlines>span{white-space:nowrap}

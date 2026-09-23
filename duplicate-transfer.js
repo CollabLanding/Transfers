@@ -87,6 +87,10 @@
         created_by:currentUser.id,
         created_by_name:creatorName
       };
+      if(Object.prototype.hasOwnProperty.call(source,"pickup_by_date"))copy.pickup_by_date=source.pickup_by_date;
+      if(Object.prototype.hasOwnProperty.call(source,"pickup_by_time"))copy.pickup_by_time=source.pickup_by_time;
+      if(Object.prototype.hasOwnProperty.call(source,"deliver_by_date"))copy.deliver_by_date=source.deliver_by_date;
+      if(Object.prototype.hasOwnProperty.call(source,"deliver_by_time"))copy.deliver_by_time=source.deliver_by_time;
       if(Object.prototype.hasOwnProperty.call(source,"urgent"))copy.urgent=Boolean(source.urgent);
 
       const insertResult=await sb.from("transfers").insert(copy).select("*").single();

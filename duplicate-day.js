@@ -130,7 +130,11 @@
           created_by:currentUser.id,
           created_by_name:creatorName
         };
-        if(Object.prototype.hasOwnProperty.call(row,"urgent"))copy.urgent=Boolean(row.urgent);
+        if(Object.prototype.hasOwnProperty.call(row,"pickup_by_date"))copy.pickup_by_date=row.pickup_by_date?addDays(row.pickup_by_date,Math.round((Date.parse(destination)-Date.parse(sourceDate))/86400000)):null;
+      if(Object.prototype.hasOwnProperty.call(row,"pickup_by_time"))copy.pickup_by_time=row.pickup_by_time;
+      if(Object.prototype.hasOwnProperty.call(row,"deliver_by_date"))copy.deliver_by_date=row.deliver_by_date?addDays(row.deliver_by_date,Math.round((Date.parse(destination)-Date.parse(sourceDate))/86400000)):null;
+      if(Object.prototype.hasOwnProperty.call(row,"deliver_by_time"))copy.deliver_by_time=row.deliver_by_time;
+      if(Object.prototype.hasOwnProperty.call(row,"urgent"))copy.urgent=Boolean(row.urgent);
         return copy
       });
 

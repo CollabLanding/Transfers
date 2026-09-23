@@ -1,7 +1,7 @@
 (()=>{
 const C=window.TRANSFERS_CONFIG||{},live=!!(C.supabaseUrl&&C.supabaseAnonKey),sb=live?window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey):null;
 let user=null,profile=null,items=[],drivers=[],locations=[],driverSchedule=[],presence=null,dataChannel=null,optionContext=null,ignoreClickUntil=0,draggedDriver=null,draggedTransferId=null,dragGrabOffsetPx=0,audioCtx=null,lastPlanningDing=0;
-const $=id=>document.getElementById(id),E={form:$("form"),edit:$("editId"),date:$("date"),time:$("time"),duration:$("duration"),driver:$("driver"),origin:$("origin"),destination:$("destination"),pallet:$("pallet"),job:$("job"),status:$("status"),urgent:$("urgent"),save:$("save"),del:$("delete"),cancel:$("cancel"),textDriver:$("textDriver"),msg:$("msg"),boardDate:$("boardDate"),grid:$("grid"),title:$("title"),currentTime:$("scheduleCurrentTime"),mode:$("mode"),me:$("me"),email:$("email"),active:$("active"),login:$("login"),loginForm:$("loginForm"),loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg"),signout:$("signout"),formTitle:$("formTitle"),optionModal:$("optionModal"),optionForm:$("optionForm"),optionTitle:$("optionTitle"),optionLabel:$("optionLabel"),optionName:$("optionName"),optionMsg:$("optionMsg"),optionClose:$("optionClose"),optionCancel:$("optionCancel")};
+const $=id=>document.getElementById(id),E={form:$("form"),edit:$("editId"),date:$("date"),time:$("time"),duration:$("duration"),pickupByDate:$("pickupByDate"),pickupByTime:$("pickupByTime"),deliverByDate:$("deliverByDate"),deliverByTime:$("deliverByTime"),driver:$("driver"),origin:$("origin"),destination:$("destination"),pallet:$("pallet"),job:$("job"),status:$("status"),urgent:$("urgent"),save:$("save"),del:$("delete"),cancel:$("cancel"),textDriver:$("textDriver"),msg:$("msg"),boardDate:$("boardDate"),grid:$("grid"),title:$("title"),currentTime:$("scheduleCurrentTime"),mode:$("mode"),me:$("me"),email:$("email"),active:$("active"),login:$("login"),loginForm:$("loginForm"),loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg"),signout:$("signout"),formTitle:$("formTitle"),optionModal:$("optionModal"),optionForm:$("optionForm"),optionTitle:$("optionTitle"),optionLabel:$("optionLabel"),optionName:$("optionName"),optionMsg:$("optionMsg"),optionClose:$("optionClose"),optionCancel:$("optionCancel")};
 const key="transfers-demo-v2",driverKey="transfers-demo-drivers-v1",locationKey="transfers-demo-locations-v1",PX15=20,GRID_START=210,GRID_END=1320,GRID_HEIGHT=((GRID_END-GRID_START)/15)*PX15;
 const today=()=>{let d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)},add=(iso,n)=>{let d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)},fmt=t=>{let [h,m]=String(t).slice(0,5).split(":").map(Number);return (h%12||12)+":"+String(m).padStart(2,"0")+" "+(h>=12?"PM":"AM")};
 const minToTime=m=>String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"),timeToMin=t=>{let [h,m]=String(t).slice(0,5).split(":").map(Number);return h*60+m};
@@ -114,7 +114,7 @@ function planningDing(){
 function handleNewTransfer(payload){
   if(String(payload?.new?.driver||"").trim().toLowerCase()==="planning")planningDing();
 }
-function normalize(x){return{id:String(x.id),scheduled_date:x.scheduled_date,scheduled_time:String(x.scheduled_time||"00:00").slice(0,5),duration_minutes:Number(x.duration_minutes||60),driver:x.driver||"Unassigned",origin:x.origin||"",destination:x.destination||"",pallet_count:Number(x.pallet_count||0),job_number:x.job_number||"",order_status:x.order_status||"Planned",urgent:Boolean(x.urgent),move_number:x.move_number==null?null:Number(x.move_number),created_by:x.created_by,created_by_name:x.created_by_name||"Unknown",created_at:x.created_at||"",updated_at:x.updated_at||x.created_at||""}}
+function normalize(x){return{pickup_by_date:x.pickup_by_date||"",pickup_by_time:String(x.pickup_by_time||"").slice(0,5),deliver_by_date:x.deliver_by_date||"",deliver_by_time:String(x.deliver_by_time||"").slice(0,5),id:String(x.id),scheduled_date:x.scheduled_date,scheduled_time:String(x.scheduled_time||"00:00").slice(0,5),duration_minutes:Number(x.duration_minutes||60),driver:x.driver||"Unassigned",origin:x.origin||"",destination:x.destination||"",pallet_count:Number(x.pallet_count||0),job_number:x.job_number||"",order_status:x.order_status||"Planned",urgent:Boolean(x.urgent),move_number:x.move_number==null?null:Number(x.move_number),created_by:x.created_by,created_by_name:x.created_by_name||"Unknown",created_at:x.created_at||"",updated_at:x.updated_at||x.created_at||""}}
 function uniq(values){return [...new Set(values.filter(Boolean).map(v=>String(v).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b))}
 function orderedUniq(values){const out=[],seen=new Set();for(const raw of values){const v=String(raw||"").trim();if(v&&!seen.has(v)){seen.add(v);out.push(v)}}return out}
 function saveLocal(){localStorage.setItem(key,JSON.stringify(items));localStorage.setItem(driverKey,JSON.stringify(drivers));localStorage.setItem(locationKey,JSON.stringify(locations))}
@@ -227,9 +227,14 @@ function landingMinutes(e,lane,x){const rect=lane.getBoundingClientRect(),pointe
 function transferLaneDragOver(e){if(!draggedTransferId)return;e.preventDefault();const lane=e.currentTarget,x=items.find(i=>i.id===draggedTransferId);if(!x)return;document.querySelectorAll(".drop-preview").forEach(p=>{if(p.parentElement!==lane)p.remove()});document.querySelectorAll(".lane.dragover").forEach(l=>{if(l!==lane)l.classList.remove("dragover")});lane.classList.add("dragover");const minutes=landingMinutes(e,lane,x),visualTop=candidateVisualTop(x,lane.dataset.driver,E.boardDate.value,minutes);let p=lane.querySelector(".drop-preview");if(!p){p=document.createElement("div");p.className="drop-preview";lane.appendChild(p)}p.style.top=visualTop+"px";p.style.height=cardHeightPx(x)+"px";p.innerHTML='<span class="drop-preview-time">'+fmt(minToTime(minutes))+'</span><span class="drop-preview-label">Drop here</span>'}
 function transferLaneDragLeave(e){const lane=e.currentTarget;if(e.relatedTarget&&lane.contains(e.relatedTarget))return;lane.classList.remove("dragover");lane.querySelector(".drop-preview")?.remove()}
 function statusClass(s){return "status-"+String(s||"Planned").toLowerCase().replace(/\s+/g,"-")}
+function deadlineText(date,time){
+ const day=date?new Date(date+"T12:00:00").toLocaleDateString("en-US",{month:"numeric",day:"numeric"}):"";
+ return [day,time?fmt(time):""].filter(Boolean).join(" ");
+}
 function makeCard(x,visualTop=null,visualHeight=null,stacked=false){
+ const deadlines=[["PU",deadlineText(x.pickup_by_date,x.pickup_by_time)],["DL",deadlineText(x.deliver_by_date,x.deliver_by_time)]].filter(([,value])=>value);
  let b=document.createElement("button");
- b.type="button";b.className="card "+statusClass(x.order_status)+(x.urgent?" urgent":"")+(stacked?" visually-stacked":"");b.draggable=true;b.dataset.id=x.id;
+ b.type="button";b.className="card "+statusClass(x.order_status)+(x.urgent?" urgent":"")+(stacked?" visually-stacked":"");b.draggable=true;b.dataset.id=x.id;if(deadlines.length)b.classList.add("has-deadlines");
  b.style.top=(Number.isFinite(visualTop)?visualTop:cardBaseTopPx(x))+"px";
  b.style.height=(Number.isFinite(visualHeight)?visualHeight:cardHeightPx(x))+"px";
  b.innerHTML=(x.urgent?'<span class="urgent-tape" aria-hidden="true"></span>':'')+
@@ -237,7 +242,9 @@ function makeCard(x,visualTop=null,visualHeight=null,stacked=false){
    '<span class="card-topline"><span class="card-status">'+esc(x.order_status||"Planned")+'</span><span class="card-move">Move #'+esc(x.move_number??"—")+'</span></span>'+
    '<small class="card-route">'+esc(x.origin)+' → '+esc(x.destination)+'</small>'+
    '<b class="card-job">'+esc(x.job_number)+'</b>'+
-   '<small class="card-creator">'+esc(x.created_by_name)+'</small>';
+   '<small class="card-creator">'+esc(x.created_by_name)+'</small>'+
+   (deadlines.length?'<span class="card-deadlines">'+deadlines.map(([label,value])=>'<span>'+label+': '+esc(value)+'</span>').join('')+'</span>':'');
+ b.title=[x.origin+' → '+x.destination,x.job_number,...deadlines.map(([label,value])=>label+': '+value)].join('\n');
  ["top","bottom"].forEach(edge=>{const h=document.createElement("span");h.className="resize-handle resize-"+edge;h.dataset.edge=edge;h.title=edge==="top"?"Drag to change start time and duration":"Drag to change duration";h.addEventListener("pointerdown",e=>beginTransferResize(e,x,b,edge));b.appendChild(h)});
  b.addEventListener("dragstart",e=>{if(e.target.closest?.(".resize-handle")){e.preventDefault();return}ignoreClickUntil=Date.now()+500;draggedTransferId=x.id;const rect=b.getBoundingClientRect();dragGrabOffsetPx=Math.max(0,Math.min(rect.height,e.clientY-rect.top));b.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",x.id)});
  b.addEventListener("dragend",()=>{draggedTransferId=null;dragGrabOffsetPx=0;b.classList.remove("dragging");clearDropPreviews()});
@@ -338,7 +345,7 @@ async function loadBoardSchedule(){
 async function loadData(){if(!live){loadLocal();driverSchedule=[];renderOptions();renderBoard();return}const [tr,dr,lr,sc]=await Promise.all([sb.from("transfers").select("*").order("scheduled_date").order("scheduled_time"),loadDriversWithFallback(),loadLocationsWithFallback(),sb.from("driver_schedules").select("driver_name,schedule_date,start_time,end_time").eq("schedule_date",E.boardDate.value)]);if(tr.error){msg("Transfers could not load: "+tr.error.message,"error");items=[]}else items=(tr.data||[]).map(normalize);drivers=orderedUniq(["Planning",...(dr.error?[]:(dr.data||[]).map(x=>x.name)),...items.map(x=>x.driver)]);locations=uniq([...(lr.error?["Building 100","Building 200"]:(lr.data||[]).map(x=>x.name)),...items.flatMap(x=>[x.origin,x.destination]),"Building 100","Building 200"]);driverSchedule=sc.error?[]:(sc.data||[]);if(dr.error||lr.error){const details=[dr.error?"Drivers: "+dr.error.message:"",lr.error?"Locations: "+lr.error.message:""].filter(Boolean).join(" · ");msg("Could not load driver/location lists. "+details,"error")}renderOptions();renderBoard()}
 async function subscribe(){if(!live)return;if(dataChannel)await sb.removeChannel(dataChannel);if(presence)await sb.removeChannel(presence);dataChannel=sb.channel("transfers-data").on("postgres_changes",{event:"INSERT",schema:"public",table:"transfers"},handleNewTransfer).on("postgres_changes",{event:"*",schema:"public",table:"transfers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_locations"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"driver_schedules"},loadBoardSchedule).subscribe();presence=sb.channel("transfers-active",{config:{presence:{key:user.id}}}).on("presence",{event:"sync"},()=>{const unique=new Map();Object.values(presence.presenceState()).forEach(v=>v.forEach(x=>{const id=x.user_id||x.email;if(id&&!unique.has(id))unique.set(id,x)}));renderUsers([...unique.values()])}).subscribe(async s=>{if(s==="SUBSCRIBED")await presence.track({user_id:user.id,display_name:name(),email:user.email})})}
 function reset(){E.form.reset();E.edit.value="";E.date.value=E.boardDate.value;E.time.value="08:00";E.duration.value="60";if(E.status)E.status.value="Planned";if(E.urgent)E.urgent.checked=false;E.formTitle.textContent="Build Transfer Load";E.save.textContent="Add Transfer";E.del.classList.add("hidden");E.cancel.classList.add("hidden");E.textDriver?.classList.add("hidden");renderOptions();msg("")}
-function edit(id){let x=items.find(i=>i.id===String(id));if(!x)return;E.edit.value=x.id;E.date.value=x.scheduled_date;E.time.value=x.scheduled_time;if(![...E.duration.options].some(o=>Number(o.value)===Number(x.duration_minutes))){const o=document.createElement("option");o.value=String(x.duration_minutes);o.textContent=durationLabel(x.duration_minutes);E.duration.appendChild(o)}E.duration.value=String(x.duration_minutes);renderOptions();E.driver.value=x.driver;E.origin.value=x.origin;E.destination.value=x.destination;E.pallet.value=x.pallet_count;E.job.value=x.job_number;E.status.value=x.order_status||"Planned";if(E.urgent)E.urgent.checked=Boolean(x.urgent);E.formTitle.textContent="Edit Transfer Load";E.save.textContent="Update";E.del.classList.remove("hidden");E.cancel.classList.remove("hidden");E.textDriver?.classList.remove("hidden");msg("Created by "+x.created_by_name)}
+function edit(id){let x=items.find(i=>i.id===String(id));if(!x)return;E.edit.value=x.id;E.date.value=x.scheduled_date;E.time.value=x.scheduled_time;if(![...E.duration.options].some(o=>Number(o.value)===Number(x.duration_minutes))){const o=document.createElement("option");o.value=String(x.duration_minutes);o.textContent=durationLabel(x.duration_minutes);E.duration.appendChild(o)}E.duration.value=String(x.duration_minutes);E.pickupByDate.value=x.pickup_by_date||"";E.pickupByTime.value=x.pickup_by_time||"";E.deliverByDate.value=x.deliver_by_date||"";E.deliverByTime.value=x.deliver_by_time||"";renderOptions();E.driver.value=x.driver;E.origin.value=x.origin;E.destination.value=x.destination;E.pallet.value=x.pallet_count;E.job.value=x.job_number;E.status.value=x.order_status||"Planned";if(E.urgent)E.urgent.checked=Boolean(x.urgent);E.formTitle.textContent="Edit Transfer Load";E.save.textContent="Update";E.del.classList.remove("hidden");E.cancel.classList.remove("hidden");E.textDriver?.classList.remove("hidden");msg("Created by "+x.created_by_name)}
 function urgentColumnMissing(error){
   const code=String(error?.code||"");
   const message=String(error?.message||"").toLowerCase();
@@ -350,6 +357,11 @@ async function submit(ev){
     scheduled_date:E.date.value,
     scheduled_time:E.time.value,
     duration_minutes:Number(E.duration.value),
+    pickup_by_date:E.pickupByDate.value||null,
+    pickup_by_time:E.pickupByTime.value||null,
+    deliver_by_date:E.deliverByDate.value||null,
+    deliver_by_time:E.deliverByTime.value||null,
+
     driver:E.driver.value,
     origin:E.origin.value,
     destination:E.destination.value,
@@ -375,6 +387,11 @@ async function submit(ev){
         scheduled_date:p.scheduled_date,
         scheduled_time:p.scheduled_time,
         duration_minutes:p.duration_minutes,
+        pickup_by_date:p.pickup_by_date,
+        pickup_by_time:p.pickup_by_time,
+        deliver_by_date:p.deliver_by_date,
+        deliver_by_time:p.deliver_by_time,
+
         driver:p.driver,
         origin:p.origin,
         destination:p.destination,

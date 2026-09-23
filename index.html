@@ -10,7 +10,7 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260922-planning-left-anchor">
+  <link rel="stylesheet" href="styles.css?v=20260923-deadlines">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
 </head>
@@ -41,6 +41,14 @@
             </select>
           </label>
         </div>
+        <fieldset class="deadline-fields">
+          <legend>Pickup By: <span>(optional)</span></legend>
+          <div class="row"><label>Hour<input id="pickupByTime" type="time"></label><label>Day<input id="pickupByDate" type="date"></label></div>
+        </fieldset>
+        <fieldset class="deadline-fields">
+          <legend>Deliver By: <span>(optional)</span></legend>
+          <div class="row"><label>Hour<input id="deliverByTime" type="time"></label><label>Day<input id="deliverByDate" type="date"></label></div>
+        </fieldset>
         <label>Driver<select id="driver" required></select></label>
         <div class="row">
           <label>Load Origination<select id="origin" required></select></label>
@@ -154,11 +162,11 @@
 <div id="login" class="login hidden">
   <form id="loginForm" class="loginbox"><h1>Transfers</h1><p>Sign in to the transfer board.</p><input id="loginEmail" type="email" placeholder="Email" required><input id="loginPassword" type="password" placeholder="Password" required><button class="primary">Sign In</button><p id="loginMsg"></p></form>
 </div>
-<script src="app.js?v=20260922-visual-overlap-stack"></script>
+<script src="app.js?v=20260923-deadlines"></script>
 <script src="order-status.js?v=20260921-planned-default"></script>
 <script src="recent-activity.js?v=20260922-global-live"></script>
-<script src="duplicate-transfer.js?v=20260922-visual-overlap-stack"></script>
-<script src="duplicate-day.js?v=20260922-visual-overlap-stack"></script>
+<script src="duplicate-transfer.js?v=20260923-deadlines"></script>
+<script src="duplicate-day.js?v=20260923-deadlines"></script>
 <script src="theme.js"></script>
 <script src="chat.js?v=20260922-chat-sound-clear"></script>
 <script src="sms.js?v=20260921-infobip"></script>
