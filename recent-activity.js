@@ -51,6 +51,17 @@
       const stamp=Number.isFinite(when.getTime())?when.toLocaleString():"";
       return '<div class="activity-item" data-transfer-id="'+esc(row.transfer_id||"")+'" data-activity-action="'+esc(row.action||"")+'"><div class="activity-title">'+actionText(row)+'</div><div class="activity-time">'+esc(stamp)+' · '+esc(row.actor_name||"User")+'</div></div>';
     }).join("");
+    list.querySelectorAll(".activity-item[data-transfer-id]").forEach(item=>{
+      item.tabIndex=0;
+      item.setAttribute("role","button");
+      item.addEventListener("click",()=>window.openTransferEditor?.(item.dataset.transferId));
+      item.addEventListener("keydown",event=>{
+        if(event.key==="Enter"||event.key===" "){
+          event.preventDefault();
+          window.openTransferEditor?.(item.dataset.transferId);
+        }
+      });
+    });
   }
 
   function focusRenderedActivity(transferId,action="Created"){
