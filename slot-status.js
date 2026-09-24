@@ -1,8 +1,8 @@
 /* Shared status ranges; independent of transfer loading and drag/drop. */
 window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start, end, px}) {
   const table = 'transfer_slot_statuses', key = 'transfers-slot-statuses-v1';
-  const statuses = ['Driving', 'Yard Moves', 'Loading'];
-  let rows = [], date = null, generation = 0, selection = null, busy = false, moving = null;
+  const statuses = ['Driving', 'Yard Moves', 'Loading', 'Standby'];
+  let rows = [], date = null, generation = 0, selection = null, busy = false, moving = null, resizeCancel = null;
   const dialog = document.createElement('dialog');
   dialog.className = 'slot-status-dialog';
   dialog.setAttribute('aria-labelledby', 'slot-status-title');
@@ -18,6 +18,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
   dialog.addEventListener('cancel', e => { e.preventDefault(); close(); });
   function localRows() { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } }
   function paint() {
+    if (resizeCancel) resizeCancel(false);
     grid.querySelectorAll('.slot-status-block,.slot-status-delete').forEach(n => n.remove());
     for (const lane of grid.querySelectorAll('.lane')) {
       for (const row of rows.filter(r => r.driver === lane.dataset.driver && r.scheduled_date === getDate())) {
@@ -49,9 +50,57 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
           } catch (error) { report('Could not delete status: ' + error.message, 'error'); }
           paint();
         };
-        block.append(label); lane.append(block, remove);
+        block.append(label);
+        for (const edge of ['top','bottom']) {
+          const handle=document.createElement('span');handle.className='slot-resize-handle slot-resize-'+edge;handle.title=edge==='top'?'Drag to change status start':'Drag to change status end';
+          handle.addEventListener('pointerdown',e=>beginResize(e,row,block,remove,edge));block.append(handle);
+        }
+        lane.append(block, remove);
       }
     }
+  }
+  async function savePlacement(row,payload,message) {
+    busy=true;
+    try {
+      if(sb){const r=await sb.from(table).update(payload).eq('id',row.id).select('id').single();if(r.error)throw r.error;}
+      else localStorage.setItem(key,JSON.stringify(localRows().map(r=>r.id===row.id?{...r,...payload}:r)));
+      await refresh();report(message,'ok');
+    }catch(error){report('Could not update status: '+error.message,'error');paint();}
+    finally{busy=false;}
+  }
+  function beginResize(e,row,block,remove,edge) {
+    if(e.button!==0||busy||moving||!getUser())return;
+    e.preventDefault();e.stopPropagation();clear();
+    const handle=e.currentTarget,lane=block.parentElement,pointer=e.pointerId,originalDate=getDate();
+    let begin=row.start_minutes,finish=row.end_minutes;
+    busy=true;block.draggable=false;block.classList.add('slot-status-resizing');handle.setPointerCapture(pointer);
+    const move=ev=>{
+      if(ev.pointerId!==pointer)return;ev.preventDefault();ev.stopPropagation();
+      const raw=start+Math.round((ev.clientY-lane.getBoundingClientRect().top)/px)*15;
+      if(edge==='top')begin=Math.max(start,Math.min(finish-30,raw));
+      else finish=Math.min(end,Math.max(begin+30,raw));
+      block.style.top=((begin-start)/15*px)+'px';block.style.height=((finish-begin)/15*px)+'px';remove.style.top=((begin-start)/15*px+1)+'px';
+      block.querySelector('span').textContent=row.status+' · '+time(begin)+' – '+time(finish);
+      block.classList.toggle('is-blocked',overlap({...row,start_minutes:begin,end_minutes:finish},row.id));
+    };
+    const cleanup=()=>{
+      handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',up);handle.removeEventListener('pointercancel',cancel);handle.removeEventListener('lostpointercapture',cancel);
+      document.removeEventListener('keydown',escape);window.removeEventListener('blur',cancel);
+      if(handle.hasPointerCapture(pointer))handle.releasePointerCapture(pointer);
+      resizeCancel=null;busy=false;block.draggable=true;block.classList.remove('slot-status-resizing','is-blocked');
+    };
+    const cancel=(repaint=true)=>{cleanup();if(repaint!==false)paint();};
+    const escape=ev=>{if(ev.key==='Escape')cancel();};
+    const up=ev=>{
+      if(ev.pointerId!==pointer)return;ev.preventDefault();ev.stopPropagation();move(ev);cleanup();
+      if(originalDate!==getDate()||(begin===row.start_minutes&&finish===row.end_minutes)){paint();return;}
+      const payload={start_minutes:begin,end_minutes:finish};
+      if(overlap({...row,...payload},row.id)){paint();report('That time overlaps another status. Choose an open range.','error');return;}
+      savePlacement(row,payload,'Status resized.');
+    };
+    resizeCancel=cancel;
+    handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',up);handle.addEventListener('pointercancel',cancel);handle.addEventListener('lostpointercapture',cancel);
+    document.addEventListener('keydown',escape);window.addEventListener('blur',cancel);
   }
   function clearMovePreview() { grid.querySelectorAll('.slot-status-move-preview').forEach(n=>n.remove()); }
   function endMove() { moving=null; clearMovePreview(); grid.querySelectorAll('.slot-status-dragging').forEach(n=>n.classList.remove('slot-status-dragging')); }
@@ -78,13 +127,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
     const row=moving.row,payload=movePosition(e,lane);endMove();
     if(overlap(payload,row.id)){report('That time overlaps another status. Choose an open range.','error');return;}
     if(payload.driver===row.driver&&payload.start_minutes===row.start_minutes)return;
-    busy=true;
-    try{
-      if(sb){const r=await sb.from(table).update(payload).eq('id',row.id).select('id').single();if(r.error)throw r.error;}
-      else localStorage.setItem(key,JSON.stringify(localRows().map(r=>r.id===row.id?{...r,...payload}:r)));
-      await refresh();report('Status moved.','ok');
-    }catch(error){report('Could not move status: '+error.message,'error');paint();}
-    finally{busy=false;}
+    await savePlacement(row,payload,'Status moved.');
   },true);
   async function refresh() {
     const requestedDate = getDate(), token = ++generation;
