@@ -1390,13 +1390,10 @@ body.dark-theme .schedule-overrun-warning{
 .deadline-fields .row{grid-template-columns:1fr 1fr;gap:6px;min-width:0}
 .deadline-fields label{margin:0;gap:3px;font-size:10px}
 .deadline-fields input{min-width:0;min-height:32px;padding:0 6px}
-.card.has-deadlines{display:flex;flex-direction:column;gap:0;padding-bottom:4px}
-.card.has-deadlines .card-topline{flex-shrink:0}
-.card.has-deadlines .card-route{font-size:11px!important;flex-shrink:1;min-height:0}
-.card.has-deadlines .card-job{font-size:12px;overflow:hidden;min-height:0;white-space:nowrap;text-overflow:ellipsis}
-.card.has-deadlines .card-creator{position:static;align-self:flex-end;flex-shrink:1;min-height:0;font-size:9px!important;margin:0;line-height:10px}
-.card-deadlines{display:flex;flex-direction:column;flex-shrink:0;margin-top:auto;font-size:10px;line-height:11px;font-weight:700}
-.card-deadlines>span{white-space:nowrap}
+/* Fixed footer positions do not compress the load's main text. */
+.card-deadlines{position:absolute;left:7px;bottom:5px;width:calc(50% - 25px);display:flex;flex-direction:column;font-size:10px;line-height:11px;font-weight:700}
+.card-deadlines>span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .card-creator{position:absolute;right:7px;bottom:5px;width:calc(50% - 25px);max-width:none;margin:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 .created-by-link{border:0;background:transparent;color:var(--accent);padding:0;text-decoration:underline;font-weight:700;cursor:pointer}
 .created-by-link:hover,.created-by-link:focus-visible{color:#16466d}
@@ -1410,7 +1407,6 @@ html[data-theme="dark"] .activity-item.activity-focus,body.dark-theme .activity-
 .card .load-chain:focus-visible{outline:2px solid #ec9800;outline-offset:1px}
 .card.link-target{outline:3px solid #159969!important;outline-offset:-3px}
 .card .resize-bottom{left:0;right:0}
-.card.has-deadlines{padding-bottom:21px}
 .card:focus-visible{outline:2px solid var(--accent)}
 
 .card .load-chain{touch-action:none;transition:color .15s,filter .15s}
