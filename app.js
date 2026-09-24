@@ -1,5 +1,6 @@
 (()=>{
 const C=window.TRANSFERS_CONFIG||{},live=!!(C.supabaseUrl&&C.supabaseAnonKey),sb=live?window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey):null;
+let linkDragId=null,linkBusy=false,moveBusy=false;
 let user=null,profile=null,items=[],drivers=[],locations=[],driverSchedule=[],presence=null,dataChannel=null,optionContext=null,ignoreClickUntil=0,draggedDriver=null,draggedTransferId=null,dragGrabOffsetPx=0,audioCtx=null,lastPlanningDing=0;
 const $=id=>document.getElementById(id),E={form:$("form"),edit:$("editId"),date:$("date"),time:$("time"),duration:$("duration"),pickupByDate:$("pickupByDate"),pickupByTime:$("pickupByTime"),deliverByDate:$("deliverByDate"),deliverByTime:$("deliverByTime"),driver:$("driver"),origin:$("origin"),destination:$("destination"),pallet:$("pallet"),job:$("job"),status:$("status"),urgent:$("urgent"),save:$("save"),del:$("delete"),cancel:$("cancel"),textDriver:$("textDriver"),msg:$("msg"),boardDate:$("boardDate"),grid:$("grid"),title:$("title"),currentTime:$("scheduleCurrentTime"),mode:$("mode"),me:$("me"),email:$("email"),active:$("active"),login:$("login"),loginForm:$("loginForm"),loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg"),signout:$("signout"),formTitle:$("formTitle"),optionModal:$("optionModal"),optionForm:$("optionForm"),optionTitle:$("optionTitle"),optionLabel:$("optionLabel"),optionName:$("optionName"),optionMsg:$("optionMsg"),optionClose:$("optionClose"),optionCancel:$("optionCancel")};
 const key="transfers-demo-v2",driverKey="transfers-demo-drivers-v1",locationKey="transfers-demo-locations-v1",PX15=20,GRID_START=210,GRID_END=1320,GRID_HEIGHT=((GRID_END-GRID_START)/15)*PX15;
@@ -120,7 +121,7 @@ function planningDing(){
 function handleNewTransfer(payload){
   if(String(payload?.new?.driver||"").trim().toLowerCase()==="planning")planningDing();
 }
-function normalize(x){return{pickup_by_date:x.pickup_by_date||"",pickup_by_time:String(x.pickup_by_time||"").slice(0,5),deliver_by_date:x.deliver_by_date||"",deliver_by_time:String(x.deliver_by_time||"").slice(0,5),id:String(x.id),scheduled_date:x.scheduled_date,scheduled_time:String(x.scheduled_time||"00:00").slice(0,5),duration_minutes:Number(x.duration_minutes||60),driver:x.driver||"Unassigned",origin:x.origin||"",destination:x.destination||"",pallet_count:Number(x.pallet_count||0),job_number:x.job_number||"",order_status:x.order_status||"Planned",urgent:Boolean(x.urgent),move_number:x.move_number==null?null:Number(x.move_number),created_by:x.created_by,created_by_name:x.created_by_name||"Unknown",created_at:x.created_at||"",updated_at:x.updated_at||x.created_at||""}}
+function normalize(x){return{linked_next_id:x.linked_next_id?String(x.linked_next_id):null,pickup_by_date:x.pickup_by_date||"",pickup_by_time:String(x.pickup_by_time||"").slice(0,5),deliver_by_date:x.deliver_by_date||"",deliver_by_time:String(x.deliver_by_time||"").slice(0,5),id:String(x.id),scheduled_date:x.scheduled_date,scheduled_time:String(x.scheduled_time||"00:00").slice(0,5),duration_minutes:Number(x.duration_minutes||60),driver:x.driver||"Unassigned",origin:x.origin||"",destination:x.destination||"",pallet_count:Number(x.pallet_count||0),job_number:x.job_number||"",order_status:x.order_status||"Planned",urgent:Boolean(x.urgent),move_number:x.move_number==null?null:Number(x.move_number),created_by:x.created_by,created_by_name:x.created_by_name||"Unknown",created_at:x.created_at||"",updated_at:x.updated_at||x.created_at||""}}
 function uniq(values){return [...new Set(values.filter(Boolean).map(v=>String(v).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b))}
 function orderedUniq(values){const out=[],seen=new Set();for(const raw of values){const v=String(raw||"").trim();if(v&&!seen.has(v)){seen.add(v);out.push(v)}}return out}
 function saveLocal(){localStorage.setItem(key,JSON.stringify(items));localStorage.setItem(driverKey,JSON.stringify(drivers));localStorage.setItem(locationKey,JSON.stringify(locations))}
@@ -229,9 +230,16 @@ function driverHeaderDragEnd(e){draggedDriver=null;e.currentTarget.classList.rem
 function driverHeaderDragOver(e){if(!draggedDriver||draggedDriver===e.currentTarget.dataset.driver)return;e.preventDefault();e.dataTransfer.dropEffect="move";e.currentTarget.classList.add("driver-dragover")}
 async function driverHeaderDrop(e){e.preventDefault();const target=e.currentTarget.dataset.driver,source=draggedDriver||e.dataTransfer.getData("application/x-transfer-driver");e.currentTarget.classList.remove("driver-dragover");if(!source||!target||source===target)return;const old=drivers.slice(),next=drivers.filter(d=>d!==source),rect=e.currentTarget.getBoundingClientRect(),after=e.clientX>rect.left+rect.width/2;let index=next.indexOf(target);if(index<0)return;if(after)index++;next.splice(index,0,source);drivers=orderedUniq(next);renderOptions();renderBoard();if(!live){saveLocal();return}const r=await sb.rpc("reorder_transfer_drivers",{p_names:drivers});if(r.error){drivers=old;renderOptions();renderBoard();msg("Could not reorder drivers: "+r.error.message,"error");return}msg("Driver column order updated.","ok")}
 function clearDropPreviews(){document.querySelectorAll(".drop-preview").forEach(x=>x.remove());document.querySelectorAll(".lane.dragover").forEach(x=>x.classList.remove("dragover"))}
-function landingMinutes(e,lane,x){const rect=lane.getBoundingClientRect(),pointerTop=e.clientY-rect.top-dragGrabOffsetPx,raw=GRID_START+Math.round(pointerTop/PX15)*15,max=Math.max(GRID_START,GRID_END-x.duration_minutes);return Math.max(GRID_START,Math.min(max,raw))}
-function transferLaneDragOver(e){if(!draggedTransferId)return;e.preventDefault();const lane=e.currentTarget,x=items.find(i=>i.id===draggedTransferId);if(!x)return;document.querySelectorAll(".drop-preview").forEach(p=>{if(p.parentElement!==lane)p.remove()});document.querySelectorAll(".lane.dragover").forEach(l=>{if(l!==lane)l.classList.remove("dragover")});lane.classList.add("dragover");const minutes=landingMinutes(e,lane,x),visualTop=candidateVisualTop(x,lane.dataset.driver,E.boardDate.value,minutes);let p=lane.querySelector(".drop-preview");if(!p){p=document.createElement("div");p.className="drop-preview";lane.appendChild(p)}p.style.top=visualTop+"px";p.style.height=cardHeightPx(x)+"px";p.innerHTML='<span class="drop-preview-time">'+fmt(minToTime(minutes))+'</span><span class="drop-preview-label">Drop here</span>'}
-function transferLaneDragLeave(e){const lane=e.currentTarget;if(e.relatedTarget&&lane.contains(e.relatedTarget))return;lane.classList.remove("dragover");lane.querySelector(".drop-preview")?.remove()}
+function landingMinutes(e,lane,x){const rect=lane.getBoundingClientRect(),raw=GRID_START+Math.round((e.clientY-rect.top-dragGrabOffsetPx)/PX15)*15,anchor=timeToMin(x.scheduled_time),group=linkedGroup(x),earliest=Math.min(...group.map(row=>timeToMin(row.scheduled_time)-anchor)),latest=Math.max(...group.map(row=>timeToMin(row.scheduled_time)-anchor+row.duration_minutes));return Math.max(GRID_START-earliest,Math.min(GRID_END-latest,raw))}
+function transferLaneDragOver(e){
+ if(!draggedTransferId)return;e.preventDefault();const lane=e.currentTarget,x=items.find(i=>i.id===draggedTransferId);if(!x)return;
+ clearDropPreviews();lane.classList.add("dragover");
+ const minutes=landingMinutes(e,lane,x),delta=minutes-timeToMin(x.scheduled_time),group=linkedGroup(x),ids=new Set(group.map(row=>row.id));
+ const moved=group.map(row=>({...row,driver:lane.dataset.driver,scheduled_date:E.boardDate.value,scheduled_time:minToTime(timeToMin(row.scheduled_time)+delta)}));
+ const neighbors=items.filter(row=>!ids.has(row.id)&&row.driver===lane.dataset.driver&&row.scheduled_date===E.boardDate.value);
+ for(const entry of layoutLaneCards([...neighbors,...moved])){if(!ids.has(entry.x.id))continue;const p=document.createElement("div");p.className="drop-preview";p.style.top=entry.top+"px";p.style.height=entry.height+"px";p.innerHTML='<span class="drop-preview-time">'+fmt(entry.x.scheduled_time)+'</span><span class="drop-preview-label">'+(group.length>1?'Linked load':'Drop here')+'</span>';lane.appendChild(p)}
+}
+function transferLaneDragLeave(e){const lane=e.currentTarget;if(e.relatedTarget&&lane.contains(e.relatedTarget))return;lane.classList.remove("dragover");lane.querySelectorAll(".drop-preview").forEach(p=>p.remove())}
 function statusClass(s){return "status-"+String(s||"Planned").toLowerCase().replace(/\s+/g,"-")}
 function deadlineText(date,time){
  const day=date?new Date(date+"T12:00:00").toLocaleDateString("en-US",{month:"numeric",day:"numeric"}):"";
@@ -239,8 +247,8 @@ function deadlineText(date,time){
 }
 function makeCard(x,visualTop=null,visualHeight=null,stacked=false){
  const deadlines=[["PU",deadlineText(x.pickup_by_date,x.pickup_by_time)],["DL",deadlineText(x.deliver_by_date,x.deliver_by_time)]].filter(([,value])=>value);
- let b=document.createElement("button");
- b.type="button";b.className="card "+statusClass(x.order_status)+(x.urgent?" urgent":"")+(stacked?" visually-stacked":"");b.draggable=true;b.dataset.id=x.id;if(deadlines.length)b.classList.add("has-deadlines");
+ let b=document.createElement("div");b.setAttribute("role","button");b.tabIndex=0;
+ b.className="card "+statusClass(x.order_status)+(x.urgent?" urgent":"")+(stacked?" visually-stacked":"");b.draggable=true;b.dataset.id=x.id;if(deadlines.length)b.classList.add("has-deadlines");
  b.style.top=(Number.isFinite(visualTop)?visualTop:cardBaseTopPx(x))+"px";
  b.style.height=(Number.isFinite(visualHeight)?visualHeight:cardHeightPx(x))+"px";
  b.innerHTML=(x.urgent?'<span class="urgent-tape" aria-hidden="true"></span>':'')+
@@ -252,8 +260,10 @@ function makeCard(x,visualTop=null,visualHeight=null,stacked=false){
    (deadlines.length?'<span class="card-deadlines">'+deadlines.map(([label,value])=>'<span>'+label+': '+esc(value)+'</span>').join('')+'</span>':'');
  b.title=[x.origin+' → '+x.destination,x.job_number,...deadlines.map(([label,value])=>label+': '+value)].join('\n');
  ["top","bottom"].forEach(edge=>{const h=document.createElement("span");h.className="resize-handle resize-"+edge;h.dataset.edge=edge;h.title=edge==="top"?"Drag to change start time and duration":"Drag to change duration";h.addEventListener("pointerdown",e=>beginTransferResize(e,x,b,edge));b.appendChild(h)});
- b.addEventListener("dragstart",e=>{if(e.target.closest?.(".resize-handle")){e.preventDefault();return}ignoreClickUntil=Date.now()+500;draggedTransferId=x.id;const rect=b.getBoundingClientRect();dragGrabOffsetPx=Math.max(0,Math.min(rect.height,e.clientY-rect.top));b.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",x.id)});
- b.addEventListener("dragend",()=>{draggedTransferId=null;dragGrabOffsetPx=0;b.classList.remove("dragging");clearDropPreviews()});
+ attachChainHandle(b,x);
+ b.addEventListener("keydown",e=>{if(e.target===b&&(e.key==="Enter"||e.key===" ")){e.preventDefault();edit(x.id)}});
+ b.addEventListener("dragstart",e=>{if(e.target.closest?.(".resize-handle,.load-chain")){e.preventDefault();return}ignoreClickUntil=Date.now()+500;draggedTransferId=x.id;const rect=b.getBoundingClientRect();dragGrabOffsetPx=Math.max(0,Math.min(rect.height,e.clientY-rect.top));linkedGroup(x).forEach(row=>E.grid.querySelectorAll(".card").forEach(card=>{if(card.dataset.id===row.id)card.classList.add("dragging")}));e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",x.id)});
+ b.addEventListener("dragend",()=>{draggedTransferId=null;dragGrabOffsetPx=0;E.grid.querySelectorAll(".card.dragging").forEach(card=>card.classList.remove("dragging"));clearDropPreviews()});
  b.onclick=()=>{if(Date.now()<ignoreClickUntil)return;edit(x.id)};
  return b
 }
@@ -327,7 +337,47 @@ async function resizeTransfer(x,newStartMinutes,newDuration){
 }
 function durationLabel(n){if(n<60)return n+" min";let h=Math.floor(n/60),m=n%60;return h+" hr"+(h!==1?"s":"")+(m?" "+m+" min":"")}
 async function dropCard(e){e.preventDefault();const lane=e.currentTarget,id=e.dataTransfer.getData("text/plain")||draggedTransferId,x=items.find(i=>i.id===id);if(!x){clearDropPreviews();return}const minutes=landingMinutes(e,lane,x),newTime=minToTime(minutes),newDriver=lane.dataset.driver;draggedTransferId=null;dragGrabOffsetPx=0;clearDropPreviews();await moveTransfer(x,newDriver,newTime)}
-async function moveTransfer(x,newDriver,newTime){const old={driver:x.driver,scheduled_time:x.scheduled_time,updated_at:x.updated_at};x.driver=newDriver;x.scheduled_time=newTime;x.updated_at=new Date().toISOString();renderBoard();if(live){let r=await sb.from("transfers").update({driver:newDriver,scheduled_time:newTime,updated_at:new Date().toISOString()}).eq("id",x.id).select("*").single();if(r.error){x.driver=old.driver;x.scheduled_time=old.scheduled_time;x.updated_at=old.updated_at;renderBoard();msg("Could not move transfer: "+r.error.message,"error");return}replaceItem(r.data);renderBoard()}else saveLocal();msg("Transfer moved to "+fmt(newTime)+" with "+newDriver+".","ok")}
+function linkedGroup(x){
+ const ids=new Set([x.id]);let changed=true;
+ while(changed){changed=false;for(const row of items){if(row.linked_next_id&&(ids.has(row.id)||ids.has(row.linked_next_id))){for(const id of [row.id,row.linked_next_id])if(!ids.has(id)){ids.add(id);changed=true}}}}
+ return items.filter(row=>ids.has(row.id));
+}
+function nextLoad(x){const lane=layoutLaneCards(items.filter(row=>row.driver===x.driver&&row.scheduled_date===x.scheduled_date));return lane[lane.findIndex(entry=>entry.x.id===x.id)+1]?.x}
+async function changeLink(source,target){
+ if(linkBusy)return;linkBusy=true;
+ try{
+   if(live){const r=await sb.rpc("set_transfer_link",{p_source:source.id,p_target:target?.id||null});if(r.error)throw r.error;(r.data||[]).forEach(replaceItem)}
+   else{source.linked_next_id=target?.id||null;saveLocal()}
+   renderBoard();msg(target?"Loads linked. Drag either load to move them together.":"Link removed.","ok");
+ }catch(error){msg("Could not change link: "+error.message,"error")}
+ finally{linkBusy=false}
+}
+function attachChainHandle(card,x){
+ const incoming=items.find(row=>row.linked_next_id===x.id),linked=!!(x.linked_next_id||incoming);
+ const handle=document.createElement("button");handle.type="button";handle.className="load-chain"+(linked?" is-linked":"");handle.draggable=true;
+ handle.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>';
+ handle.title=linked?"Linked — click to unlink; drag to link the next load":"Drag chain to the next load below";handle.setAttribute("aria-label",handle.title);handle.setAttribute("aria-pressed",String(linked));
+ handle.addEventListener("pointerdown",e=>e.stopPropagation());
+ handle.addEventListener("click",e=>{e.stopPropagation();if(Date.now()<ignoreClickUntil)return;const source=x.linked_next_id?x:incoming;if(source)changeLink(source,null)});
+ handle.addEventListener("dragstart",e=>{e.stopPropagation();if(linkBusy||moveBusy||x.linked_next_id){e.preventDefault();return}linkDragId=x.id;ignoreClickUntil=Date.now()+600;e.dataTransfer.effectAllowed="link";e.dataTransfer.setData("application/x-transfer-link",x.id);handle.classList.add("link-dragging")});
+ handle.addEventListener("dragend",e=>{e.stopPropagation();linkDragId=null;ignoreClickUntil=Date.now()+300;handle.classList.remove("link-dragging");E.grid.querySelectorAll(".link-target").forEach(n=>n.classList.remove("link-target"))});
+ card.addEventListener("dragover",e=>{if(!linkDragId)return;e.stopPropagation();const source=items.find(row=>row.id===linkDragId);if(source&&nextLoad(source)?.id===x.id&&!incoming){e.preventDefault();e.dataTransfer.dropEffect="link";card.classList.add("link-target")}});
+ card.addEventListener("dragleave",e=>{if(!card.contains(e.relatedTarget))card.classList.remove("link-target")});
+ card.addEventListener("drop",e=>{if(!linkDragId)return;e.preventDefault();e.stopPropagation();const source=items.find(row=>row.id===linkDragId);linkDragId=null;ignoreClickUntil=Date.now()+300;card.classList.remove("link-target");if(source&&nextLoad(source)?.id===x.id&&!incoming)changeLink(source,x);else msg("Drop the chain on the next unlinked load below in the same driver column.","error")});
+ card.append(handle);if(linked)card.classList.add("linked-load");
+}
+async function moveTransfer(x,newDriver,newTime){
+ if(moveBusy||linkBusy)return;
+ const group=linkedGroup(x),delta=timeToMin(newTime)-timeToMin(x.scheduled_time);
+ if(group.some(row=>timeToMin(row.scheduled_time)+delta<GRID_START||timeToMin(row.scheduled_time)+delta+row.duration_minutes>GRID_END)){msg("The linked loads must all fit within the board hours.","error");return}
+ moveBusy=true;
+ try{
+   if(live){const r=await sb.rpc("move_linked_transfers",{p_anchor:x.id,p_driver:newDriver,p_time:newTime});if(r.error)throw r.error;(r.data||[]).forEach(replaceItem)}
+   else{group.forEach(row=>{row.driver=newDriver;row.scheduled_date=x.scheduled_date;row.scheduled_time=minToTime(timeToMin(row.scheduled_time)+delta);row.updated_at=new Date().toISOString()});saveLocal()}
+   renderBoard();msg((group.length>1?"Linked loads":"Transfer")+" moved to "+fmt(newTime)+" with "+newDriver+".","ok");
+ }catch(error){msg("Could not move loads: "+error.message,"error")}
+ finally{moveBusy=false}
+}
 function replaceItem(row){const n=normalize(row),i=items.findIndex(x=>x.id===n.id);if(i>=0)items[i]=n;else items.push(n)}
 async function loadDriversWithFallback(){
   let r=await sb.from("transfer_drivers").select("name,sort_order").order("sort_order",{ascending:true}).order("name",{ascending:true});
