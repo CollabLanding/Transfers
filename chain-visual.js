@@ -8,15 +8,27 @@ window.TransferChainVisual = (() => {
     const bend=b.y<a.y+18?48:0;
     const c={x:a.x+bend,y:a.y+Math.max(20,Math.abs(b.y-a.y)*.4)},d={x:b.x+bend,y:b.y-20};
     const point=t=>{const u=1-t;return{x:u*u*u*a.x+3*u*u*t*c.x+3*u*t*t*d.x+t*t*t*b.x,y:u*u*u*a.y+3*u*u*t*c.y+3*u*t*t*d.y+t*t*t*b.y}};
-    let previous=a,travel=0;
+    const samples=[{...a,distance:0}];let previous=a,total=0;
     for(let i=1;i<=160;i++){
-      const p=point(i/160);travel+=Math.hypot(p.x-previous.x,p.y-previous.y);
-      if(travel>=7){const angle=Math.atan2(p.y-previous.y,p.x-previous.x)*180/Math.PI-90;svg.append(node('ellipse',{cx:p.x,cy:p.y,rx:2.7,ry:4.6,transform:`rotate(${angle} ${p.x} ${p.y})`,class:'chain-metal'}));travel=0}
-      previous=p;
+      const p=point(i/160);total+=Math.hypot(p.x-previous.x,p.y-previous.y);
+      samples.push({...p,distance:total});previous=p;
+    }
+    // Reveal one larger link per 18px rather than a dense row of small rings.
+    const count=Math.floor(total/18);
+    let sampleIndex=1;
+    for(let i=0;i<count;i++){
+      const distance=(i+.5)*total/count;
+      while(sampleIndex<samples.length-1&&samples[sampleIndex].distance<distance)sampleIndex++;
+      const p=samples[sampleIndex],q=samples[sampleIndex-1];
+      const ratio=(distance-q.distance)/(p.distance-q.distance||1);
+      const x=q.x+(p.x-q.x)*ratio,y=q.y+(p.y-q.y)*ratio;
+      const angle=Math.atan2(p.y-q.y,p.x-q.x)*180/Math.PI-90;
+      const length=total/count+4;
+      svg.append(node('rect',{x:x-4,y:y-length/2,width:8,height:length,rx:4,transform:`rotate(${angle} ${x} ${y})`,class:'chain-metal'}));
     }
     svg.append(node('path',{d:`M ${b.x-4} ${b.y-7} v 6 a 4 4 0 0 0 8 0 v -3`,class:'chain-hook'}));
   }
-  function start(handle){stop();const r=handle.getBoundingClientRect(),svg=node('svg',{'aria-hidden':'true',class:'chain-drag-art'});document.body.append(svg);drag={svg,a:{x:r.left+r.width/2,y:r.bottom-3}};draw(svg,drag.a,drag.a,false)}
+  function start(handle){stop();const r=handle.getBoundingClientRect(),svg=node('svg',{'aria-hidden':'true',class:'chain-drag-art'});svg.style.color=getComputedStyle(handle).color;document.body.append(svg);drag={svg,a:{x:r.left+r.width/2,y:r.bottom-3}};draw(svg,drag.a,drag.a,false)}
   function move(x,y,target){if(!drag)return;let b={x,y};if(target){const r=target.getBoundingClientRect();b={x:r.left+r.width/2,y:r.top+5}}draw(drag.svg,drag.a,b,!!target)}
   function stop(){drag?.svg.remove();drag=null}
   function renderLinks(grid,items){
