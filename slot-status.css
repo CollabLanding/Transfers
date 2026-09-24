@@ -10,3 +10,9 @@
 .slot-status-options button{flex:1;white-space:nowrap}
 .slot-status-error{color:#c51f30}
 .slot-status-hint{font-size:12px;color:var(--muted);margin:8px 18px}
+
+.slot-status-block{pointer-events:auto;cursor:grab}
+.slot-status-block:active{cursor:grabbing}
+.slot-status-dragging{opacity:.4}
+.slot-status-move-preview{position:absolute;left:2px;right:2px;z-index:21;pointer-events:none;border:2px dashed #2476a5;border-radius:5px;background:#b8dff4cf;color:#173650;padding:4px 6px;font-size:12px;font-weight:700}
+.slot-status-move-preview.is-blocked{border-color:#c51f30;background:#f8daddd9;color:#8e1221}
