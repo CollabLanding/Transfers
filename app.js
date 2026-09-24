@@ -223,7 +223,7 @@ function renderBoard(){
    br.appendChild(lane)
  });
  const nowLine=document.createElement("div");nowLine.className="current-time-line hidden";nowLine.setAttribute("aria-hidden","true");br.appendChild(nowLine);
- E.grid.appendChild(br);updateScheduleClock();updateCurrentTimeLine();slotStatuses.render()
+ E.grid.appendChild(br);updateScheduleClock();updateCurrentTimeLine();slotStatuses.render();window.TransferChainVisual.renderLinks(E.grid,items)
 }
 function driverHeaderDragStart(e){draggedDriver=e.currentTarget.dataset.driver;e.currentTarget.classList.add("dragging-driver");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("application/x-transfer-driver",draggedDriver)}
 function driverHeaderDragEnd(e){draggedDriver=null;e.currentTarget.classList.remove("dragging-driver");document.querySelectorAll(".driverhead.driver-dragover").forEach(x=>x.classList.remove("driver-dragover"))}
@@ -354,16 +354,45 @@ async function changeLink(source,target){
 }
 function attachChainHandle(card,x){
  const incoming=items.find(row=>row.linked_next_id===x.id),linked=!!(x.linked_next_id||incoming);
- const handle=document.createElement("button");handle.type="button";handle.className="load-chain"+(linked?" is-linked":"");handle.draggable=true;
+ const handle=document.createElement("button");handle.type="button";handle.className="load-chain"+(linked?" is-linked":"");handle.draggable=false;
  handle.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>';
  handle.title=linked?"Linked — click to unlink; drag to link the next load":"Drag chain to the next load below";handle.setAttribute("aria-label",handle.title);handle.setAttribute("aria-pressed",String(linked));
- handle.addEventListener("pointerdown",e=>e.stopPropagation());
  handle.addEventListener("click",e=>{e.stopPropagation();if(Date.now()<ignoreClickUntil)return;const source=x.linked_next_id?x:incoming;if(source)changeLink(source,null)});
- handle.addEventListener("dragstart",e=>{e.stopPropagation();if(linkBusy||moveBusy||x.linked_next_id){e.preventDefault();return}linkDragId=x.id;ignoreClickUntil=Date.now()+600;e.dataTransfer.effectAllowed="link";e.dataTransfer.setData("application/x-transfer-link",x.id);handle.classList.add("link-dragging")});
- handle.addEventListener("dragend",e=>{e.stopPropagation();linkDragId=null;ignoreClickUntil=Date.now()+300;handle.classList.remove("link-dragging");E.grid.querySelectorAll(".link-target").forEach(n=>n.classList.remove("link-target"))});
- card.addEventListener("dragover",e=>{if(!linkDragId)return;e.stopPropagation();const source=items.find(row=>row.id===linkDragId);if(source&&nextLoad(source)?.id===x.id&&!incoming){e.preventDefault();e.dataTransfer.dropEffect="link";card.classList.add("link-target")}});
- card.addEventListener("dragleave",e=>{if(!card.contains(e.relatedTarget))card.classList.remove("link-target")});
- card.addEventListener("drop",e=>{if(!linkDragId)return;e.preventDefault();e.stopPropagation();const source=items.find(row=>row.id===linkDragId);linkDragId=null;ignoreClickUntil=Date.now()+300;card.classList.remove("link-target");if(source&&nextLoad(source)?.id===x.id&&!incoming)changeLink(source,x);else msg("Drop the chain on the next unlinked load below in the same driver column.","error")});
+ handle.addEventListener("dragstart",e=>{e.preventDefault();e.stopPropagation()});
+ handle.addEventListener("pointerdown",e=>{
+   if(e.button!==0)return;e.preventDefault();e.stopPropagation();
+   if(linkBusy||moveBusy)return;
+   const pointer=e.pointerId,startX=e.clientX,startY=e.clientY;let dragging=false,target=null;
+   handle.setPointerCapture(pointer);
+   const findTarget=ev=>{
+     const c=document.elementFromPoint(ev.clientX,ev.clientY)?.closest(".card");
+     const next=nextLoad(x);
+     return c&&next&&c.dataset.id===next.id&&!items.some(row=>row.linked_next_id===next.id)?c:null;
+   };
+   const move=ev=>{
+     if(ev.pointerId!==pointer)return;
+     if(!dragging&&Math.hypot(ev.clientX-startX,ev.clientY-startY)<5)return;
+     if(x.linked_next_id)return;
+     if(!dragging){dragging=true;linkDragId=x.id;window.TransferChainVisual.start(handle);handle.classList.add("link-dragging")}
+     ignoreClickUntil=Date.now()+500;
+     target?.classList.remove("link-target");target=findTarget(ev);target?.classList.add("link-target");
+     window.TransferChainVisual.move(ev.clientX,ev.clientY,target);
+   };
+   const cleanup=()=>{
+     handle.removeEventListener("pointermove",move);handle.removeEventListener("pointerup",finish);handle.removeEventListener("pointercancel",cancel);handle.removeEventListener("lostpointercapture",cancel);
+     window.removeEventListener("blur",cancel);document.removeEventListener("keydown",escape);
+     if(handle.hasPointerCapture(pointer))handle.releasePointerCapture(pointer);
+     target?.classList.remove("link-target");handle.classList.remove("link-dragging");linkDragId=null;window.TransferChainVisual.stop();
+   };
+   const finish=ev=>{
+     if(ev.pointerId!==pointer)return;ev.preventDefault();ev.stopPropagation();
+     const destination=dragging?findTarget(ev):null;cleanup();
+     if(dragging){ignoreClickUntil=Date.now()+500;if(destination)changeLink(x,items.find(row=>row.id===destination.dataset.id))}
+   };
+   const cancel=()=>{if(dragging)ignoreClickUntil=Date.now()+500;cleanup()};
+   const escape=ev=>{if(ev.key==="Escape")cancel()};
+   handle.addEventListener("pointermove",move);handle.addEventListener("pointerup",finish);handle.addEventListener("pointercancel",cancel);handle.addEventListener("lostpointercapture",cancel);window.addEventListener("blur",cancel);document.addEventListener("keydown",escape);
+ });
  card.append(handle);if(linked)card.classList.add("linked-load");
 }
 async function moveTransfer(x,newDriver,newTime){
