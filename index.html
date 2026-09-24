@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="styles.css?v=20260923-deadlines">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
+<link rel="stylesheet" href="slot-status.css?v=20260924-slots">
 </head>
 <body>
 <header>
@@ -86,6 +87,7 @@
   </aside>
   <section class="panel board">
     <div class="boardhead"><div class="planning-month-total" id="planningMonthTotal">Orders in Planning: <strong>0</strong></div><div id="scheduleCurrentTime" class="schedule-current-time" aria-live="off"></div><h2 id="title" class="schedule-date">Transfer Board</h2></div>
+    <p class="slot-status-hint">Drag over two or more time slots in a driver column to assign a status.</p>
     <div id="gridWrap"><div id="grid"></div></div>
   </section>
   <aside class="right-sidebar">
@@ -164,7 +166,8 @@
 <div id="login" class="login hidden">
   <form id="loginForm" class="loginbox"><h1>Transfers</h1><p>Sign in to the transfer board.</p><input id="loginEmail" type="email" placeholder="Email" required><input id="loginPassword" type="password" placeholder="Password" required><button class="primary">Sign In</button><p id="loginMsg"></p></form>
 </div>
-<script src="app.js?v=20260923-board-repair"></script>
+<script src="slot-status.js?v=20260924-slots"></script>
+<script src="app.js?v=20260924-slots"></script>
 <script src="order-status.js?v=20260921-planned-default"></script>
 <script src="recent-activity.js?v=20260922-global-live"></script>
 <script src="duplicate-transfer.js?v=20260923-deadlines"></script>
