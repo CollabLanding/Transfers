@@ -1414,13 +1414,12 @@ html[data-theme="dark"] .activity-item.activity-focus,body.dark-theme .activity-
 .card:focus-visible{outline:2px solid var(--accent)}
 
 .card .load-chain{touch-action:none;transition:color .15s,filter .15s}
-.card .load-chain:hover,.card .load-chain.link-dragging{color:#168266;filter:drop-shadow(0 0 3px #21a58177)}
+.card .load-chain:hover,.card .load-chain.link-dragging{filter:drop-shadow(0 0 2px currentColor)}
 .chain-drag-art,.chain-saved-art{pointer-events:none;overflow:visible}
 .chain-drag-art{position:fixed;inset:0;width:100%;height:100%;z-index:45}
 .chain-saved-art{position:absolute;left:0;top:0;z-index:4}
-.chain-metal{fill:none;stroke:#687e90;stroke-width:1.7}
-.chain-hook{fill:none;stroke:#687e90;stroke-width:2.3;stroke-linecap:round}
-.chain-hooked .chain-metal,.chain-hooked .chain-hook{stroke:#168266}
+.chain-metal{fill:none;stroke:currentColor;stroke-width:1.7}
+.chain-hook{fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round}
+.chain-saved-art{color:#168266}
 html[data-theme="dark"] .load-chain,body.dark-theme .load-chain{color:#b1c7d8}
-html[data-theme="dark"] .chain-metal,html[data-theme="dark"] .chain-hook,body.dark-theme .chain-metal,body.dark-theme .chain-hook{stroke:#adc4d7}
-html[data-theme="dark"] .chain-hooked .chain-metal,html[data-theme="dark"] .chain-hooked .chain-hook,body.dark-theme .chain-hooked .chain-metal,body.dark-theme .chain-hooked .chain-hook{stroke:#59d6ad}
+html[data-theme="dark"] .chain-saved-art,body.dark-theme .chain-saved-art{color:#59d6ad}
