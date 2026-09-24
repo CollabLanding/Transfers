@@ -21,6 +21,6 @@
 .slot-resize-handle{position:absolute;left:0;right:28px;height:7px;cursor:ns-resize;touch-action:none;z-index:1}
 .slot-resize-top{top:0}
 .slot-resize-bottom{bottom:0;right:0}
-.slot-resize-handle::after{content:"";display:block;width:28px;height:2px;border-radius:2px;background:currentColor;opacity:.4;margin:2px auto}
+.slot-resize-handle::after{display:none}
 .slot-status-resizing{z-index:22}
 .slot-status-resizing.is-blocked{outline:2px solid #c51f30}
