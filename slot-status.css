@@ -1,0 +1,12 @@
+.lane{touch-action:pan-x}
+.slot-status-block,.slot-selection{position:absolute;left:2px;right:2px;border:1px solid #5882a7;border-radius:5px;padding:4px 28px 3px 6px;font-size:12px;font-weight:700;user-select:none;pointer-events:none;z-index:2;color:#173650;background:#d4e8f6e8}
+.slot-status-1{background:#eadff5ed;border-color:#9570b6;color:#503268}
+.slot-status-2{background:#fff0c9ed;border-color:#b68a32;color:#654708}
+.slot-status-delete{pointer-events:auto;position:absolute;right:1px;top:1px;color:#c51f30;background:#fff;border:1px solid #e9a1a9;border-radius:4px;font-size:20px;line-height:20px;width:24px;height:24px;padding:0;z-index:4}
+.slot-selection{background:#b8dff4b3;border:2px dashed #2476a5;z-index:21;padding-right:4px}
+.slot-status-dialog{color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;width:min(420px,calc(100vw - 32px));box-shadow:0 20px 60px #0005}
+.slot-status-dialog::backdrop{background:#0f161dc9}
+.slot-status-options{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+.slot-status-options button{flex:1;white-space:nowrap}
+.slot-status-error{color:#c51f30}
+.slot-status-hint{font-size:12px;color:var(--muted);margin:8px 18px}
