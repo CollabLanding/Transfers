@@ -2,7 +2,7 @@
 window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start, end, px}) {
   const table = 'transfer_slot_statuses', key = 'transfers-slot-statuses-v1';
   const statuses = ['Driving', 'Yard Moves', 'Loading'];
-  let rows = [], date = null, generation = 0, selection = null, busy = false;
+  let rows = [], date = null, generation = 0, selection = null, busy = false, moving = null;
   const dialog = document.createElement('dialog');
   dialog.className = 'slot-status-dialog';
   dialog.setAttribute('aria-labelledby', 'slot-status-title');
@@ -23,6 +23,15 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
       for (const row of rows.filter(r => r.driver === lane.dataset.driver && r.scheduled_date === getDate())) {
         const block = document.createElement('div');
         block.className = 'slot-status-block slot-status-' + statuses.indexOf(row.status);
+        block.draggable = true; block.dataset.statusId = row.id;
+        block.addEventListener('dragstart', e => {
+          if (busy || dialog.open || !getUser()) { e.preventDefault(); return; }
+          e.stopPropagation(); clear();
+          moving = {row, date:getDate(), offset:Math.max(0,e.clientY-block.getBoundingClientRect().top)};
+          e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('application/x-slot-status',row.id);
+          block.classList.add('slot-status-dragging');
+        });
+        block.addEventListener('dragend', endMove);
         block.style.top = ((row.start_minutes - start) / 15 * px) + 'px';
         block.style.height = ((row.end_minutes - row.start_minutes) / 15 * px) + 'px';
         block.title = row.status + ': ' + time(row.start_minutes) + ' – ' + time(row.end_minutes);
@@ -44,6 +53,39 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
       }
     }
   }
+  function clearMovePreview() { grid.querySelectorAll('.slot-status-move-preview').forEach(n=>n.remove()); }
+  function endMove() { moving=null; clearMovePreview(); grid.querySelectorAll('.slot-status-dragging').forEach(n=>n.classList.remove('slot-status-dragging')); }
+  function movePosition(e,lane) {
+    const duration=moving.row.end_minutes-moving.row.start_minutes;
+    const raw=start+Math.round((e.clientY-lane.getBoundingClientRect().top-moving.offset)/px)*15;
+    const begin=Math.max(start,Math.min(end-duration,raw));
+    return {driver:lane.dataset.driver,scheduled_date:getDate(),start_minutes:begin,end_minutes:begin+duration};
+  }
+  function overlap(payload,id) { return rows.some(r=>r.id!==id&&r.driver===payload.driver&&r.scheduled_date===payload.scheduled_date&&r.start_minutes<payload.end_minutes&&r.end_minutes>payload.start_minutes); }
+  grid.addEventListener('dragover',e=>{
+    if(!moving)return; e.preventDefault();e.stopPropagation();clearMovePreview();
+    const lane=e.target.closest('.lane');if(!lane||moving.date!==getDate())return;
+    const payload=movePosition(e,lane),blocked=overlap(payload,moving.row.id);
+    e.dataTransfer.dropEffect=blocked?'none':'move';
+    const preview=document.createElement('div');preview.className='slot-status-move-preview'+(blocked?' is-blocked':'');
+    preview.style.top=((payload.start_minutes-start)/15*px)+'px';preview.style.height=((payload.end_minutes-payload.start_minutes)/15*px)+'px';
+    preview.textContent=moving.row.status+' · '+time(payload.start_minutes)+' – '+time(payload.end_minutes);lane.append(preview);
+  },true);
+  grid.addEventListener('dragleave',e=>{if(moving&&!grid.contains(e.relatedTarget))clearMovePreview();});
+  grid.addEventListener('drop',async e=>{
+    if(!moving)return;e.preventDefault();e.stopPropagation();
+    const lane=e.target.closest('.lane');if(!lane||moving.date!==getDate()){endMove();return;}
+    const row=moving.row,payload=movePosition(e,lane);endMove();
+    if(overlap(payload,row.id)){report('That time overlaps another status. Choose an open range.','error');return;}
+    if(payload.driver===row.driver&&payload.start_minutes===row.start_minutes)return;
+    busy=true;
+    try{
+      if(sb){const r=await sb.from(table).update(payload).eq('id',row.id).select('id').single();if(r.error)throw r.error;}
+      else localStorage.setItem(key,JSON.stringify(localRows().map(r=>r.id===row.id?{...r,...payload}:r)));
+      await refresh();report('Status moved.','ok');
+    }catch(error){report('Could not move status: '+error.message,'error');paint();}
+    finally{busy=false;}
+  },true);
   async function refresh() {
     const requestedDate = getDate(), token = ++generation;
     date = requestedDate;
@@ -116,6 +158,6 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
       paint();
     },
     refresh,
-    reset() { generation++; rows = []; date = null; close(); paint(); }
+    reset() { endMove(); generation++; rows = []; date = null; close(); paint(); }
   };
 };

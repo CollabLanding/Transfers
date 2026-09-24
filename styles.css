@@ -1419,3 +1419,6 @@ html[data-theme="dark"] .activity-item.activity-focus,body.dark-theme .activity-
 .chain-saved-art{color:#168266}
 html[data-theme="dark"] .load-chain,body.dark-theme .load-chain{color:#b1c7d8}
 html[data-theme="dark"] .chain-saved-art,body.dark-theme .chain-saved-art{color:#59d6ad}
+
+.card .load-chain svg{transition:transform .15s ease}
+.card .load-chain.link-dragging svg,.card .load-chain.chain-connected svg{transform:rotate(-45deg)}
