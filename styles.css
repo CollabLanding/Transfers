@@ -1402,15 +1402,15 @@ body.dark-theme .schedule-overrun-warning{
 html[data-theme="dark"] .activity-item.activity-focus,body.dark-theme .activity-item.activity-focus{background:#20384a}
 
 /* The chain sits above the resize strip and never starts a load drag. */
-.card .load-chain{position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:26px;height:19px;min-height:0;padding:0;display:flex;align-items:center;justify-content:center;border:0;border-radius:0;background:transparent;color:#536777;cursor:grab;z-index:12;line-height:1}
-.card .load-chain.is-linked{background:transparent;color:#157559}
-.card .load-chain:focus-visible{outline:2px solid #ec9800;outline-offset:1px}
-.card.link-target{outline:3px solid #159969!important;outline-offset:-3px}
+:is(.card,.slot-status-block) .load-chain{position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:26px;height:19px;min-height:0;padding:0;display:flex;align-items:center;justify-content:center;border:0;border-radius:0;background:transparent;color:#536777;cursor:grab;z-index:12;line-height:1}
+:is(.card,.slot-status-block) .load-chain.is-linked{background:transparent;color:#157559}
+:is(.card,.slot-status-block) .load-chain:focus-visible{outline:2px solid #ec9800;outline-offset:1px}
+:is(.card,.slot-status-block).link-target{outline:3px solid #159969!important;outline-offset:-3px}
 .card .resize-bottom{left:0;right:0}
 .card:focus-visible{outline:2px solid var(--accent)}
 
-.card .load-chain{touch-action:none;transition:color .15s,filter .15s}
-.card .load-chain:hover,.card .load-chain.link-dragging{filter:drop-shadow(0 0 2px currentColor)}
+:is(.card,.slot-status-block) .load-chain{touch-action:none;transition:color .15s,filter .15s}
+:is(.card,.slot-status-block) .load-chain:hover,:is(.card,.slot-status-block) .load-chain.link-dragging{filter:drop-shadow(0 0 2px currentColor)}
 .chain-drag-art,.chain-saved-art{pointer-events:none;overflow:visible}
 .chain-drag-art{position:fixed;inset:0;width:100%;height:100%;z-index:45}
 .chain-saved-art{position:absolute;left:0;top:0;z-index:4}
@@ -1420,5 +1420,10 @@ html[data-theme="dark"] .activity-item.activity-focus,body.dark-theme .activity-
 html[data-theme="dark"] .load-chain,body.dark-theme .load-chain{color:#b1c7d8}
 html[data-theme="dark"] .chain-saved-art,body.dark-theme .chain-saved-art{color:#59d6ad}
 
-.card .load-chain svg{transition:transform .15s ease}
-.card .load-chain.link-dragging svg,.card .load-chain.chain-connected svg{transform:rotate(-45deg)}
+:is(.card,.slot-status-block) .load-chain svg{transition:transform .15s ease}
+:is(.card,.slot-status-block) .load-chain.link-dragging svg,:is(.card,.slot-status-block) .load-chain.chain-connected svg{transform:rotate(-45deg)}
+
+.linked-box-preview{position:absolute;left:2px;right:2px;z-index:21;pointer-events:none;background:#b8dff4c9;border:2px dashed #2476a5;border-radius:5px;color:#173650;padding:4px;font-size:12px}
+.linked-box-dragging{opacity:.4}
+.slot-status-block .load-chain{bottom:1px}
+.slot-status-block .slot-resize-bottom{right:calc(50% + 16px)}

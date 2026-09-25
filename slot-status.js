@@ -1,5 +1,5 @@
 /* Shared status ranges; independent of transfer loading and drag/drop. */
-window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start, end, px}) {
+window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start, end, px, getLinks}) {
   const table = 'transfer_slot_statuses', key = 'transfers-slot-statuses-v1';
   const statuses = ['Driving', 'Yard Moves', 'Loading', 'Standby'];
   let rows = [], date = null, generation = 0, selection = null, busy = false, moving = null, resizeCancel = null;
@@ -26,7 +26,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
         block.className = 'slot-status-block slot-status-' + statuses.indexOf(row.status);
         block.draggable = true; block.dataset.statusId = row.id;
         block.addEventListener('dragstart', e => {
-          if (busy || dialog.open || !getUser()) { e.preventDefault(); return; }
+          if (busy || dialog.open || !getUser() || e.target.closest('.load-chain')) { e.preventDefault(); return; }
           e.stopPropagation(); clear();
           moving = {row, date:getDate(), offset:Math.max(0,e.clientY-block.getBoundingClientRect().top)};
           e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('application/x-slot-status',row.id);
@@ -46,7 +46,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
           try {
             if (sb) { const r = await sb.from(table).delete().eq('id', row.id); if (r.error) throw r.error; }
             else localStorage.setItem(key, JSON.stringify(localRows().filter(r => r.id !== row.id)));
-            rows = rows.filter(r => r.id !== row.id);
+            rows = rows.filter(r => r.id !== row.id);getLinks?.().forget('status:'+row.id);
           } catch (error) { report('Could not delete status: ' + error.message, 'error'); }
           paint();
         };
@@ -58,6 +58,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
         lane.append(block, remove);
       }
     }
+    getLinks?.().render();
   }
   async function savePlacement(row,payload,message) {
     busy=true;
@@ -103,28 +104,29 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
     document.addEventListener('keydown',escape);window.addEventListener('blur',cancel);
   }
   function clearMovePreview() { grid.querySelectorAll('.slot-status-move-preview').forEach(n=>n.remove()); }
-  function endMove() { moving=null; clearMovePreview(); grid.querySelectorAll('.slot-status-dragging').forEach(n=>n.classList.remove('slot-status-dragging')); }
+  function endMove() { getLinks?.().clearPreview(); moving=null; clearMovePreview(); grid.querySelectorAll('.slot-status-dragging').forEach(n=>n.classList.remove('slot-status-dragging')); }
   function movePosition(e,lane) {
     const duration=moving.row.end_minutes-moving.row.start_minutes;
     const raw=start+Math.round((e.clientY-lane.getBoundingClientRect().top-moving.offset)/px)*15;
-    const begin=Math.max(start,Math.min(end-duration,raw));
+    const begin=getLinks?getLinks().landing('status:'+moving.row.id,raw):Math.max(start,Math.min(end-duration,raw));
     return {driver:lane.dataset.driver,scheduled_date:getDate(),start_minutes:begin,end_minutes:begin+duration};
   }
   function overlap(payload,id) { return rows.some(r=>r.id!==id&&r.driver===payload.driver&&r.scheduled_date===payload.scheduled_date&&r.start_minutes<payload.end_minutes&&r.end_minutes>payload.start_minutes); }
   grid.addEventListener('dragover',e=>{
     if(!moving)return; e.preventDefault();e.stopPropagation();clearMovePreview();
     const lane=e.target.closest('.lane');if(!lane||moving.date!==getDate())return;
-    const payload=movePosition(e,lane),blocked=overlap(payload,moving.row.id);
+    const payload=movePosition(e,lane);if(getLinks){e.dataTransfer.dropEffect='move';getLinks().preview('status:'+moving.row.id,lane,payload.start_minutes);return;}const blocked=overlap(payload,moving.row.id);
     e.dataTransfer.dropEffect=blocked?'none':'move';
     const preview=document.createElement('div');preview.className='slot-status-move-preview'+(blocked?' is-blocked':'');
     preview.style.top=((payload.start_minutes-start)/15*px)+'px';preview.style.height=((payload.end_minutes-payload.start_minutes)/15*px)+'px';
     preview.textContent=moving.row.status+' · '+time(payload.start_minutes)+' – '+time(payload.end_minutes);lane.append(preview);
   },true);
-  grid.addEventListener('dragleave',e=>{if(moving&&!grid.contains(e.relatedTarget))clearMovePreview();});
+  grid.addEventListener('dragleave',e=>{if(moving&&!grid.contains(e.relatedTarget)){clearMovePreview();getLinks?.().clearPreview();}});
   grid.addEventListener('drop',async e=>{
     if(!moving)return;e.preventDefault();e.stopPropagation();
     const lane=e.target.closest('.lane');if(!lane||moving.date!==getDate()){endMove();return;}
     const row=moving.row,payload=movePosition(e,lane);endMove();
+    if(getLinks){await getLinks().move('status:'+row.id,payload.driver,payload.start_minutes);return;}
     if(overlap(payload,row.id)){report('That time overlaps another status. Choose an open range.','error');return;}
     if(payload.driver===row.driver&&payload.start_minutes===row.start_minutes)return;
     await savePlacement(row,payload,'Status moved.');
@@ -199,6 +201,12 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
       if (selection && (!selection.lane.isConnected || selection.date !== getDate())) { if (!busy) close(); }
       if (date !== getDate()) { rows = []; refresh(); }
       paint();
+    },
+    rows:()=>rows,
+    applyRows(updates) {
+      const map=new Map(updates.map(r=>[r.id,r]));
+      if(!sb)localStorage.setItem(key,JSON.stringify(localRows().map(r=>map.get(r.id)||r)));
+      rows=rows.filter(r=>!map.has(r.id)).concat(updates.filter(r=>r.scheduled_date===getDate()));paint();
     },
     refresh,
     reset() { endMove(); generation++; rows = []; date = null; close(); paint(); }
