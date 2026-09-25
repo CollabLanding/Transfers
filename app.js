@@ -1,6 +1,5 @@
 (()=>{
 const C=window.TRANSFERS_CONFIG||{},live=!!(C.supabaseUrl&&C.supabaseAnonKey),sb=live?window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey):null;
-let linkDragId=null,linkBusy=false,moveBusy=false;
 let user=null,profile=null,items=[],drivers=[],locations=[],driverSchedule=[],presence=null,dataChannel=null,optionContext=null,ignoreClickUntil=0,draggedDriver=null,draggedTransferId=null,dragGrabOffsetPx=0,audioCtx=null,lastPlanningDing=0;
 const $=id=>document.getElementById(id),E={form:$("form"),edit:$("editId"),date:$("date"),time:$("time"),duration:$("duration"),pickupByDate:$("pickupByDate"),pickupByTime:$("pickupByTime"),deliverByDate:$("deliverByDate"),deliverByTime:$("deliverByTime"),driver:$("driver"),origin:$("origin"),destination:$("destination"),pallet:$("pallet"),job:$("job"),status:$("status"),urgent:$("urgent"),save:$("save"),del:$("delete"),cancel:$("cancel"),textDriver:$("textDriver"),msg:$("msg"),boardDate:$("boardDate"),grid:$("grid"),title:$("title"),currentTime:$("scheduleCurrentTime"),mode:$("mode"),me:$("me"),email:$("email"),active:$("active"),login:$("login"),loginForm:$("loginForm"),loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg"),signout:$("signout"),formTitle:$("formTitle"),optionModal:$("optionModal"),optionForm:$("optionForm"),optionTitle:$("optionTitle"),optionLabel:$("optionLabel"),optionName:$("optionName"),optionMsg:$("optionMsg"),optionClose:$("optionClose"),optionCancel:$("optionCancel")};
 const key="transfers-demo-v2",driverKey="transfers-demo-drivers-v1",locationKey="transfers-demo-locations-v1",PX15=20,GRID_START=210,GRID_END=1320,GRID_HEIGHT=((GRID_END-GRID_START)/15)*PX15;
@@ -223,23 +222,17 @@ function renderBoard(){
    br.appendChild(lane)
  });
  const nowLine=document.createElement("div");nowLine.className="current-time-line hidden";nowLine.setAttribute("aria-hidden","true");br.appendChild(nowLine);
- E.grid.appendChild(br);updateScheduleClock();updateCurrentTimeLine();slotStatuses.render();window.TransferChainVisual.renderLinks(E.grid,items)
+ E.grid.appendChild(br);updateScheduleClock();updateCurrentTimeLine();slotStatuses.render();boxLinks.render()
 }
 function driverHeaderDragStart(e){draggedDriver=e.currentTarget.dataset.driver;e.currentTarget.classList.add("dragging-driver");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("application/x-transfer-driver",draggedDriver)}
 function driverHeaderDragEnd(e){draggedDriver=null;e.currentTarget.classList.remove("dragging-driver");document.querySelectorAll(".driverhead.driver-dragover").forEach(x=>x.classList.remove("driver-dragover"))}
 function driverHeaderDragOver(e){if(!draggedDriver||draggedDriver===e.currentTarget.dataset.driver)return;e.preventDefault();e.dataTransfer.dropEffect="move";e.currentTarget.classList.add("driver-dragover")}
 async function driverHeaderDrop(e){e.preventDefault();const target=e.currentTarget.dataset.driver,source=draggedDriver||e.dataTransfer.getData("application/x-transfer-driver");e.currentTarget.classList.remove("driver-dragover");if(!source||!target||source===target)return;const old=drivers.slice(),next=drivers.filter(d=>d!==source),rect=e.currentTarget.getBoundingClientRect(),after=e.clientX>rect.left+rect.width/2;let index=next.indexOf(target);if(index<0)return;if(after)index++;next.splice(index,0,source);drivers=orderedUniq(next);renderOptions();renderBoard();if(!live){saveLocal();return}const r=await sb.rpc("reorder_transfer_drivers",{p_names:drivers});if(r.error){drivers=old;renderOptions();renderBoard();msg("Could not reorder drivers: "+r.error.message,"error");return}msg("Driver column order updated.","ok")}
-function clearDropPreviews(){document.querySelectorAll(".drop-preview").forEach(x=>x.remove());document.querySelectorAll(".lane.dragover").forEach(x=>x.classList.remove("dragover"))}
-function landingMinutes(e,lane,x){const rect=lane.getBoundingClientRect(),raw=GRID_START+Math.round((e.clientY-rect.top-dragGrabOffsetPx)/PX15)*15,anchor=timeToMin(x.scheduled_time),group=linkedGroup(x),earliest=Math.min(...group.map(row=>timeToMin(row.scheduled_time)-anchor)),latest=Math.max(...group.map(row=>timeToMin(row.scheduled_time)-anchor+row.duration_minutes));return Math.max(GRID_START-earliest,Math.min(GRID_END-latest,raw))}
-function transferLaneDragOver(e){
- if(!draggedTransferId)return;e.preventDefault();const lane=e.currentTarget,x=items.find(i=>i.id===draggedTransferId);if(!x)return;
- clearDropPreviews();lane.classList.add("dragover");
- const minutes=landingMinutes(e,lane,x),delta=minutes-timeToMin(x.scheduled_time),group=linkedGroup(x),ids=new Set(group.map(row=>row.id));
- const moved=group.map(row=>({...row,driver:lane.dataset.driver,scheduled_date:E.boardDate.value,scheduled_time:minToTime(timeToMin(row.scheduled_time)+delta)}));
- const neighbors=items.filter(row=>!ids.has(row.id)&&row.driver===lane.dataset.driver&&row.scheduled_date===E.boardDate.value);
- for(const entry of layoutLaneCards([...neighbors,...moved])){if(!ids.has(entry.x.id))continue;const p=document.createElement("div");p.className="drop-preview";p.style.top=entry.top+"px";p.style.height=entry.height+"px";p.innerHTML='<span class="drop-preview-time">'+fmt(entry.x.scheduled_time)+'</span><span class="drop-preview-label">'+(group.length>1?'Linked load':'Drop here')+'</span>';lane.appendChild(p)}
-}
-function transferLaneDragLeave(e){const lane=e.currentTarget;if(e.relatedTarget&&lane.contains(e.relatedTarget))return;lane.classList.remove("dragover");lane.querySelectorAll(".drop-preview").forEach(p=>p.remove())}
+function clearDropPreviews(){boxLinks.clearPreview();document.querySelectorAll(".drop-preview").forEach(x=>x.remove());document.querySelectorAll(".lane.dragover").forEach(x=>x.classList.remove("dragover"))}
+function landingMinutes(e,lane,x){const rect=lane.getBoundingClientRect(),raw=GRID_START+Math.round((e.clientY-rect.top-dragGrabOffsetPx)/PX15)*15;return boxLinks.landing('job:'+x.id,raw)}
+function transferLaneDragOver(e){if(!draggedTransferId)return;e.preventDefault();const lane=e.currentTarget,x=items.find(i=>i.id===draggedTransferId);if(!x)return;clearDropPreviews();lane.classList.add('dragover');boxLinks.preview('job:'+x.id,lane,landingMinutes(e,lane,x))}
+
+function transferLaneDragLeave(e){const lane=e.currentTarget;if(e.relatedTarget&&lane.contains(e.relatedTarget))return;lane.classList.remove("dragover");lane.querySelectorAll(".drop-preview,.linked-box-preview").forEach(p=>p.remove())}
 function statusClass(s){return "status-"+String(s||"Planned").toLowerCase().replace(/\s+/g,"-")}
 function deadlineText(date,time){
  const day=date?new Date(date+"T12:00:00").toLocaleDateString("en-US",{month:"numeric",day:"numeric"}):"";
@@ -260,9 +253,8 @@ function makeCard(x,visualTop=null,visualHeight=null,stacked=false){
    (deadlines.length?'<span class="card-deadlines">'+deadlines.map(([label,value])=>'<span>'+label+': '+esc(value)+'</span>').join('')+'</span>':'');
  b.title=[x.origin+' → '+x.destination,x.job_number,...deadlines.map(([label,value])=>label+': '+value)].join('\n');
  ["top","bottom"].forEach(edge=>{const h=document.createElement("span");h.className="resize-handle resize-"+edge;h.dataset.edge=edge;h.title=edge==="top"?"Drag to change start time and duration":"Drag to change duration";h.addEventListener("pointerdown",e=>beginTransferResize(e,x,b,edge));b.appendChild(h)});
- attachChainHandle(b,x);
  b.addEventListener("keydown",e=>{if(e.target===b&&(e.key==="Enter"||e.key===" ")){e.preventDefault();edit(x.id)}});
- b.addEventListener("dragstart",e=>{if(e.target.closest?.(".resize-handle,.load-chain")){e.preventDefault();return}ignoreClickUntil=Date.now()+500;draggedTransferId=x.id;const rect=b.getBoundingClientRect();dragGrabOffsetPx=Math.max(0,Math.min(rect.height,e.clientY-rect.top));linkedGroup(x).forEach(row=>E.grid.querySelectorAll(".card").forEach(card=>{if(card.dataset.id===row.id)card.classList.add("dragging")}));e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",x.id)});
+ b.addEventListener("dragstart",e=>{if(e.target.closest?.(".resize-handle,.load-chain")){e.preventDefault();return}ignoreClickUntil=Date.now()+500;draggedTransferId=x.id;const rect=b.getBoundingClientRect();dragGrabOffsetPx=Math.max(0,Math.min(rect.height,e.clientY-rect.top));b.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",x.id)});
  b.addEventListener("dragend",()=>{draggedTransferId=null;dragGrabOffsetPx=0;E.grid.querySelectorAll(".card.dragging").forEach(card=>card.classList.remove("dragging"));clearDropPreviews()});
  b.onclick=()=>{if(Date.now()<ignoreClickUntil)return;edit(x.id)};
  return b
@@ -337,76 +329,8 @@ async function resizeTransfer(x,newStartMinutes,newDuration){
 }
 function durationLabel(n){if(n<60)return n+" min";let h=Math.floor(n/60),m=n%60;return h+" hr"+(h!==1?"s":"")+(m?" "+m+" min":"")}
 async function dropCard(e){e.preventDefault();const lane=e.currentTarget,id=e.dataTransfer.getData("text/plain")||draggedTransferId,x=items.find(i=>i.id===id);if(!x){clearDropPreviews();return}const minutes=landingMinutes(e,lane,x),newTime=minToTime(minutes),newDriver=lane.dataset.driver;draggedTransferId=null;dragGrabOffsetPx=0;clearDropPreviews();await moveTransfer(x,newDriver,newTime)}
-function linkedGroup(x){
- const ids=new Set([x.id]);let changed=true;
- while(changed){changed=false;for(const row of items){if(row.linked_next_id&&(ids.has(row.id)||ids.has(row.linked_next_id))){for(const id of [row.id,row.linked_next_id])if(!ids.has(id)){ids.add(id);changed=true}}}}
- return items.filter(row=>ids.has(row.id));
-}
-function nextLoad(x){const lane=layoutLaneCards(items.filter(row=>row.driver===x.driver&&row.scheduled_date===x.scheduled_date));return lane[lane.findIndex(entry=>entry.x.id===x.id)+1]?.x}
-async function changeLink(source,target){
- if(linkBusy)return;linkBusy=true;
- try{
-   if(live){const r=await sb.rpc("set_transfer_link",{p_source:source.id,p_target:target?.id||null});if(r.error)throw r.error;(r.data||[]).forEach(replaceItem)}
-   else{source.linked_next_id=target?.id||null;saveLocal()}
-   renderBoard();msg(target?"Loads linked. Drag either load to move them together.":"Link removed.","ok");
- }catch(error){msg("Could not change link: "+error.message,"error")}
- finally{linkBusy=false}
-}
-function attachChainHandle(card,x){
- const incoming=items.find(row=>row.linked_next_id===x.id),linked=!!(x.linked_next_id||incoming);
- const handle=document.createElement("button");handle.type="button";handle.className="load-chain"+(linked?" is-linked":"");handle.draggable=false;
- handle.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>';
- handle.title=linked?"Linked — click to unlink; drag to link the next load":"Drag chain to the next load below";handle.setAttribute("aria-label",handle.title);handle.setAttribute("aria-pressed",String(linked));
- handle.addEventListener("click",e=>{e.stopPropagation();if(Date.now()<ignoreClickUntil)return;const source=x.linked_next_id?x:incoming;if(source)changeLink(source,null)});
- handle.addEventListener("dragstart",e=>{e.preventDefault();e.stopPropagation()});
- handle.addEventListener("pointerdown",e=>{
-   if(e.button!==0)return;e.preventDefault();e.stopPropagation();
-   if(linkBusy||moveBusy)return;
-   const pointer=e.pointerId,startX=e.clientX,startY=e.clientY;let dragging=false,target=null;
-   handle.setPointerCapture(pointer);
-   const findTarget=ev=>{
-     const c=document.elementFromPoint(ev.clientX,ev.clientY)?.closest(".card");
-     const next=nextLoad(x);
-     return c&&next&&c.dataset.id===next.id&&!items.some(row=>row.linked_next_id===next.id)?c:null;
-   };
-   const move=ev=>{
-     if(ev.pointerId!==pointer)return;
-     if(!dragging&&Math.hypot(ev.clientX-startX,ev.clientY-startY)<5)return;
-     if(x.linked_next_id)return;
-     if(!dragging){dragging=true;linkDragId=x.id;window.TransferChainVisual.start(handle);handle.classList.add("link-dragging")}
-     ignoreClickUntil=Date.now()+500;
-     target?.classList.remove("link-target");target=findTarget(ev);target?.classList.add("link-target");
-     window.TransferChainVisual.move(ev.clientX,ev.clientY,target);
-   };
-   const cleanup=()=>{
-     handle.removeEventListener("pointermove",move);handle.removeEventListener("pointerup",finish);handle.removeEventListener("pointercancel",cancel);handle.removeEventListener("lostpointercapture",cancel);
-     window.removeEventListener("blur",cancel);document.removeEventListener("keydown",escape);
-     if(handle.hasPointerCapture(pointer))handle.releasePointerCapture(pointer);
-     target?.classList.remove("link-target");handle.classList.remove("link-dragging");linkDragId=null;window.TransferChainVisual.stop();
-   };
-   const finish=ev=>{
-     if(ev.pointerId!==pointer)return;ev.preventDefault();ev.stopPropagation();
-     const destination=dragging?findTarget(ev):null;cleanup();
-     if(dragging){ignoreClickUntil=Date.now()+500;if(destination)changeLink(x,items.find(row=>row.id===destination.dataset.id))}
-   };
-   const cancel=()=>{if(dragging)ignoreClickUntil=Date.now()+500;cleanup()};
-   const escape=ev=>{if(ev.key==="Escape")cancel()};
-   handle.addEventListener("pointermove",move);handle.addEventListener("pointerup",finish);handle.addEventListener("pointercancel",cancel);handle.addEventListener("lostpointercapture",cancel);window.addEventListener("blur",cancel);document.addEventListener("keydown",escape);
- });
- card.append(handle);if(linked)card.classList.add("linked-load");
-}
-async function moveTransfer(x,newDriver,newTime){
- if(moveBusy||linkBusy)return;
- const group=linkedGroup(x),delta=timeToMin(newTime)-timeToMin(x.scheduled_time);
- if(group.some(row=>timeToMin(row.scheduled_time)+delta<GRID_START||timeToMin(row.scheduled_time)+delta+row.duration_minutes>GRID_END)){msg("The linked loads must all fit within the board hours.","error");return}
- moveBusy=true;
- try{
-   if(live){const r=await sb.rpc("move_linked_transfers",{p_anchor:x.id,p_driver:newDriver,p_time:newTime});if(r.error)throw r.error;(r.data||[]).forEach(replaceItem)}
-   else{group.forEach(row=>{row.driver=newDriver;row.scheduled_date=x.scheduled_date;row.scheduled_time=minToTime(timeToMin(row.scheduled_time)+delta);row.updated_at=new Date().toISOString()});saveLocal()}
-   renderBoard();msg((group.length>1?"Linked loads":"Transfer")+" moved to "+fmt(newTime)+" with "+newDriver+".","ok");
- }catch(error){msg("Could not move loads: "+error.message,"error")}
- finally{moveBusy=false}
-}
+async function moveTransfer(x,newDriver,newTime){await boxLinks.move('job:'+x.id,newDriver,timeToMin(newTime))}
+
 function replaceItem(row){const n=normalize(row),i=items.findIndex(x=>x.id===n.id);if(i>=0)items[i]=n;else items.push(n)}
 async function loadDriversWithFallback(){
   let r=await sb.from("transfer_drivers").select("name,sort_order").order("sort_order",{ascending:true}).order("name",{ascending:true});
@@ -428,7 +352,7 @@ async function loadBoardSchedule(){
   renderBoard();
 }
 async function loadData(){if(!live){loadLocal();driverSchedule=[];renderOptions();renderBoard();return}const [tr,dr,lr,sc]=await Promise.all([sb.from("transfers").select("*").order("scheduled_date").order("scheduled_time"),loadDriversWithFallback(),loadLocationsWithFallback(),sb.from("driver_schedules").select("driver_name,schedule_date,start_time,end_time").eq("schedule_date",E.boardDate.value)]);if(tr.error){msg("Transfers could not load: "+tr.error.message,"error");items=[]}else items=(tr.data||[]).map(normalize);drivers=orderedUniq(["Planning",...(dr.error?[]:(dr.data||[]).map(x=>x.name)),...items.map(x=>x.driver)]);locations=uniq([...(lr.error?["Building 100","Building 200"]:(lr.data||[]).map(x=>x.name)),...items.flatMap(x=>[x.origin,x.destination]),"Building 100","Building 200"]);driverSchedule=sc.error?[]:(sc.data||[]);if(dr.error||lr.error){const details=[dr.error?"Drivers: "+dr.error.message:"",lr.error?"Locations: "+lr.error.message:""].filter(Boolean).join(" · ");msg("Could not load driver/location lists. "+details,"error")}renderOptions();renderBoard()}
-async function subscribe(){if(!live)return;if(dataChannel)await sb.removeChannel(dataChannel);if(presence)await sb.removeChannel(presence);dataChannel=sb.channel("transfers-data").on("postgres_changes",{event:"INSERT",schema:"public",table:"transfers"},handleNewTransfer).on("postgres_changes",{event:"*",schema:"public",table:"transfers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_locations"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"driver_schedules"},loadBoardSchedule).on("postgres_changes",{event:"*",schema:"public",table:"transfer_slot_statuses"},()=>slotStatuses.refresh()).subscribe();presence=sb.channel("transfers-active",{config:{presence:{key:user.id}}}).on("presence",{event:"sync"},()=>{const unique=new Map();Object.values(presence.presenceState()).forEach(v=>v.forEach(x=>{const id=x.user_id||x.email;if(id&&!unique.has(id))unique.set(id,x)}));renderUsers([...unique.values()])}).subscribe(async s=>{if(s==="SUBSCRIBED")await presence.track({user_id:user.id,display_name:name(),email:user.email})})}
+async function subscribe(){if(!live)return;if(dataChannel)await sb.removeChannel(dataChannel);if(presence)await sb.removeChannel(presence);dataChannel=sb.channel("transfers-data").on("postgres_changes",{event:"INSERT",schema:"public",table:"transfers"},handleNewTransfer).on("postgres_changes",{event:"*",schema:"public",table:"transfers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_locations"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"driver_schedules"},loadBoardSchedule).on("postgres_changes",{event:"*",schema:"public",table:"transfer_slot_statuses"},()=>slotStatuses.refresh()).on("postgres_changes",{event:"*",schema:"public",table:"board_box_links"},()=>boxLinks.refresh()).subscribe();presence=sb.channel("transfers-active",{config:{presence:{key:user.id}}}).on("presence",{event:"sync"},()=>{const unique=new Map();Object.values(presence.presenceState()).forEach(v=>v.forEach(x=>{const id=x.user_id||x.email;if(id&&!unique.has(id))unique.set(id,x)}));renderUsers([...unique.values()])}).subscribe(async s=>{if(s==="SUBSCRIBED")await presence.track({user_id:user.id,display_name:name(),email:user.email})})}
 function reset(){E.form.reset();E.edit.value="";E.date.value=E.boardDate.value;E.time.value="08:00";E.duration.value="60";if(E.status)E.status.value="Planned";if(E.urgent)E.urgent.checked=false;E.formTitle.textContent="Build Transfer Load";E.save.textContent="Add Transfer";E.del.classList.add("hidden");E.cancel.classList.add("hidden");E.textDriver?.classList.add("hidden");renderOptions();msg("")}
 function edit(id){let x=items.find(i=>i.id===String(id));if(!x)return;E.edit.value=x.id;E.date.value=x.scheduled_date;E.time.value=x.scheduled_time;if(![...E.duration.options].some(o=>Number(o.value)===Number(x.duration_minutes))){const o=document.createElement("option");o.value=String(x.duration_minutes);o.textContent=durationLabel(x.duration_minutes);E.duration.appendChild(o)}E.duration.value=String(x.duration_minutes);E.pickupByDate.value=x.pickup_by_date||"";E.pickupByTime.value=x.pickup_by_time||"";E.deliverByDate.value=x.deliver_by_date||"";E.deliverByTime.value=x.deliver_by_time||"";renderOptions();E.driver.value=x.driver;E.origin.value=x.origin;E.destination.value=x.destination;E.pallet.value=x.pallet_count;E.job.value=x.job_number;E.status.value=x.order_status||"Planned";if(E.urgent)E.urgent.checked=Boolean(x.urgent);E.formTitle.textContent="Edit Transfer Load";E.save.textContent="Update";E.del.classList.remove("hidden");E.cancel.classList.remove("hidden");E.textDriver?.classList.remove("hidden");createdByMessage(x)}
 async function openTransferEditor(id){
@@ -544,13 +468,14 @@ async function submit(ev){
   if(urgentFallback)msg("Transfer saved. Run migration-v12.sql to enable the Urgent flag.","error");
   else msg(id?"Transfer updated.":"Transfer added.","ok")
 }
-async function remove(){let id=E.edit.value;if(!id||!confirm("Delete this transfer load?"))return;if(live){let r=await sb.from("transfers").delete().eq("id",id);if(r.error){msg(r.error.message,"error");return}}items=items.filter(x=>x.id!==id);if(!live)saveLocal();renderBoard();reset();msg("Transfer deleted.","ok")}
+async function remove(){let id=E.edit.value;if(!id||!confirm("Delete this transfer load?"))return;if(live){let r=await sb.from("transfers").delete().eq("id",id);if(r.error){msg(r.error.message,"error");return}}items=items.filter(x=>x.id!==id);boxLinks.forget('job:'+id);if(!live)saveLocal();renderBoard();reset();msg("Transfer deleted.","ok")}
 function managedChange(kind,select){if(select.value==="__add_driver__")openOption("driver",select);else if(select.value==="__add_location__")openOption("location",select)}
 function openOption(kind,select){optionContext={kind,select};E.optionTitle.textContent=kind==="driver"?"Add a Driver":"Add a Location";E.optionLabel.firstChild.textContent=kind==="driver"?"Driver Name":"Building / Location Name";E.optionName.value="";optionMsg("");E.optionModal.classList.remove("hidden");setTimeout(()=>E.optionName.focus(),0)}
 function closeOption(){if(optionContext?.select&&optionContext.select.value.startsWith("__"))optionContext.select.value="";optionContext=null;E.optionModal.classList.add("hidden");optionMsg("")}
 async function addOption(ev){ev.preventDefault();if(!optionContext)return;const value=E.optionName.value.trim(),kind=optionContext.kind,list=kind==="driver"?drivers:locations;if(!value){optionMsg("Enter a name.","error");return}const existing=list.find(x=>x.toLowerCase()===value.toLowerCase());if(existing){renderOptions();optionContext.select.value=existing;closeOption();return}if(live){const table=kind==="driver"?"transfer_drivers":"transfer_locations",payload={name:value,created_by:user.id,created_by_name:name()};if(kind==="driver")payload.sort_order=drivers.length;const r=await sb.from(table).insert(payload).select("name").single();if(r.error){optionMsg("Could not add option: "+r.error.message,"error");return}}if(kind==="driver")drivers=orderedUniq([...drivers,value]);else locations=uniq([...locations,value]);if(!live)saveLocal();const target=optionContext.select;renderOptions();target.value=value;closeOption();renderBoard()}
-async function session(s){if(!s?.user){slotStatuses.reset();user=null;E.login.classList.remove("hidden");return}user=s.user;E.login.classList.add("hidden");E.signout.classList.remove("hidden");let r=await sb.from("profiles").select("display_name").eq("id",user.id).maybeSingle();profile=r.data||{display_name:user.email?.split("@")[0]||"User"};E.me.textContent=name();E.email.textContent=user.email||"";await loadData();await slotStatuses.refresh();await subscribe()}
-const slotStatuses=window.createSlotStatuses({sb,grid:E.grid,getDate:()=>E.boardDate.value,getUser:()=>user,report:msg,start:GRID_START,end:GRID_END,px:PX15});
+async function session(s){if(!s?.user){boxLinks.reset();slotStatuses.reset();user=null;E.login.classList.remove("hidden");return}user=s.user;E.login.classList.add("hidden");E.signout.classList.remove("hidden");let r=await sb.from("profiles").select("display_name").eq("id",user.id).maybeSingle();profile=r.data||{display_name:user.email?.split("@")[0]||"User"};E.me.textContent=name();E.email.textContent=user.email||"";await loadData();await slotStatuses.refresh();await boxLinks.refresh();await subscribe()}
+const slotStatuses=window.createSlotStatuses({sb,grid:E.grid,getDate:()=>E.boardDate.value,getUser:()=>user,report:msg,start:GRID_START,end:GRID_END,px:PX15,getLinks:()=>boxLinks});
+const boxLinks=window.createBoardLinks({sb,grid:E.grid,getDate:()=>E.boardDate.value,getUser:()=>user,getJobs:()=>items,getStatuses:()=>slotStatuses.rows(),report:msg,start:GRID_START,end:GRID_END,px:PX15,applyMove:result=>{(result.jobs||[]).forEach(replaceItem);slotStatuses.applyRows(result.statuses||[]);if(!live)saveLocal();renderBoard()}});
 E.form.onsubmit=submit;E.del.onclick=remove;E.cancel.onclick=reset;E.driver.onchange=()=>managedChange("driver",E.driver);E.origin.onchange=()=>managedChange("location",E.origin);E.destination.onchange=()=>managedChange("location",E.destination);E.optionForm.onsubmit=addOption;E.optionClose.onclick=closeOption;E.optionCancel.onclick=closeOption;E.optionModal.addEventListener("click",e=>{if(e.target===E.optionModal)closeOption()});
 $("prev").onclick=()=>{E.boardDate.value=add(E.boardDate.value,-1);E.date.value=E.boardDate.value;loadBoardSchedule()};$("next").onclick=()=>{E.boardDate.value=add(E.boardDate.value,1);E.date.value=E.boardDate.value;loadBoardSchedule()};$("today").onclick=()=>{E.boardDate.value=today();E.date.value=E.boardDate.value;loadBoardSchedule()};E.boardDate.onchange=()=>{E.date.value=E.boardDate.value;loadBoardSchedule()};E.signout.onclick=()=>sb?.auth.signOut();
 document.addEventListener("pointerdown",unlockAudio,{once:true});
@@ -559,5 +484,5 @@ updateScheduleClock();
 setInterval(updateScheduleClock,1000);
 setInterval(updateCurrentTimeLine,30000);
 E.loginForm.onsubmit=async e=>{e.preventDefault();E.loginMsg.textContent="Signing in…";let r=await sb.auth.signInWithPassword({email:E.loginEmail.value.trim(),password:E.loginPassword.value});E.loginMsg.textContent=r.error?r.error.message:""};
-(async()=>{E.boardDate.value=today();E.date.value=today();E.time.value="08:00";E.duration.value="60";if(!live){user={id:"demo-user",email:"Local preview mode",user_metadata:{display_name:"Demo User"}};profile={display_name:"Demo User"};renderUsers([{display_name:"Demo User"}]);loadLocal();renderOptions();renderBoard();return}E.mode.textContent="Live";let s=await sb.auth.getSession();await session(s.data.session);sb.auth.onAuthStateChange((_e,s)=>session(s))})();
+(async()=>{E.boardDate.value=today();E.date.value=today();E.time.value="08:00";E.duration.value="60";if(!live){user={id:"demo-user",email:"Local preview mode",user_metadata:{display_name:"Demo User"}};profile={display_name:"Demo User"};renderUsers([{display_name:"Demo User"}]);loadLocal();renderOptions();renderBoard();boxLinks.refresh();return}E.mode.textContent="Live";let s=await sb.auth.getSession();await session(s.data.session);sb.auth.onAuthStateChange((_e,s)=>session(s))})();
 })();

@@ -57,3 +57,7 @@ GitHub Pages is enabled for this repository and deploys from `main`.
 Run `migration-v16.sql` in the existing Supabase SQL Editor before deploying this update. It adds four nullable fields and records deadline edits in Recent Activity.
 
 Pickup By and Deliver By each accept an optional hour and/or calendar day. Populated values appear at the bottom of the transfer as PU: and DL:. Clearing fields removes those labels. Duplicating a transfer preserves its deadlines; Duplicate Day shifts deadline days by the same number of calendar days as the schedule, retaining the time and relative day offset. Dragging or resizing a job does not change its deadlines.
+
+### Linking board boxes
+
+Job and time-slot status boxes share the chain control. Drag a chain onto a job or status above or below in the same driver column and day. Dragging any connected box moves the entire group while preserving time gaps and durations. Clicking a box's chain disconnects that box from its direct links. Deleting a box also removes its links. Existing job links are retained by the mixed-board-links migration.
