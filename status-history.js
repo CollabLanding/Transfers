@@ -7,7 +7,6 @@
     form:$("form"),
     editId:$("editId"),
     status:$("status"),
-    urgent:$(".urgent-toggle"),
     screen:$("statusHistoryScreen"),
     title:$("statusHistoryTitle"),
     graph:$("statusHistoryGraph"),
@@ -25,6 +24,8 @@
     "In Transit":"#3b82f6",
     "Delivered":"#16a34a"
   };
+
+  let restoreFocus=null;
 
   function esc(s){
     return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
@@ -74,7 +75,7 @@
     const intervals=[];
 
     for(const change of changes){
-      if(change.at<=start) {
+      if(change.at<=start){
         status=change.to||status;
         continue;
       }
@@ -105,81 +106,54 @@
     return merged;
   }
 
-  function statusRank(status,present){
-    const idx=STATUS_ORDER.indexOf(status);
-    if(idx>=0)return idx;
-    const existing=present.indexOf(status);
-    return existing>=0?existing:0;
-  }
-
   function graph(intervals,transfer){
     if(!intervals.length){
       E.graph.innerHTML='<div class="status-history-empty">No status history recorded.</div>';
       return;
     }
 
-    const knownStatuses=[...STATUS_ORDER];
-    intervals.forEach(x=>{if(!knownStatuses.includes(x.status))knownStatuses.push(x.status)});
-    const width=760;
-    const left=118;
-    const right=24;
-    const top=34;
-    const bottom=58;
-    const rowGap=38;
-    const height=top+((knownStatuses.length-1)*rowGap)+bottom;
-    const plotLeft=left;
-    const plotRight=width-right;
-    const plotTop=top;
-    const plotBottom=top+((knownStatuses.length-1)*rowGap);
+    const present=intervals.map(x=>x.status);
+    const unknown=present.filter(status=>!STATUS_ORDER.includes(status));
+    const statuses=[...new Set([...unknown,...STATUS_ORDER.slice().reverse()])];
     const startTime=intervals[0].start.getTime();
     const endTime=Math.max(startTime+60000,intervals[intervals.length-1].end.getTime());
-    const span=endTime-startTime;
-    const x=t=>plotLeft+((t-startTime)/span)*(plotRight-plotLeft);
-    const y=status=>plotTop+statusRank(status,knownStatuses)*rowGap;
-    const color=status=>COLORS[status]||"#7c3aed";
-    const labelTimes=[];
-    const tickCount=4;
-    for(let i=0;i<tickCount;i++)labelTimes.push(startTime+(span*i/(tickCount-1)));
+    const span=Math.max(60000,endTime-startTime);
+    const tickCount=5;
+    const currentStatus=intervals[intervals.length-1].status;
+    const currentColor=COLORS[currentStatus]||"#7c3aed";
 
-    let svg='<svg class="status-history-svg" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="'+esc("Status history for "+(transfer.job_number||"transfer"))+'">';
-    svg+='<line class="history-axis" x1="'+plotLeft+'" y1="'+plotTop+'" x2="'+plotLeft+'" y2="'+plotBottom+'"/>';
-    svg+='<line class="history-axis" x1="'+plotLeft+'" y1="'+plotBottom+'" x2="'+plotRight+'" y2="'+plotBottom+'"/>';
+    const pct=time=>
+      Math.max(0,Math.min(100,((time-startTime)/span)*100));
 
-    knownStatuses.forEach(status=>{
-      const yy=y(status);
-      svg+='<line class="history-grid" x1="'+plotLeft+'" y1="'+yy+'" x2="'+plotRight+'" y2="'+yy+'"/>';
-      svg+='<text class="history-y-label" x="'+(plotLeft-12)+'" y="'+(yy+4)+'" text-anchor="end">'+esc(status)+'</text>';
-    });
+    const ticks=Array.from({length:tickCount},(_,index)=>startTime+(span*index/(tickCount-1)));
+    const rows=statuses.map(status=>{
+      const statusIntervals=intervals.filter(interval=>interval.status===status);
+      const total=statusIntervals.reduce((sum,interval)=>sum+Math.max(0,interval.end-interval.start),0);
+      const bars=statusIntervals.map(interval=>{
+        const left=pct(interval.start.getTime());
+        const right=pct(interval.end.getTime());
+        const width=Math.max(0.8,right-left);
+        const duration=durationLabel(interval.end.getTime()-interval.start.getTime());
+        return '<div class="history-bar" style="left:'+left+'%;width:'+Math.min(100-left,width)+'%;background:'+esc(COLORS[status]||"#7c3aed")+'" title="'+esc(status+" • "+duration+" • "+formatTime(interval.start)+" – "+formatTime(interval.end))+'"><span>'+esc(duration)+'</span></div>';
+      }).join("");
+      return '<div class="history-row"><div class="history-status-label"><span class="history-status-dot" style="background:'+esc(COLORS[status]||"#7c3aed")+'"></span><span>'+esc(status)+'</span><strong>'+esc(durationLabel(total))+'</strong></div><div class="history-track">'+ticks.map(time=>'<span class="history-grid-line" style="left:'+pct(time)+'%"></span>').join("")+bars+'</div></div>';
+    }).join("");
 
-    tickCount && labelTimes.forEach((time,index)=>{
-      const xx=x(time);
-      svg+='<line class="history-tick" x1="'+xx+'" y1="'+plotBottom+'" x2="'+xx+'" y2="'+(plotBottom+5)+'"/>';
-      svg+='<text class="history-x-label" x="'+xx+'" y="'+(plotBottom+19)+'" text-anchor="'+(index===0?"start":index===tickCount-1?"end":"middle")+'">'+esc(formatTime(time))+'</text>';
-    });
+    const axis=ticks.map((time,index)=>{
+      const align=index===0?"start":index===tickCount-1?"end":"center";
+      return '<div class="history-axis-label" style="left:'+pct(time)+'%;text-align:'+align+'">'+esc(formatTime(time))+'</div>';
+    }).join("");
 
-    intervals.forEach((interval,index)=>{
-      const x1=x(interval.start.getTime());
-      const x2=x(interval.end.getTime());
-      const yy=y(interval.status);
-      const next=intervals[index+1];
-      svg+='<line class="history-segment" x1="'+x1+'" y1="'+yy+'" x2="'+x2+'" y2="'+yy+'" stroke="'+color(interval.status)+'"/>';
-      const duration=durationLabel(interval.end.getTime()-interval.start.getTime());
-      const mid=(x1+x2)/2;
-      if(x2-x1>=42){
-        svg+='<text class="history-duration" x="'+mid+'" y="'+(yy-9)+'" text-anchor="middle">'+esc(duration)+'</text>';
-      }
-      svg+='<circle class="history-point" cx="'+x1+'" cy="'+yy+'" r="4" fill="'+color(interval.status)+'"/>';
-      if(next){
-        const nextY=y(next.status);
-        svg+='<line class="history-transition" x1="'+x2+'" y1="'+yy+'" x2="'+x2+'" y2="'+nextY+'"/>';
-      }
-    });
-
-    const last=intervals[intervals.length-1];
-    const lastX=x(last.end.getTime());
-    svg+='<circle class="history-point history-current" cx="'+lastX+'" cy="'+y(last.status)+'" r="5" fill="'+color(last.status)+'"/>';
-    svg+='</svg>';
-    E.graph.innerHTML=svg;
+    E.title.textContent=transfer.job_number?("Job "+transfer.job_number):"Status History";
+    E.graph.innerHTML=
+      '<div class="status-history-summary">'+
+        '<div class="status-history-summary-copy"><small>TIME IN EACH STATUS</small><p>Track each status change across the life of this transfer.</p></div>'+
+        '<div class="status-history-current"><span>Current Status</span><strong style="color:'+esc(currentColor)+'">'+esc(currentStatus)+'</strong></div>'+
+      '</div>'+
+      '<div class="history-chart">'+
+        '<div class="history-axis-row"><div></div><div class="history-axis-track">'+axis+'</div></div>'+
+        '<div class="history-rows">'+rows+'</div>'+
+      '</div>';
   }
 
   async function load(){
@@ -215,29 +189,34 @@
     }
 
     const transfer=transferResult.data;
-    const intervals=buildIntervals(transfer,activityResult.data||[]);
-    E.title.textContent=(transfer.job_number?"Job "+transfer.job_number:"Status History");
-    graph(intervals,transfer);
+    graph(buildIntervals(transfer,activityResult.data||[]),transfer);
   }
 
   function open(){
     if(!E.screen)return;
-    E.form?.classList.add("hidden");
-    E.urgent?.classList.add("hidden");
+    restoreFocus=document.activeElement;
+    document.body.classList.add("status-history-open");
     E.screen.classList.remove("hidden");
-    E.button?.classList.add("hidden");
+    E.back?.focus();
     load();
   }
 
   function close(){
-    E.screen?.classList.add("hidden");
-    E.form?.classList.remove("hidden");
-    E.urgent?.classList.remove("hidden");
-    if(E.editId?.value)E.button?.classList.remove("hidden");
+    if(!E.screen)return;
+    E.screen.classList.add("hidden");
+    document.body.classList.remove("status-history-open");
+    if(restoreFocus&&typeof restoreFocus.focus==="function")restoreFocus.focus();
+    restoreFocus=null;
   }
 
   window.closeStatusHistory=close;
 
   E.button?.addEventListener("click",open);
   E.back?.addEventListener("click",close);
+  E.screen?.addEventListener("click",event=>{
+    if(event.target===E.screen)close();
+  });
+  document.addEventListener("keydown",event=>{
+    if(event.key==="Escape"&&!E.screen?.classList.contains("hidden"))close();
+  });
 })();
