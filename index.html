@@ -76,6 +76,7 @@
           <button class="primary" type="submit" id="save">Add Transfer</button>
           <button type="button" class="hidden" id="duplicate">Duplicate</button>
           <button type="button" class="hidden" id="textDriver">Text Driver</button>
+          <button type="button" class="hidden" id="statusHistory">Status History</button>
           <button type="button" class="danger hidden" id="delete">Delete</button>
           <button type="button" class="hidden" id="cancel">Cancel Edit</button>
         </div>
@@ -93,6 +94,16 @@
           <button type="button" id="slotStatusCancel">Cancel</button>
         </div>
         <p id="slotStatusMsg"></p>
+      </section>
+      <section id="statusHistoryScreen" class="status-history-screen hidden" aria-label="Transfer status history">
+        <div class="status-history-head">
+          <div>
+            <small>STATUS HISTORY</small>
+            <h3 id="statusHistoryTitle">Status History</h3>
+          </div>
+          <button type="button" id="statusHistoryBack" class="iconbtn" aria-label="Back to transfer editor">×</button>
+        </div>
+        <div id="statusHistoryGraph" class="status-history-graph" aria-label="Status history line graph"></div>
       </section>
     </section>
     <section class="panel recent-activity-panel">
@@ -185,6 +196,7 @@
 <script src="board-links.js?v=20260925-mixed-links"></script>
 <script src="app.js?v=20260928-pallet-count-2"></script>
 <script src="order-status.js?v=20260921-planned-default"></script>
+<script src="status-history.js?v=20260928-status-history-1"></script>
 <script src="recent-activity.js?v=20260922-global-live"></script>
 <script src="duplicate-transfer.js?v=20260923-deadlines"></script>
 <script src="duplicate-day.js?v=20260923-deadlines"></script>
