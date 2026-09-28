@@ -79,6 +79,19 @@
         </div>
         <p id="msg"></p>
       </form>
+      <section id="slotStatusEditor" class="slot-status-editor hidden" aria-label="Edit status notes">
+        <div class="slot-status-editor-head">
+          <div><small>TIME SLOT STATUS</small><h3 id="slotStatusTitle">Edit Status</h3></div>
+          <button type="button" id="slotStatusClose" class="iconbtn" aria-label="Close status editor">×</button>
+        </div>
+        <p id="slotStatusMeta" class="slot-status-editor-meta"></p>
+        <label>Notes<textarea id="slotStatusNotes" maxlength="2000" rows="6" placeholder="Add notes for this status…"></textarea></label>
+        <div class="transfer-actions">
+          <button class="primary" type="button" id="slotStatusSave">Save Notes</button>
+          <button type="button" id="slotStatusCancel">Cancel</button>
+        </div>
+        <p id="slotStatusMsg"></p>
+      </section>
     </section>
     <section class="panel recent-activity-panel">
       <div class="section-heading"><div><h2>Recent Activity</h2><p>Latest transfer changes</p></div><span id="mode" class="mode-badge">Demo</span></div>
