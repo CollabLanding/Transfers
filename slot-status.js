@@ -23,7 +23,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
     for (const lane of grid.querySelectorAll('.lane')) {
       for (const row of rows.filter(r => r.driver === lane.dataset.driver && r.scheduled_date === getDate())) {
         const block = document.createElement('div');
-        block.className = 'slot-status-block slot-status-' + statuses.indexOf(row.status);
+        block.className = 'slot-status-block slot-status-' + statuses.indexOf(row.status) + (row.notes ? ' has-notes' : '');
         block.draggable = true; block.dataset.statusId = row.id;
         block.addEventListener('dragstart', e => {
           if (busy || dialog.open || !getUser() || e.target.closest('.load-chain')) { e.preventDefault(); return; }
@@ -37,6 +37,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
         block.style.height = ((row.end_minutes - row.start_minutes) / 15 * px) + 'px';
         block.title = row.status + ': ' + time(row.start_minutes) + ' – ' + time(row.end_minutes);
         const label = document.createElement('span'); label.textContent = row.status;
+        if (row.notes) { const note = document.createElement('span'); note.className = 'slot-status-note-indicator'; note.textContent = 'N'; note.title = 'This status has notes'; block.append(note); }
         const remove = document.createElement('button');
         remove.type = 'button'; remove.className = 'slot-status-delete'; remove.textContent = '×';
         remove.setAttribute('aria-label', 'Delete ' + block.title);
