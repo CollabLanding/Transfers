@@ -1,5 +1,5 @@
 /* Shared status ranges; independent of transfer loading and drag/drop. */
-window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start, end, px, getLinks}) {
+window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start, end, px, getLinks, onSelectStatus}) {
   const table = 'transfer_slot_statuses', key = 'transfers-slot-statuses-v1';
   const statuses = ['Driving', 'Yard Moves', 'Loading', 'Standby'];
   let rows = [], date = null, generation = 0, selection = null, busy = false, moving = null, resizeCancel = null;
@@ -41,6 +41,11 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
         remove.type = 'button'; remove.className = 'slot-status-delete'; remove.textContent = '×';
         remove.setAttribute('aria-label', 'Delete ' + block.title);
         remove.style.top = ((row.start_minutes - start) / 15 * px + 1) + 'px';
+        block.addEventListener('click', e => {
+          if (e.target.closest('.slot-resize-handle,.slot-status-delete,.load-chain')) return;
+          e.preventDefault(); e.stopPropagation();
+          if (!busy) onSelectStatus?.(row);
+        });
         remove.onclick = async e => {
           e.stopPropagation(); remove.disabled = true; block.remove(); remove.remove();
           try {
@@ -59,6 +64,26 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
       }
     }
     getLinks?.().render();
+  }
+  async function saveNotes(row, notes) {
+    const value = String(notes ?? '');
+    busy = true;
+    try {
+      if (sb) {
+        const r = await sb.from(table).update({notes:value}).eq('id', row.id).select('*').single();
+        if (r.error) throw r.error;
+      } else {
+        localStorage.setItem(key, JSON.stringify(localRows().map(r => r.id === row.id ? {...r, notes:value} : r)));
+      }
+      const current = rows.find(r => String(r.id) === String(row.id));
+      if (current) current.notes = value;
+      await refresh();
+      report('Status notes saved.', 'ok');
+      return true;
+    } catch (error) {
+      report('Could not save status notes: ' + error.message, 'error');
+      return false;
+    } finally { busy = false; }
   }
   async function savePlacement(row,payload,message) {
     busy=true;
@@ -209,6 +234,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
       rows=rows.filter(r=>!map.has(r.id)).concat(updates.filter(r=>r.scheduled_date===getDate()));paint();
     },
     refresh,
+    saveNotes,
     reset() { endMove(); generation++; rows = []; date = null; close(); paint(); }
   };
 };
