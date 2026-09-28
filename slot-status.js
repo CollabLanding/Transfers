@@ -71,7 +71,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
     busy = true;
     try {
       if (sb) {
-        const r = await sb.from(table).update({notes:value}).eq('id', row.id).select('*').single();
+        const r = await sb.from(table).update({notes:value}).eq('id', row.id);
         if (r.error) throw r.error;
       } else {
         localStorage.setItem(key, JSON.stringify(localRows().map(r => r.id === row.id ? {...r, notes:value} : r)));
