@@ -79,10 +79,11 @@
     else E.select.value="";
     setDetails(locations.find(row=>row.name===E.select.value)||null);
   }
-  async function load(){
+  async function load(preserveName=null){
+    const keepName=preserveName??E.select.value;
     if(!live){
       loadLocal();
-      renderSelect();
+      renderSelect(keepName);
       E.me.textContent="Demo User";
       E.email.textContent="Local preview mode";
       return;
@@ -101,7 +102,7 @@
       created_by_name:row.created_by_name||"System",
       created_at:row.created_at||""
     })).filter(row=>row.name);
-    renderSelect();
+    renderSelect(keepName);
     show("");
   }
 
@@ -177,7 +178,7 @@
       return;
     }
 
-    const row=(renamed.data||[])[0]||{...locations.find(x=>x.name===oldName),name:newName};
+    const row=renamed.data||{...locations.find(x=>x.name===oldName),name:newName};
     locations=locations.filter(x=>x.name!==oldName);
     locations.push(row);
     locations.sort((a,b)=>a.name.localeCompare(b.name));
@@ -250,7 +251,7 @@
     if(!live)return;
     if(channel)sb.removeChannel(channel);
     channel=sb.channel("locations-management")
-      .on("postgres_changes",{event:"*",schema:"public",table:"transfer_locations"},()=>load())
+      .on("postgres_changes",{event:"*",schema:"public",table:"transfer_locations"},()=>load(E.select.value))
       .subscribe();
   }
 
