@@ -36,8 +36,9 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
         block.style.top = ((row.start_minutes - start) / 15 * px) + 'px';
         block.style.height = ((row.end_minutes - row.start_minutes) / 15 * px) + 'px';
         block.title = row.status + ': ' + time(row.start_minutes) + ' – ' + time(row.end_minutes);
-        const label = document.createElement('span'); label.textContent = row.status;
-        if (row.notes) { const note = document.createElement('span'); note.className = 'slot-status-note-indicator'; note.textContent = 'N'; note.title = 'This status has notes'; block.append(note); }
+        const label = document.createElement('span'); label.className = 'slot-status-label'; label.textContent = row.status;
+        block.append(label);
+        if (row.notes) { const note = document.createElement('span'); note.className = 'slot-status-note'; note.textContent = row.notes; note.title = row.notes; block.append(note); }
         const remove = document.createElement('button');
         remove.type = 'button'; remove.className = 'slot-status-delete'; remove.textContent = '×';
         remove.setAttribute('aria-label', 'Delete ' + block.title);
@@ -56,7 +57,6 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
           } catch (error) { report('Could not delete status: ' + error.message, 'error'); }
           paint();
         };
-        block.append(label);
         for (const edge of ['top','bottom']) {
           const handle=document.createElement('span');handle.className='slot-resize-handle slot-resize-'+edge;handle.title=edge==='top'?'Drag to change status start':'Drag to change status end';
           handle.addEventListener('pointerdown',e=>beginResize(e,row,block,remove,edge));block.append(handle);
