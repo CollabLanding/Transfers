@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Locations | Transfers</title>
+  <script>
+    try{
+      const saved=localStorage.getItem("transfers-theme");
+      document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
+    }catch(_err){}
+  </script>
+  <link rel="stylesheet" href="styles.css?v=20260925-mixed-links">
+  <link rel="stylesheet" href="locations.css?v=20260928-locations-1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+</head>
+<body>
+<header>
+  <div class="brand-cluster">
+    <img class="company-logo" src="/Transfers/site-logo.png?v=2" alt="Fanatics Collectibles">
+    <div class="app-brand">
+      <small><a class="live-board-link" href="/live-dock-board/">Live Trailer Board</a></small>
+      <nav class="app-tabs" aria-label="Main navigation">
+        <a href="index.html">Transfers</a>
+        <a href="drivers.html">Drivers</a>
+        <a class="active" href="locations.html" aria-current="page">Locations</a>
+      </nav>
+    </div>
+  </div>
+  <div class="header-right">
+    <label class="theme-switch" for="themeToggle">
+      <span class="theme-label light-label">Light</span>
+      <input id="themeToggle" type="checkbox" role="switch" aria-label="Toggle dark theme">
+      <span class="switch-track"><span class="switch-thumb"></span></span>
+      <span class="theme-label dark-label">Dark</span>
+    </label>
+    <div class="user-session">
+      <span id="me"></span>
+      <small id="email"></small>
+      <button id="signout" class="hidden" type="button">Sign Out</button>
+    </div>
+  </div>
+</header>
+
+<main class="locations-main">
+  <section class="panel locations-panel">
+    <div class="locations-heading">
+      <div>
+        <small>LOCATION MANAGEMENT</small>
+        <h2>Locations</h2>
+        <p>Manage the locations available in Load Origination and Load Destination.</p>
+      </div>
+    </div>
+
+    <p id="locationMsg" class="location-message" aria-live="polite"></p>
+
+    <div class="locations-layout">
+      <section class="location-picker">
+        <label for="locationSelect">Select Location
+          <select id="locationSelect">
+            <option value="">Loading locations…</option>
+          </select>
+        </label>
+      </section>
+
+      <section id="locationDetails" class="location-details hidden" aria-label="Location details">
+        <div class="location-details-head">
+          <div>
+            <small>LOCATION DETAILS</small>
+            <h3 id="locationTitle">Edit Location</h3>
+          </div>
+        </div>
+
+        <form id="locationForm">
+          <input id="originalName" type="hidden">
+
+          <label>Location Name
+            <input id="locationName" type="text" maxlength="120" autocomplete="off" required>
+          </label>
+
+          <div class="location-meta-grid">
+            <label>Created By
+              <input id="createdBy" type="text" readonly>
+            </label>
+            <label>Created At
+              <input id="createdAt" type="text" readonly>
+            </label>
+          </div>
+
+          <p class="location-help">Renaming a location also updates that location's name on existing transfer loads. Deleting a location removes it from the master list but does not delete transfer history.</p>
+
+          <div class="location-actions">
+            <button class="primary" type="submit" id="saveLocation">Save Changes</button>
+            <button class="danger" type="button" id="deleteLocation">Delete Location</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="locationEmpty" class="location-empty">
+        Select a location above to view and edit its details.
+      </section>
+    </div>
+  </section>
+</main>
+
+<div id="login" class="login hidden">
+  <form id="loginForm" class="loginbox">
+    <h1>Locations</h1>
+    <p>Sign in to manage transfer locations.</p>
+    <input id="loginEmail" type="email" placeholder="Email" required>
+    <input id="loginPassword" type="password" placeholder="Password" required>
+    <button class="primary">Sign In</button>
+    <p id="loginMsg"></p>
+  </form>
+</div>
+
+<script src="theme.js"></script>
+<script src="locations.js?v=20260928-locations-1"></script>
+</body>
+</html>
