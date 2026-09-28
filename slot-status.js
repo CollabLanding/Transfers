@@ -82,7 +82,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
       report('Status notes saved.', 'ok');
       return true;
     } catch (error) {
-      report('Could not save status notes: ' + error.message, 'error');
+      report('Could not save status notes: ' + (error?.message || error?.details || error?.hint || 'Unknown database error'), 'error');
       return false;
     } finally { busy = false; }
   }
