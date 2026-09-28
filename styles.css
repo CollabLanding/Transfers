@@ -1428,6 +1428,6 @@ html[data-theme="dark"] .chain-saved-art,body.dark-theme .chain-saved-art{color:
 .slot-status-block .load-chain{bottom:1px}
 .slot-status-block .slot-resize-bottom{right:calc(50% + 16px)}
 
-.card .card-pallet{position:absolute;left:7px;bottom:5px;margin:0;font-weight:400!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(50% - 25px)}
+.card .card-pallet{position:absolute;left:7px;bottom:5px;margin:0;font-size:calc(1em - 2pt)!important;font-weight:400!important;line-height:1;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(50% - 25px)}
 .card .card-pallet:before{content:"Pallets: ";font-weight:400}
 .card-deadlines{bottom:22px}
