@@ -376,15 +376,14 @@ async function saveStatusNotes(){
   const row=slotStatuses.rows().find(r=>String(r.id)===String(id));
   if(!row){E.slotStatusMsg.textContent="No status selected.";E.slotStatusMsg.style.color="#a43c3c";return;}
   E.slotStatusSave.disabled=true;E.slotStatusMsg.textContent="Saving…";E.slotStatusMsg.style.color="";
-  const result=await slotStatuses.saveNotes(row,E.slotStatusNotes.value);
-  E.slotStatusSave.disabled=false;
-  if(result?.ok){row.notes=E.slotStatusNotes.value;E.slotStatusMsg.textContent="Saved.";E.slotStatusMsg.style.color="#2f6f49";}
-  else {
-    const e=result?.error||{};
-    const detail=[e.message,e.details,e.hint,e.code].filter(Boolean).join(" · ")||"Unknown database error";
+  try {
+    await slotStatuses.saveNotes(row,E.slotStatusNotes.value);
+    row.notes=E.slotStatusNotes.value;E.slotStatusMsg.textContent="Saved.";E.slotStatusMsg.style.color="#2f6f49";
+  } catch(e) {
+    const detail=[e?.message,e?.details,e?.hint,e?.code].filter(Boolean).join(" · ")||String(e)||"Unknown database error";
     E.slotStatusMsg.textContent="Could not save notes: "+detail;
     E.slotStatusMsg.style.color="#a43c3c";
-  }
+  } finally { E.slotStatusSave.disabled=false; }
 }
 function selectStatusEditor(row){
   E.slotStatusTitle.dataset.statusId=String(row.id);
