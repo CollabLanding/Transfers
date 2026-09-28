@@ -47,10 +47,10 @@
   }
   function loadLocal(){
     try{
-      const names=JSON.parse(localStorage.getItem("transfers-demo-locations-v1")||'["Building 100","Building 200"]')||[];
-      locations=names.filter(Boolean).map(name=>({name:String(name),created_by_name:"Demo User",created_at:""}));
+      const names=JSON.parse(localStorage.getItem("transfers-demo-locations-v1")||'["Sunnyvale 100","Sunnyvale 200"]')||[];
+      locations=names.filter(Boolean).map(name=>({name:String(name)==="Building 100"?"Sunnyvale 100":String(name)==="Building 200"?"Sunnyvale 200":String(name),created_by_name:"Demo User",created_at:""}));
     }catch(_err){
-      locations=[{name:"Building 100",created_by_name:"Demo User",created_at:""},{name:"Building 200",created_by_name:"Demo User",created_at:""}];
+      locations=[{name:"Sunnyvale 100",created_by_name:"Demo User",created_at:""},{name:"Sunnyvale 200",created_by_name:"Demo User",created_at:""}];
     }
   }
   function setDetails(row){
