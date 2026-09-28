@@ -14,7 +14,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
 <link rel="stylesheet" href="slot-status.css?v=20260928-status-notes-6">
-<link rel="stylesheet" href="status-history.css?v=20260928-status-history-1">
+<link rel="stylesheet" href="status-history.css?v=20260928-status-history-2">
 </head>
 <body>
 <header>
@@ -96,16 +96,18 @@
         </div>
         <p id="slotStatusMsg"></p>
       </section>
-      <section id="statusHistoryScreen" class="status-history-screen hidden" aria-label="Transfer status history">
-        <div class="status-history-head">
-          <div>
-            <small>STATUS HISTORY</small>
-            <h3 id="statusHistoryTitle">Status History</h3>
-          </div>
-          <button type="button" id="statusHistoryBack" class="iconbtn" aria-label="Back to transfer editor">×</button>
-        </div>
-        <div id="statusHistoryGraph" class="status-history-graph" aria-label="Status history line graph"></div>
-      </section>
+<div id="statusHistoryScreen" class="status-history-modal hidden" role="dialog" aria-modal="true" aria-labelledby="statusHistoryTitle">
+  <div class="status-history-dialog">
+    <div class="status-history-head">
+      <div>
+        <small>STATUS HISTORY</small>
+        <h3 id="statusHistoryTitle">Status History</h3>
+      </div>
+      <button type="button" id="statusHistoryBack" class="iconbtn" aria-label="Close status history">×</button>
+    </div>
+    <div id="statusHistoryGraph" class="status-history-graph" aria-label="Status history graph"></div>
+  </div>
+</div>
     </section>
     <section class="panel recent-activity-panel">
       <div class="section-heading"><div><h2>Recent Activity</h2><p>Latest transfer changes</p></div><span id="mode" class="mode-badge">Demo</span></div>
@@ -197,7 +199,7 @@
 <script src="board-links.js?v=20260925-mixed-links"></script>
 <script src="app.js?v=20260928-pallet-count-2"></script>
 <script src="order-status.js?v=20260921-planned-default"></script>
-<script src="status-history.js?v=20260928-status-history-1"></script>
+<script src="status-history.js?v=20260928-status-history-2"></script>
 <script src="recent-activity.js?v=20260922-global-live"></script>
 <script src="duplicate-transfer.js?v=20260923-deadlines"></script>
 <script src="duplicate-day.js?v=20260923-deadlines"></script>
