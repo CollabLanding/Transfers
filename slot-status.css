@@ -24,3 +24,5 @@
 .slot-resize-handle::after{display:none}
 .slot-status-resizing{z-index:22}
 .slot-status-resizing.is-blocked{outline:2px solid #c51f30}
+
+.slot-status-editor{margin-top:16px;border-top:1px solid var(--line);padding-top:16px}.slot-status-editor-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.slot-status-editor-head small{color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.08em}.slot-status-editor-head h3{margin:3px 0 0;font-size:18px}.slot-status-editor-meta{margin:8px 0 14px;color:var(--muted);font-size:12px}.slot-status-editor textarea{width:100%;min-height:120px;resize:vertical;box-sizing:border-box}.slot-status-editor .iconbtn{flex:0 0 auto}.slot-status-block.has-notes{box-shadow:inset 0 0 0 2px #5882a755}.slot-status-note-indicator{position:absolute;right:30px;top:4px;font-size:10px;font-weight:800;opacity:.75}
