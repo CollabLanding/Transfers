@@ -80,10 +80,10 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
       if (current) current.notes = value;
       await refresh();
       report('Status notes saved.', 'ok');
-      return true;
+      return {ok:true};
     } catch (error) {
-      report('Could not save status notes: ' + (error?.message || error?.details || error?.hint || 'Unknown database error'), 'error');
-      return false;
+      return {ok:false,error};
+      return {ok:false,error:new Error('Unknown status note save error')};
     } finally { busy = false; }
   }
   async function savePlacement(row,payload,message) {
