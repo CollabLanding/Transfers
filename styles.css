@@ -1439,3 +1439,86 @@ html[data-theme="dark"] .chain-saved-art,body.dark-theme .chain-saved-art{color:
 .card .card-pallet{position:absolute;left:7px;bottom:5px;margin:0;font-size:calc(1em - 2pt)!important;font-weight:400!important;line-height:1;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(50% - 25px)}
 .card .card-pallet:before{content:"Pallets: ";font-weight:400}
 .card-deadlines{bottom:22px}
+
+/* Mobile daily schedule: keep desktop layout unchanged */
+@media(max-width:900px){
+  main{
+    display:flex!important;
+    flex-direction:column!important;
+    gap:12px;
+  }
+
+  main > .board{
+    order:1;
+    width:100%;
+    min-width:0;
+  }
+
+  main > aside:not(.right-sidebar){
+    order:2;
+  }
+
+  main > .right-sidebar{
+    order:3;
+  }
+
+  .board{
+    min-width:0;
+    overflow:hidden;
+  }
+
+  #gridWrap{
+    width:100%;
+    max-width:100%;
+    min-height:520px;
+    max-height:calc(100vh - 250px);
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+    touch-action:pan-x pan-y;
+  }
+
+  #grid{
+    min-width:max-content;
+  }
+
+  .headrow{
+    position:sticky;
+    top:0;
+    z-index:8;
+  }
+
+  .corner{
+    position:sticky;
+    left:0;
+    z-index:9;
+  }
+
+  .times{
+    position:sticky;
+    left:0;
+    z-index:7;
+  }
+
+  .boardhead{
+    min-height:78px;
+  }
+
+  .schedule-current-time{
+    font-size:26px!important;
+    top:28px;
+  }
+
+  .schedule-date{
+    max-width:56%;
+    font-size:17px;
+    line-height:1.15;
+  }
+
+  .planning-month-total{
+    font-size:11px;
+    max-width:42%;
+    white-space:normal;
+    line-height:1.2;
+  }
+}
