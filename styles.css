@@ -45,14 +45,18 @@ main{grid-template-columns:380px minmax(0,1fr) 155px;align-items:start}
 /* Order status colors */
 .card.status-planned{background:#f1f5f9;border-color:#64748b;border-left-color:#64748b}
 .card.status-planned .card-status{color:#475569}
-.card.status-loading{background:#fef3c7;border-color:#d97706;border-left-color:#d97706}
-.card.status-loading .card-status{color:#92400e}
-.card.status-loaded{background:#dbeafe;border-color:#2563eb;border-left-color:#2563eb}
-.card.status-loaded .card-status{color:#1d4ed8}
-.card.status-in-transit{background:#fef9c3;border-color:#eab308;border-left-color:#eab308}
-.card.status-in-transit .card-status{color:#854d0e}
-.card.status-delivered{background:#dcfce7;border-color:#16a34a;border-left-color:#16a34a}
-.card.status-delivered .card-status{color:#166534}
+.card.status-waiting{background:#f97316;border-color:#ea580c;border-left-color:#c2410c;color:#351507}
+.card.status-waiting .card-status{color:#57200b}
+.card.status-on-site{background:#fde68a;border-color:#eab308;border-left-color:#d4a72c}
+.card.status-on-site .card-status{color:#713f12}
+.card.status-loading{background:#facc15;border-color:#eab308;border-left-color:#ca8a04}
+.card.status-loading .card-status{color:#713f12}
+.card.status-loaded{background:#bef264;border-color:#84cc16;border-left-color:#65a30d}
+.card.status-loaded .card-status{color:#365314}
+.card.status-in-transit{background:#86efac;border-color:#22c55e;border-left-color:#16a34a}
+.card.status-in-transit .card-status{color:#166534}
+.card.status-delivered{background:#4ade80;border-color:#16a34a;border-left-color:#15803d}
+.card.status-delivered .card-status{color:#14532d}
 
 .driverhead[draggable="true"]{cursor:grab;user-select:none}
 .driverhead[draggable="true"]:active{cursor:grabbing}
@@ -127,14 +131,18 @@ html[data-theme="dark"] .iconbtn{background:transparent}
 html[data-theme="dark"] .card{color:#e4ebf1}
 html[data-theme="dark"] .card.status-planned{background:#29333d;border-color:#6f7d8a;border-left-color:#8996a2}
 html[data-theme="dark"] .card.status-planned .card-status{color:#c1ccd5}
-html[data-theme="dark"] .card.status-loading{background:#443716;border-color:#c68b22;border-left-color:#d89a28}
-html[data-theme="dark"] .card.status-loading .card-status{color:#f3c96f}
-html[data-theme="dark"] .card.status-loaded{background:#183352;border-color:#397cc5;border-left-color:#4a8ed7}
-html[data-theme="dark"] .card.status-loaded .card-status{color:#88bdf3}
-html[data-theme="dark"] .card.status-in-transit{background:#494415;border-color:#c7ad24;border-left-color:#dbc12e}
-html[data-theme="dark"] .card.status-in-transit .card-status{color:#f0dc6d}
-html[data-theme="dark"] .card.status-delivered{background:#173a29;border-color:#2e985f;border-left-color:#39aa6d}
-html[data-theme="dark"] .card.status-delivered .card-status{color:#7fe0aa}
+html[data-theme="dark"] .card.status-waiting{background:#7c2d12;border-color:#c2410c;border-left-color:#ea580c;color:#fff7ed}
+html[data-theme="dark"] .card.status-waiting .card-status{color:#ffedd5}
+html[data-theme="dark"] .card.status-on-site{background:#5a4a12;border-color:#c49a20;border-left-color:#eab308}
+html[data-theme="dark"] .card.status-on-site .card-status{color:#fde68a}
+html[data-theme="dark"] .card.status-loading{background:#665817;border-color:#d4aa18;border-left-color:#eab308}
+html[data-theme="dark"] .card.status-loading .card-status{color:#fef08a}
+html[data-theme="dark"] .card.status-loaded{background:#315116;border-color:#75a91e;border-left-color:#84cc16}
+html[data-theme="dark"] .card.status-loaded .card-status{color:#d9f99d}
+html[data-theme="dark"] .card.status-in-transit{background:#164a2a;border-color:#269653;border-left-color:#22c55e}
+html[data-theme="dark"] .card.status-in-transit .card-status{color:#86efac}
+html[data-theme="dark"] .card.status-delivered{background:#176330;border-color:#2ca455;border-left-color:#22c55e}
+html[data-theme="dark"] .card.status-delivered .card-status{color:#bbf7d0}
 html[data-theme="dark"] .card .draghint{color:#aebdca}
 
 html[data-theme="dark"] *{scrollbar-color:#46525e #151c23}
