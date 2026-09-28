@@ -248,7 +248,7 @@ function makeCard(x,visualTop=null,visualHeight=null,stacked=false){
    '<span class="draghint">↕</span>'+
    '<span class="card-topline"><span class="card-status">'+esc(x.order_status||"Planned")+'</span><span class="card-move">Move #'+esc(x.move_number??"—")+'</span></span>'+
    '<small class="card-route">'+esc(x.origin)+' → '+esc(x.destination)+'</small>'+
-   '<b class="card-job">'+esc(x.job_number)+'</b>'+
+   '<b class="card-job">'+esc(x.job_number)+'</b>'+\n   '<b class="card-pallet">'+esc(x.pallet_count)+'</b>'+
    '<small class="card-creator">'+esc(x.created_by_name)+'</small>'+
    (deadlines.length?'<span class="card-deadlines">'+deadlines.map(([label,value])=>'<span>'+label+': '+esc(value)+'</span>').join('')+'</span>':'');
  b.title=[x.origin+' → '+x.destination,x.job_number,...deadlines.map(([label,value])=>label+': '+value)].join('\n');
