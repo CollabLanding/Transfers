@@ -139,7 +139,7 @@
     const renderMarkerRow=(status,time,label,position)=>{
       const markerColor=COLORS[status]||"#64748b";
       const left=pct(time);
-      const transform=position==="end"?"translateX(-100%)":"";
+      const transform=position==="end"?"translate(-100%,-50%)":"translateY(-50%)";
       const textAlign=position==="end"?"right":"left";
       return '<div class="history-row history-marker-row">'+
         '<div class="history-status-label history-marker-label">'+
