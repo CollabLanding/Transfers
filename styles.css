@@ -166,13 +166,23 @@ main{grid-template-columns:380px minmax(0,1fr) 186px}
 .chat-empty{min-height:210px;display:grid;place-items:center;text-align:center;color:var(--muted);font-size:11px}
 .chat-note{min-height:16px;padding-top:5px;color:var(--muted);font-size:10px;line-height:1.3}
 .chat-form{display:grid;grid-template-columns:1fr;gap:7px;margin-top:6px;padding-top:10px;border-top:1px solid var(--line)}
-.chat-form textarea{width:100%;min-height:58px;max-height:110px;resize:vertical;border:1px solid #cbd2d9;border-radius:8px;padding:8px 9px;background:#fff;color:var(--text);font:inherit;font-size:12px}
+.chat-input-wrap{position:relative;min-width:0}
+.chat-form textarea{width:100%;min-height:58px;max-height:110px;resize:vertical;border:1px solid #cbd2d9;border-radius:8px;padding:27px 9px 8px;background:#fff;color:var(--text);font:inherit;font-size:12px}
+.chat-emoji-toggle{position:absolute;left:7px;top:6px;width:26px;height:20px;padding:0;border:0;background:transparent;color:var(--text);font-size:17px;line-height:1;display:grid;place-items:center;opacity:.78;cursor:pointer}
+.chat-emoji-toggle:hover{opacity:1;background:transparent}
+.chat-emoji-toggle[aria-expanded="true"]{opacity:1;background:transparent}
+.chat-emoji-picker{position:absolute;left:0;bottom:calc(100% + 7px);z-index:30;width:min(340px,calc(100vw - 48px));padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 16px 40px rgba(15,23,42,.2);display:grid;grid-template-columns:repeat(8,minmax(30px,1fr));gap:6px}
+.chat-emoji-picker.hidden{display:none}
+.chat-emoji{min-height:34px;border:1px solid transparent;border-radius:8px;background:transparent;font-size:20px;line-height:1;padding:3px;display:grid;place-items:center;cursor:pointer}
+.chat-emoji:hover{background:#f1f5f9;border-color:var(--line)}
 .chat-form button{width:100%;padding:8px 10px}
 
 html[data-theme="dark"] .chat-message{border-bottom-color:#34404c}
 html[data-theme="dark"] .chat-heading small{color:#6ed59b}
 html[data-theme="dark"] .chat-form{border-top-color:#34404c}
 html[data-theme="dark"] .chat-form textarea{background:#121920;color:#dbe4ec;border-color:#3d4955}
+html[data-theme="dark"] .chat-emoji-picker{background:#121920;border-color:#3d4955}
+html[data-theme="dark"] .chat-emoji:hover{background:#1b2731}
 html[data-theme="dark"] .chat-empty,
 html[data-theme="dark"] .chat-note,
 html[data-theme="dark"] .chat-time{color:#91a0ad}
