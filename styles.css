@@ -1624,3 +1624,5 @@ body.theme-preview .theme-switch .switch-thumb{transform:translateX(calc(var(--t
 .theme-switch.theme-dragging .switch-thumb{
   transition:none!important;
 }
+
+.theme-switch .switch-track{touch-action:none}
