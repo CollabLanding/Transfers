@@ -21,7 +21,7 @@
     "Loading":"#f97316",
     "Loaded":"#eab308",
     "In Transit":"#84cc16",
-    "On Site":"#22c55e",
+    "On Site":"#84cc16",
     "Delivered":"#16a34a"
   };
 
