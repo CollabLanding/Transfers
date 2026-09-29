@@ -804,7 +804,7 @@ header .brand-cluster>.company-logo{
   height:2px;
   width:calc(100% - var(--rail));
   background:#ef4444;
-  opacity:1;
+  opacity:.72;
   z-index:4;
   pointer-events:none;
   transform:translateY(-1px)
