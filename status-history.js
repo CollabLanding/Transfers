@@ -14,11 +14,11 @@
     back:$("statusHistoryBack")
   };
 
-  const STATUS_ORDER=["Planned","Waiting","On Site","Loading","Loaded","In Transit","Delivered"];
+  const STATUS_ORDER=["Planned","Waiting","Loading","Loaded","In Transit","On Site","Delivered"];
   const COLORS={
     "Planned":"#64748b",
     "Waiting":"#ea580c",
-    "On Site":"#eab308",
+    "On Site":"#22c55e",
     "Loading":"#eab308",
     "Loaded":"#84cc16",
     "In Transit":"#3b82f6",
