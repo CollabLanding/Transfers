@@ -1522,3 +1522,9 @@ html[data-theme="dark"] .chain-saved-art,body.dark-theme .chain-saved-art{color:
     line-height:1.2;
   }
 }
+
+/* Narrower mobile time rail */
+@media(max-width:900px){
+  :root{--rail:58px}
+  .tick{right:5px;font-size:9px}
+}
