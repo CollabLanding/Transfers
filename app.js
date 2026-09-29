@@ -185,6 +185,20 @@ function updateCurrentTimeLine(){
   line.classList.toggle("hidden",!visible);
   if(!visible)return;
   line.style.top=(((minutes-GRID_START)/15)*PX15)+"px";
+
+  const bodyrow=line.parentElement;
+  const lanes=bodyrow?.querySelectorAll(".lane");
+  const rail=Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--rail"))||64;
+  if(lanes?.length){
+    const lastLane=lanes[lanes.length-1];
+    line.style.left=rail+"px";
+    line.style.right="auto";
+    line.style.width=(lastLane.offsetLeft+lastLane.offsetWidth-rail)+"px";
+  }else{
+    line.style.left=rail+"px";
+    line.style.right="0";
+    line.style.width="auto";
+  }
 }
 function renderBoard(){
  const date=E.boardDate.value,day=items.filter(x=>x.scheduled_date===date),laneDrivers=orderedUniq([...drivers,...day.map(x=>x.driver)]);
