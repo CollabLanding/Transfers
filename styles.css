@@ -171,9 +171,9 @@ main{grid-template-columns:380px minmax(0,1fr) 186px}
 .chat-emoji-toggle{position:absolute;right:7px;top:5px;width:19px!important;min-width:19px!important;height:19px!important;min-height:19px!important;padding:0!important;margin:0;border:0!important;border-radius:0!important;background:transparent!important;color:var(--text);font-size:13px;line-height:1;display:grid!important;place-items:center;align-self:auto!important;opacity:.78;cursor:pointer;box-shadow:none!important}
 .chat-emoji-toggle:hover{opacity:1;background:transparent!important}
 .chat-emoji-toggle[aria-expanded="true"]{opacity:1;background:transparent!important;box-shadow:none!important}
-.chat-emoji-picker{position:absolute;right:0;bottom:calc(100% + 7px);z-index:30;width:min(335px,calc(100vw - 48px));padding:5px;border:1px solid var(--line);border-radius:7px;background:var(--panel);box-shadow:0 16px 40px rgba(15,23,42,.2);display:grid;grid-template-columns:repeat(8,minmax(25px,1fr));gap:1px;place-items:center}
+.chat-emoji-picker{position:absolute;right:0;bottom:calc(100% + 7px);z-index:30;width:max-content;max-width:calc(100vw - 48px);padding:4px;border:1px solid var(--line);border-radius:7px;background:var(--panel);box-shadow:0 16px 40px rgba(15,23,42,.2);display:grid;grid-template-columns:repeat(8,22px);gap:1px;place-items:center}
 .chat-emoji-picker.hidden{display:none}
-.chat-emoji{min-height:29px;min-width:25px;border:1px solid transparent;border-radius:3px;background:transparent;font-size:15px;line-height:1;padding:0;display:grid;place-items:center;cursor:pointer}
+.chat-emoji{width:22px;height:22px;min-height:22px;min-width:22px;border:1px solid transparent;border-radius:3px;background:transparent;font-size:15px;line-height:1;padding:0;display:grid;place-items:center;cursor:pointer}
 .chat-emoji:hover{background:#f1f5f9;border-color:var(--line)}
 .chat-form button{width:100%;padding:8px 10px}
 
