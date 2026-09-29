@@ -17,11 +17,11 @@
   const STATUS_ORDER=["Planned","Waiting","Loading","Loaded","In Transit","On Site","Delivered"];
   const COLORS={
     "Planned":"#64748b",
-    "Waiting":"#ea580c",
+    "Waiting":"#ef4444",
+    "Loading":"#f97316",
+    "Loaded":"#eab308",
+    "In Transit":"#84cc16",
     "On Site":"#22c55e",
-    "Loading":"#eab308",
-    "Loaded":"#84cc16",
-    "In Transit":"#3b82f6",
     "Delivered":"#16a34a"
   };
 
