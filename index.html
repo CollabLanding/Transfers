@@ -10,7 +10,7 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20260928-order-status-colors-1">
+  <link rel="stylesheet" href="styles.css?v=20260929-chat-emoji-1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
 <link rel="stylesheet" href="slot-status.css?v=20260928-status-notes-6">
@@ -124,7 +124,11 @@
       <div id="chatList" class="chat-list" aria-live="polite"><div class="chat-empty">Loading chat…</div></div>
       <div id="chatNote" class="chat-note" aria-live="polite"></div>
       <form id="chatForm" class="chat-form">
-        <textarea id="chatInput" maxlength="500" rows="2" placeholder="Type a message…" aria-label="Chat message"></textarea>
+        <div class="chat-input-wrap">
+          <textarea id="chatInput" maxlength="500" rows="2" placeholder="Type a message…" aria-label="Chat message"></textarea>
+          <button id="chatEmojiToggle" class="chat-emoji-toggle" type="button" aria-label="Add emoji" aria-expanded="false">👍</button>
+          <div id="chatEmojiPicker" class="chat-emoji-picker hidden" role="menu" aria-label="Emoji picker"></div>
+        </div>
         <button id="chatSend" class="primary" type="submit">Send</button>
       </form>
     </section>
@@ -204,7 +208,7 @@
 <script src="duplicate-transfer.js?v=20260923-deadlines"></script>
 <script src="duplicate-day.js?v=20260923-deadlines"></script>
 <script src="theme.js"></script>
-<script src="chat.js?v=20260922-chat-sound-clear"></script>
+<script src="chat.js?v=20260929-chat-emoji-1"></script>
 <script src="sms.js?v=20260921-infobip"></script>
 </body>
 </html>
