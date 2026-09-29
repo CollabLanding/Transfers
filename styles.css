@@ -45,17 +45,17 @@ main{grid-template-columns:380px minmax(0,1fr) 155px;align-items:start}
 /* Order status colors */
 .card.status-planned{background:#f1f5f9;border-color:#64748b;border-left-color:#64748b}
 .card.status-planned .card-status{color:#475569}
-.card.status-waiting{background:#f97316;border-color:#ea580c;border-left-color:#c2410c;color:#351507}
-.card.status-waiting .card-status{color:#57200b}
+.card.status-waiting{background:#ef4444;border-color:#dc2626;border-left-color:#b91c1c;color:#450a0a}
+.card.status-waiting .card-status{color:#450a0a}
 .card.status-on-site{background:#86efac;border-color:#22c55e;border-left-color:#16a34a}
 .card.status-on-site .card-status{color:#14532d}
-.card.status-loading{background:#facc15;border-color:#eab308;border-left-color:#ca8a04}
-.card.status-loading .card-status{color:#713f12}
-.card.status-loaded{background:#bef264;border-color:#84cc16;border-left-color:#65a30d}
-.card.status-loaded .card-status{color:#365314}
-.card.status-in-transit{background:#bfdbfe;border-color:#3b82f6;border-left-color:#2563eb}
-.card.status-in-transit .card-status{color:#1e3a8a}
-.card.status-delivered{background:#4ade80;border-color:#16a34a;border-left-color:#15803d}
+.card.status-loading{background:#f97316;border-color:#ea580c;border-left-color:#c2410c}
+.card.status-loading .card-status{color:#431407}
+.card.status-loaded{background:#facc15;border-color:#eab308;border-left-color:#ca8a04}
+.card.status-loaded .card-status{color:#713f12}
+.card.status-in-transit{background:#bef264;border-color:#84cc16;border-left-color:#65a30d}
+.card.status-in-transit .card-status{color:#365314}
+.card.status-delivered{background:#22c55e;border-color:#16a34a;border-left-color:#15803d}
 .card.status-delivered .card-status{color:#14532d}
 
 .driverhead[draggable="true"]{cursor:grab;user-select:none}
@@ -131,17 +131,17 @@ html[data-theme="dark"] .iconbtn{background:transparent}
 html[data-theme="dark"] .card{color:#e4ebf1}
 html[data-theme="dark"] .card.status-planned{background:#29333d;border-color:#6f7d8a;border-left-color:#8996a2}
 html[data-theme="dark"] .card.status-planned .card-status{color:#c1ccd5}
-html[data-theme="dark"] .card.status-waiting{background:#7c2d12;border-color:#c2410c;border-left-color:#ea580c;color:#fff7ed}
-html[data-theme="dark"] .card.status-waiting .card-status{color:#ffedd5}
+html[data-theme="dark"] .card.status-waiting{background:#7f1d1d;border-color:#b91c1c;border-left-color:#ef4444;color:#fff1f2}
+html[data-theme="dark"] .card.status-waiting .card-status{color:#fee2e2}
 html[data-theme="dark"] .card.status-on-site{background:#245c3a;border-color:#22c55e;border-left-color:#16a34a}
 html[data-theme="dark"] .card.status-on-site .card-status{color:#bbf7d0}
-html[data-theme="dark"] .card.status-loading{background:#665817;border-color:#d4aa18;border-left-color:#eab308}
-html[data-theme="dark"] .card.status-loading .card-status{color:#fef08a}
-html[data-theme="dark"] .card.status-loaded{background:#315116;border-color:#75a91e;border-left-color:#84cc16}
-html[data-theme="dark"] .card.status-loaded .card-status{color:#d9f99d}
-html[data-theme="dark"] .card.status-in-transit{background:#183b63;border-color:#3b82f6;border-left-color:#2563eb}
-html[data-theme="dark"] .card.status-in-transit .card-status{color:#bfdbfe}
-html[data-theme="dark"] .card.status-delivered{background:#176330;border-color:#2ca455;border-left-color:#22c55e}
+html[data-theme="dark"] .card.status-loading{background:#7c2d12;border-color:#c2410c;border-left-color:#f97316}
+html[data-theme="dark"] .card.status-loading .card-status{color:#ffedd5}
+html[data-theme="dark"] .card.status-loaded{background:#665817;border-color:#d4aa18;border-left-color:#facc15}
+html[data-theme="dark"] .card.status-loaded .card-status{color:#fef08a}
+html[data-theme="dark"] .card.status-in-transit{background:#315116;border-color:#75a91e;border-left-color:#84cc16}
+html[data-theme="dark"] .card.status-in-transit .card-status{color:#d9f99d}
+html[data-theme="dark"] .card.status-delivered{background:#176330;border-color:#16a34a;border-left-color:#22c55e}
 html[data-theme="dark"] .card.status-delivered .card-status{color:#bbf7d0}
 html[data-theme="dark"] .card .draghint{color:#aebdca}
 
