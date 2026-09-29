@@ -20,7 +20,7 @@
     "Waiting":"#f97316",
     "Loading":"#f59e0b",
     "Loaded":"#eab308",
-    "In Transit":"#bef264",
+    "In Transit":"#d9e34f",
     "On Site":"#bef264",
     "Delivered":"#16a34a"
   };
