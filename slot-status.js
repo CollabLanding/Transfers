@@ -1,7 +1,7 @@
 /* Shared status ranges; independent of transfer loading and drag/drop. */
 window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start, end, px, getLinks, onSelectStatus}) {
   const table = 'transfer_slot_statuses', key = 'transfers-slot-statuses-v1';
-  const statuses = ['Driving', 'Yard Moves', 'Loading', 'Standby'];
+  const statuses = ['Driving', 'Yard Moves', 'Loading', 'Standby', 'Job Pushed'];
   let rows = [], date = null, generation = 0, selection = null, busy = false, moving = null, resizeCancel = null;
   const dialog = document.createElement('dialog');
   dialog.className = 'slot-status-dialog';
