@@ -114,9 +114,13 @@
 
     const present=intervals.map(x=>x.status);
     const unknown=present.filter(status=>!STATUS_ORDER.includes(status));
-    const statuses=[...new Set([...unknown,...STATUS_ORDER.slice().reverse()])];
+    const deliveredInterval=intervals.find(interval=>interval.status==="Delivered");
     const startTime=intervals[0].start.getTime();
-    const endTime=Math.max(startTime+60000,intervals[intervals.length-1].end.getTime());
+    const deliveredTime=deliveredInterval?deliveredInterval.start.getTime():null;
+    const endTime=Math.max(
+      startTime+60000,
+      deliveredTime??intervals[intervals.length-1].end.getTime()
+    );
     const span=Math.max(60000,endTime-startTime);
     const tickCount=5;
     const currentStatus=intervals[intervals.length-1].status;
@@ -126,18 +130,58 @@
       Math.max(0,Math.min(100,((time-startTime)/span)*100));
 
     const ticks=Array.from({length:tickCount},(_,index)=>startTime+(span*index/(tickCount-1)));
-    const rows=statuses.map(status=>{
-      const statusIntervals=intervals.filter(interval=>interval.status===status);
-      const total=statusIntervals.reduce((sum,interval)=>sum+Math.max(0,interval.end-interval.start),0);
-      const bars=statusIntervals.map(interval=>{
-        const left=pct(interval.start.getTime());
-        const right=pct(interval.end.getTime());
-        const width=Math.max(0.8,right-left);
-        const duration=durationLabel(interval.end.getTime()-interval.start.getTime());
-        return '<div class="history-bar" style="left:'+left+'%;width:'+Math.min(100-left,width)+'%;background:'+esc(COLORS[status]||"#7c3aed")+'" title="'+esc(status+" • "+duration+" • "+formatTime(interval.start)+" – "+formatTime(interval.end))+'"><span>'+esc(duration)+'</span></div>';
-      }).join("");
-      return '<div class="history-row"><div class="history-status-label"><span class="history-status-dot" style="background:'+esc(COLORS[status]||"#7c3aed")+'"></span><span>'+esc(status)+'</span><strong>'+esc(durationLabel(total))+'</strong></div><div class="history-track">'+ticks.map(time=>'<span class="history-grid-line" style="left:'+pct(time)+'%"></span>').join("")+bars+'</div></div>';
-    }).join("");
+
+    const durationStatuses=[...new Set([
+      ...unknown,
+      ...STATUS_ORDER.slice().reverse()
+    ])].filter(status=>status!=="Planned"&&status!=="Delivered");
+
+    const renderMarkerRow=(status,time,label,position)=>{
+      const markerColor=COLORS[status]||"#64748b";
+      const left=pct(time);
+      const transform=position==="end"?"translateX(-100%)":"";
+      const textAlign=position==="end"?"right":"left";
+      return '<div class="history-row history-marker-row">'+
+        '<div class="history-status-label history-marker-label">'+
+          '<span class="history-status-dot" style="background:'+esc(markerColor)+'"></span>'+
+          '<span>'+esc(status)+'</span>'+
+          '<strong>'+esc(label)+'</strong>'+
+        '</div>'+
+        '<div class="history-track history-marker-track">'+
+          '<span class="history-grid-line" style="left:'+left+'%"></span>'+
+          '<span class="history-marker-line" style="left:'+left+'%;background:'+esc(markerColor)+'"></span>'+
+          '<span class="history-marker-dot" style="left:'+left+'%;background:'+esc(markerColor)+'"></span>'+
+          '<span class="history-marker-time" style="left:'+left+'%;transform:'+transform+';text-align:'+textAlign+'">'+esc(formatTime(time))+'</span>'+
+        '</div>'+
+      '</div>';
+    };
+
+    const rows=[
+      deliveredTime!=null?renderMarkerRow("Delivered",deliveredTime,"END","end"):"",
+      durationStatuses.map(status=>{
+        const statusIntervals=intervals
+          .filter(interval=>interval.status===status)
+          .filter(interval=>interval.start.getTime()<endTime)
+          .map(interval=>({
+            start:interval.start,
+            end:new Date(Math.min(interval.end.getTime(),endTime))
+          }))
+          .filter(interval=>interval.end.getTime()>interval.start.getTime());
+
+        const total=statusIntervals.reduce((sum,interval)=>sum+Math.max(0,interval.end-interval.start),0);
+
+        const bars=statusIntervals.map(interval=>{
+          const left=pct(interval.start.getTime());
+          const right=pct(interval.end.getTime());
+          const width=Math.max(0.8,right-left);
+          const duration=durationLabel(interval.end.getTime()-interval.start.getTime());
+          return '<div class="history-bar" style="left:'+left+'%;width:'+Math.min(100-left,width)+'%;background:'+esc(COLORS[status]||"#7c3aed")+'" title="'+esc(status+" • "+duration+" • "+formatTime(interval.start)+" – "+formatTime(interval.end))+'"><span>'+esc(duration)+'</span></div>';
+        }).join("");
+
+        return '<div class="history-row"><div class="history-status-label"><span class="history-status-dot" style="background:'+esc(COLORS[status]||"#7c3aed")+'"></span><span>'+esc(status)+'</span><strong>'+esc(durationLabel(total))+'</strong></div><div class="history-track">'+ticks.map(time=>'<span class="history-grid-line" style="left:'+pct(time)+'%"></span>').join("")+bars+'</div></div>';
+      }).join(""),
+      renderMarkerRow("Planned",startTime,"START","start")
+    ].join("");
 
     const axis=ticks.map((time,index)=>{
       const align=index===0?"start":index===tickCount-1?"end":"center";
@@ -147,7 +191,7 @@
     E.title.textContent=transfer.job_number?("Job "+transfer.job_number):"Status History";
     E.graph.innerHTML=
       '<div class="status-history-summary">'+
-        '<div class="status-history-summary-copy"><small>TIME IN EACH STATUS</small><p>Track each status change across the life of this transfer.</p></div>'+
+        '<div class="status-history-summary-copy"><small>STATUS TIMELINE</small><p>Start and end markers with time spent in each working status.</p></div>'+
         '<div class="status-history-current"><span>Current Status</span><strong style="color:'+esc(currentColor)+'">'+esc(currentStatus)+'</strong></div>'+
       '</div>'+
       '<div class="history-chart">'+
@@ -155,7 +199,6 @@
         '<div class="history-rows">'+rows+'</div>'+
       '</div>';
   }
-
   async function load(){
     const id=String(E.editId?.value||"").trim();
     if(!id){
