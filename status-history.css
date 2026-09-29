@@ -194,3 +194,46 @@ html[data-theme="dark"] .history-bar{
   .history-chart{min-width:680px}
   .history-axis-row,.history-row{grid-template-columns:125px minmax(555px,1fr);column-gap:12px}
 }
+.history-marker-row{
+  min-height:48px;
+}
+.history-marker-label strong{
+  color:var(--muted);
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.history-marker-track{
+  background:transparent;
+  border-color:transparent;
+  overflow:visible;
+}
+.history-marker-line{
+  position:absolute;
+  top:3px;
+  bottom:3px;
+  width:2px;
+  transform:translateX(-50%);
+  border-radius:999px;
+}
+.history-marker-dot{
+  position:absolute;
+  top:50%;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--panel) 88%,transparent);
+}
+.history-marker-time{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  width:140px;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:700;
+  white-space:nowrap;
+  pointer-events:none;
+}
