@@ -655,9 +655,18 @@ body.dark-theme .schedule-message.error{color:#f0a2a2}
   overflow:hidden
 }
 .driver-unavailable-overlay{
+  background:rgba(8,12,16,.88);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),inset 0 -1px 0 rgba(255,255,255,.04)
+}
+html[data-theme="light"] .driver-unavailable-overlay{
   background:rgba(100,116,139,.16);
   box-shadow:inset 0 1px 0 rgba(100,116,139,.1),inset 0 -1px 0 rgba(100,116,139,.1)
 }
+body:not(.dark-theme) .driver-unavailable-overlay{
+  background:rgba(100,116,139,.16);
+  box-shadow:inset 0 1px 0 rgba(100,116,139,.1),inset 0 -1px 0 rgba(100,116,139,.1)
+}
+
 .driver-unavailable-overlay span{
   color:#d6dde3;
   font-size:10px;
