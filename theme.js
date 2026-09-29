@@ -7,9 +7,7 @@
   const root=document.documentElement;
   const body=document.body;
   let dragging=false;
-  let moved=false;
   let pointerId=null;
-  let startX=0;
   let progress=0;
 
   function savedTheme(){
@@ -89,10 +87,6 @@
     setThumbProgress(progress,true);
     if(progress<=0||progress>=1)apply(progress>=1?"dark":"light",true);
     else persistProgress();
-    if(!moved){
-      const isDark=progress>=0.5;
-      apply(isDark?"dark":"light",true);
-    }
   }
 
   function beginDrag(event){
@@ -100,9 +94,7 @@
     const rect=track.getBoundingClientRect();
     const local=Math.max(0,Math.min(1,(event.clientX-rect.left)/rect.width));
     dragging=true;
-    moved=false;
     pointerId=event.pointerId;
-    startX=event.clientX;
     try{track.setPointerCapture?.(pointerId)}catch(_err){}
     setThumbProgress(local,true);
     event.preventDefault();
@@ -111,7 +103,6 @@
 
   function moveDrag(event){
     if(!dragging||event.pointerId!==pointerId)return;
-    if(Math.abs(event.clientX-startX)>3)moved=true;
     const rect=track.getBoundingClientRect();
     const local=Math.max(0,Math.min(1,(event.clientX-rect.left)/rect.width));
     setThumbProgress(local,true);
