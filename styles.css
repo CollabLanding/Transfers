@@ -812,18 +812,14 @@ header .brand-cluster>.company-logo{
 .current-time-line::before{
   content:"";
   position:absolute;
-  left:-5px;
+  left:-1px;
   top:50%;
-  width:10px;
-  height:10px;
-  border-radius:50%;
-  background:#ef4444;
+  width:0;
+  height:0;
+  border-top:7px solid transparent;
+  border-bottom:7px solid transparent;
+  border-left:11px solid #ef4444;
   transform:translateY(-50%);
-  box-shadow:0 0 0 2px rgba(255,255,255,.9)
-}
-html[data-theme="dark"] .current-time-line::before,
-body.dark-theme .current-time-line::before{
-  box-shadow:0 0 0 2px rgba(15,22,29,.95)
 }
 
 
