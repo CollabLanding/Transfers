@@ -6,6 +6,8 @@
   const send=document.getElementById("chatSend");
   const note=document.getElementById("chatNote");
   const clearButton=document.getElementById("clearChat");
+  const emojiToggle=document.getElementById("chatEmojiToggle");
+  const emojiPicker=document.getElementById("chatEmojiPicker");
   const ADMIN_EMAIL="psaverchenko@collectfanatics.com";
 
   if(!list||!form||!input||!send)return;
@@ -136,6 +138,59 @@
       })
       .on("postgres_changes",{event:"DELETE",schema:"public",table:"transfer_chat_messages"},payload=>removeMessage(payload.old))
       .subscribe();
+  }
+
+  const CHAT_EMOJIS=["😀","😂","🤣","😅","😊","😍","😘","😎","🤔","😐","🙄","😢","😡","😱","👍","👎","👏","🙌","🙏","💪","✅","❌","⚠️","🔥","❤️","💯","🎉","🚚","📦","🛻","👀","⭐","💥","⏰","🟢","🟡","🔴"];
+
+  let emojiStart=0,emojiEnd=0;
+  function closeEmojiPicker(){
+    emojiPicker?.classList.add("hidden");
+    emojiToggle?.setAttribute("aria-expanded","false");
+  }
+  function insertEmoji(emoji){
+    if(!emojiPicker||!emojiToggle)return;
+    const start=Math.max(0,Number.isFinite(emojiStart)?emojiStart:input.selectionStart||0);
+    const end=Math.max(start,Number.isFinite(emojiEnd)?emojiEnd:input.selectionEnd||start);
+    const next=input.value.slice(0,start)+emoji+input.value.slice(end);
+    if(next.length>500)return;
+    input.value=next;
+    const caret=start+emoji.length;
+    input.focus();
+    input.setSelectionRange(caret,caret);
+    emojiStart=caret;emojiEnd=caret;
+    closeEmojiPicker();
+  }
+  if(emojiToggle&&emojiPicker){
+    CHAT_EMOJIS.forEach(emoji=>{
+      const button=document.createElement("button");
+      button.type="button";
+      button.className="chat-emoji";
+      button.textContent=emoji;
+      button.setAttribute("role","menuitem");
+      button.setAttribute("aria-label",emoji);
+      button.addEventListener("mousedown",e=>e.preventDefault());
+      button.addEventListener("click",()=>insertEmoji(emoji));
+      emojiPicker.appendChild(button);
+    });
+    emojiToggle.addEventListener("click",()=>{
+      emojiStart=input.selectionStart||input.value.length;
+      emojiEnd=input.selectionEnd||emojiStart;
+      const opening=emojiPicker.classList.toggle("hidden");
+      emojiToggle.setAttribute("aria-expanded",String(!opening));
+      if(!opening)input.focus();
+    });
+    ["select","input"].forEach(event=>{
+      input.addEventListener(event,()=>{
+        emojiStart=input.selectionStart||0;
+        emojiEnd=input.selectionEnd||emojiStart;
+      });
+    });
+    document.addEventListener("pointerdown",e=>{
+      if(!emojiPicker.contains(e.target)&&e.target!==emojiToggle)closeEmojiPicker();
+    });
+    document.addEventListener("keydown",e=>{
+      if(e.key==="Escape"&&!emojiPicker.classList.contains("hidden"))closeEmojiPicker();
+    });
   }
 
   form.addEventListener("submit",async e=>{
