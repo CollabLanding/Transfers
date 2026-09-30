@@ -1426,7 +1426,7 @@ body.dark-theme .schedule-overrun-warning{
 html[data-theme="dark"] .activity-item.activity-focus,body.dark-theme .activity-item.activity-focus{background:#20384a}
 
 /* The chain sits above the resize strip and never starts a load drag. */
-:is(.card,.slot-status-block) .load-chain{position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:26px;height:19px;min-height:0;padding:0;display:flex;align-items:center;justify-content:center;border:0;border-radius:0;background:transparent;color:#536777;cursor:grab;z-index:12;line-height:1}
+:is(.card,.slot-status-block) .load-chain{position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:26px!important;height:19px!important;min-width:26px!important;min-height:19px!important;padding:0!important;margin:0;border:0!important;border-radius:0!important;background:none!important;background-color:transparent!important;box-shadow:none!important;-webkit-appearance:none!important;appearance:none!important;color:#536777;cursor:grab;z-index:12;line-height:1;display:flex;align-items:center;justify-content:center;overflow:visible}
 :is(.card,.slot-status-block) .load-chain.is-linked{background:transparent;color:#157559}
 :is(.card,.slot-status-block) .load-chain:focus-visible{outline:2px solid #ec9800;outline-offset:1px}
 :is(.card,.slot-status-block).link-target{outline:3px solid #159969!important;outline-offset:-3px}
