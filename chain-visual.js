@@ -4,65 +4,61 @@ window.TransferChainVisual = (() => {
   let drag=null;
   function node(tag,attrs={}){const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);return n}
   function draw(svg,a,b,hooked){
-    svg.replaceChildren();svg.classList.toggle('chain-hooked',hooked);
+    svg.replaceChildren();
+    svg.classList.toggle('chain-hooked',hooked);
 
     const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy);
     if(length<2)return;
 
-    // The extension starts from the bottom-left of the existing icon.
-    // Every 5px of mouse travel reveals the next portion of the link.
-    const direction=Math.atan2(dy,dx)*180/Math.PI;
     const ux=dx/length,uy=dy/length;
-    const first=5;
-    const step=5;
-    const drawn=Math.floor(length/step)*step;
-    if(drawn<step)return;
+    const px=-uy,py=ux;
 
-    // One closed link, sized to match the existing chain icon visually.
-    // It is revealed progressively along the direction of travel.
-    const linkPath="M 0 -8 a 5 5 0 1 0 10 0 v 16 a 5 5 0 1 0 -10 0 Z";
+    // One closed chain link matching the proportions of the existing icon.
+    // Its top center is the attachment point to the previous link.
     const linkWidth=10;
-    const linkLength=26;
-    const startX=a.x;
-    const startY=a.y;
+    const linkHeight=26;
+    const pitch=16;
+    const step=5;
 
-    const group=node('g',{
-      transform:`translate(${startX} ${startY}) rotate(${direction})`
-    });
+    const travel=Math.floor(length/step)*step;
+    if(travel<step)return;
 
-    const outline=node('path',{
-      d:linkPath,
-      fill:'none',
-      stroke:'currentColor',
-      'stroke-width':'2.5',
-      'stroke-linecap':'round',
-      'stroke-linejoin':'round',
-      'stroke-dasharray':String(2*Math.PI*5+2*(linkLength-10)),
-      'stroke-dashoffset':String(Math.max(0,2*Math.PI*5+2*(linkLength-10)-Math.min(linkLength,drawn)))
-    });
-    group.append(outline);
-    svg.append(group);
+    const completed=Math.floor(travel/pitch);
+    const remainder=travel-completed*pitch;
 
-    // Once a full link has been drawn, begin the next link immediately
-    // from its bottom-left connection point, repeating the same five-pixel
-    // reveal behavior.
-    const fullLinkDistance=linkLength-1;
-    const fullCount=Math.floor(drawn/fullLinkDistance);
-    for(let i=1;i<fullCount;i++){
-      const d=i*fullLinkDistance;
-      const x=startX+ux*d,y=startY+uy*d;
-      const g=node('g',{
-        transform:`translate(${x} ${y}) rotate(${direction})`
-      });
-      g.append(node('path',{
-        d:linkPath,
+    // Every completed link overlaps the next one slightly. The small
+    // alternating perpendicular offset gives the links an interlocked
+    // appearance without turning them horizontal.
+    const addLink=(index,topDistance,progress=1)=>{
+      const side=index%2===0?-1:1;
+      const x=a.x+ux*topDistance+px*side*1.5;
+      const y=a.y+uy*topDistance+py*side*1.5;
+      const group=node('g',{transform:`translate(${x} ${y}) rotate(${Math.atan2(dy,dx)*180/Math.PI-90}) translate(-5 0)`});
+      const path=node('rect',{
+        x:0,
+        y:0,
+        width:linkWidth,
+        height:linkHeight,
+        rx:linkWidth/2,
+        ry:linkWidth/2,
         fill:'none',
         stroke:'currentColor',
         'stroke-width':'2.5',
-        'stroke-linecap':'round',
-        'stroke-linejoin':'round'
-      }));
-      svg.append(g);
+        'vector-effect':'non-scaling-stroke',
+        pathLength:'1'
+      });
+      if(progress<1){
+        path.setAttribute('stroke-dasharray',`${progress} 1`);
+        path.setAttribute('stroke-dashoffset','0');
+      }
+      group.append(path);
+      svg.append(group);
+    };
+
+    for(let i=0;i<completed;i++)addLink(i,i*pitch,1);
+
+    if(remainder>0){
+      addLink(completed,completed*pitch,remainder/linkHeight);
     }
   }
 
@@ -72,21 +68,43 @@ window.TransferChainVisual = (() => {
     const svg=node('svg',{'aria-hidden':'true',class:'chain-drag-art'});
     svg.style.color=getComputedStyle(handle).color;
     document.body.append(svg);
+
+    const centerX=r.left+r.width/2;
+    const centerY=r.top+r.height/2;
+
+    // Bottom-left edge of the existing icon is the chain's attachment point.
+    const localX=-6;
+    const localY=6;
+    const anchorX=centerX+localX;
+    const anchorY=centerY+localY;
+
     drag={
       svg,
       handle,
-      a:{x:r.left+r.width/2,y:r.top+r.height/2}
+      center:{x:centerX,y:centerY},
+      localAnchor:{x:localX,y:localY},
+      a:{x:anchorX,y:anchorY}
     };
     draw(svg,drag.a,drag.a,false);
   }
   function move(x,y,target){
     if(!drag)return;
+
     let b={x,y};
     if(target){
       const r=target.getBoundingClientRect();
       b={x:r.left+r.width/2,y:r.top+r.height/2<drag.a.y?r.bottom-5:r.top+5};
     }
-    draw(drag.svg,drag.a,b,!!target);
+
+    const angle=Math.atan2(b.y-drag.center.y,b.x-drag.center.x);
+    const lx=drag.localAnchor.x,ly=drag.localAnchor.y;
+    const anchor={
+      x:drag.center.x+lx*Math.cos(angle)-ly*Math.sin(angle),
+      y:drag.center.y+lx*Math.sin(angle)+ly*Math.cos(angle)
+    };
+
+    drag.handle.style.transform=`translateX(-50%) rotate(${angle*180/Math.PI}rad)`;
+    draw(drag.svg,anchor,b,!!target);
   }
   function stop(){
     if(drag?.handle)drag.handle.style.transform='';
