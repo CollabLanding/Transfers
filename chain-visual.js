@@ -6,29 +6,33 @@ window.TransferChainVisual = (() => {
   function draw(svg,a,b,hooked){
     svg.replaceChildren();svg.classList.toggle('chain-hooked',hooked);
 
-    // Repeat the exact same two-link SVG artwork used by the clickable
-    // chain button. The connection is simply more copies of that icon
-    // tiled end-to-end between the two jobs.
+    // The clickable handle already contains the original two-link icon.
+    // The connector adds ONE additional link at a time, using the same
+    // individual link artwork and alternating its orientation.
     const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy);
-    if(length<8)return;
+    if(length<14)return;
 
-    const iconPath="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2";
     const ux=dx/length,uy=dy/length;
-    const spacing=13;
-    const first=8;
-    const last=Math.max(first,length-8);
+    const angle=Math.atan2(dy,dx)*180/Math.PI;
+    const linkA="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2";
+    const linkB="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2";
+    const spacing=10;
+    const first=9;
+    const last=length-9;
     const count=Math.max(1,Math.floor((last-first)/spacing)+1);
 
     for(let i=0;i<count;i++){
       const d=count===1?(first+last)/2:first+(i*(last-first))/(count-1);
       const x=a.x+ux*d,y=a.y+uy*d;
-      const group=node('g',{transform:`translate(${x-12} ${y-12})`});
+      const rotation=angle+(i%2===0?0:180);
+      const group=node('g',{transform:`translate(${x-12} ${y-12}) rotate(${rotation} 12 12)`});
       group.append(node('path',{
-        d:iconPath,
+        d:i%2===0?linkA:linkB,
         fill:'none',
         stroke:'currentColor',
         'stroke-width':'2.5',
-        'stroke-linecap':'round'
+        'stroke-linecap':'round',
+        'stroke-linejoin':'round'
       }));
       svg.append(group);
     }
