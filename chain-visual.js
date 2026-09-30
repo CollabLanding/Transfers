@@ -1,7 +1,7 @@
 /* Pointer-transparent chain artwork; load/link state remains in app.js. */
 window.TransferChainVisual = (() => {
   const ns='http://www.w3.org/2000/svg';
-  const LINK_PATH='M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2';
+  const LINK_PATH='M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2Q7 9 10 13Z';
   let drag=null;
 
   function node(tag,attrs={}){
