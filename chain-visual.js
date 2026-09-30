@@ -5,11 +5,27 @@ window.TransferChainVisual = (() => {
   function node(tag,attrs={}){const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);return n}
   function draw(svg,a,b,hooked){
     svg.replaceChildren();svg.classList.toggle('chain-hooked',hooked);
-    // The handle is the first link; draw exactly one extending link to the target.
+    // Extend the existing link icon as a chain of small interlocking links;
+    // never draw a solid connector bar between the two boxes.
     const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy);
-    if(length<3)return;
-    const angle=Math.atan2(dy,dx)*180/Math.PI-90;
-    svg.append(node('rect',{x:a.x-4,y:a.y-4,width:8,height:length+8,rx:4,transform:`rotate(${angle} ${a.x} ${a.y})`,class:'chain-metal'}));
+    if(length<6)return;
+    const ux=dx/length,uy=dy/length;
+    const angle=Math.atan2(dy,dx)*180/Math.PI;
+    const spacing=12;
+    const first=8;
+    const last=length-7;
+    const count=Math.max(0,Math.floor((last-first)/spacing)+1);
+    for(let i=0;i<count;i++){
+      const d=first+i*spacing;
+      if(d>last+0.5)break;
+      const x=a.x+ux*d,y=a.y+uy*d;
+      const tilt=(i%2===0?-18:18);
+      svg.append(node('ellipse',{
+        cx:x,cy:y,rx:6.5,ry:3.6,
+        transform:`rotate(${angle+tilt} ${x} ${y})`,
+        class:'chain-link'
+      }));
+    }
   }
 
   function start(handle){stop();const r=handle.getBoundingClientRect(),svg=node('svg',{'aria-hidden':'true',class:'chain-drag-art'});svg.style.color=getComputedStyle(handle).color;document.body.append(svg);drag={svg,a:{x:r.left+r.width/2,y:r.bottom-3}};draw(svg,drag.a,drag.a,false)}
