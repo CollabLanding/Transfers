@@ -5,26 +5,40 @@ window.TransferChainVisual = (() => {
   function node(tag,attrs={}){const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);return n}
   function draw(svg,a,b,hooked){
     svg.replaceChildren();svg.classList.toggle('chain-hooked',hooked);
-    // Reuse the exact chain-link icon from the clickable link control.
-    // The connector is simply that icon repeated between the two boxes.
+    // Generate a continuous chain in SVG. Each loop is its own link and
+    // alternates orientation so the chain visually interlocks from job to job.
     const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy);
     if(length<8)return;
-    const iconPath="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2";
-    const size=16,spacing=15,first=10,last=Math.max(first,length-10);
-    const count=Math.max(1,Math.floor((last-first)/spacing)+1);
+
+    const ux=dx/length,uy=dy/length;
+    const vx=-uy,vy=ux;
     const angle=Math.atan2(dy,dx)*180/Math.PI;
+    const spacing=11;
+    const first=7;
+    const last=Math.max(first,length-7);
+    const count=Math.max(1,Math.floor((last-first)/spacing)+1);
+
     for(let i=0;i<count;i++){
       const d=count===1?(first+last)/2:first+(i*(last-first))/(count-1);
-      const x=a.x+(dx/length)*d,y=a.y+(dy/length)*d;
-      const group=node('g',{transform:`translate(${x} ${y}) rotate(${angle}) translate(-12 -12)`});
-      group.append(node('path',{
-        d:iconPath,
+      const x=a.x+ux*d,y=a.y+uy*d;
+      const tilt=(i%2===0?32:-32);
+      const w=11,h=6;
+      const path=node('path',{
+        d:`M ${x-w/2} ${y}
+           a ${h/2} ${h/2} 0 0 1 ${h} 0
+           h ${w-h*2}
+           a ${h/2} ${h/2} 0 0 1 ${h} 0
+           a ${h/2} ${h/2} 0 0 1 -${h} 0
+           h -${w-h*2}
+           a ${h/2} ${h/2} 0 0 1 -${h} 0`,
         fill:'none',
         stroke:'currentColor',
-        'stroke-width':'2.5',
-        'stroke-linecap':'round'
-      }));
-      svg.append(group);
+        'stroke-width':'2.2',
+        'stroke-linecap':'round',
+        'stroke-linejoin':'round',
+        transform:`rotate(${angle+tilt} ${x} ${y})`
+      });
+      svg.append(path);
     }
   }
 
