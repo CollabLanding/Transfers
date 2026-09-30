@@ -7,44 +7,62 @@ window.TransferChainVisual = (() => {
     svg.replaceChildren();svg.classList.toggle('chain-hooked',hooked);
 
     const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy);
-    if(length<8)return;
+    if(length<2)return;
 
-    // Keep every added link the same elongated, vertical-looking shape as
-    // the links in the button icon. Under tension the whole chain follows
-    // the pull direction; the individual links do not flip horizontal.
-    const direction=Math.atan2(dy,dx)*180/Math.PI+90;
+    // The extension starts from the bottom-left of the existing icon.
+    // Every 5px of mouse travel reveals the next portion of the link.
+    const direction=Math.atan2(dy,dx)*180/Math.PI;
+    const ux=dx/length,uy=dy/length;
+    const first=5;
+    const step=5;
+    const drawn=Math.floor(length/step)*step;
+    if(drawn<step)return;
+
+    // One closed link, sized to match the existing chain icon visually.
+    // It is revealed progressively along the direction of travel.
+    const linkPath="M 0 -8 a 5 5 0 1 0 10 0 v 16 a 5 5 0 1 0 -10 0 Z";
     const linkWidth=10;
-    const linkHeight=16;
-    const spacing=8;
-    const first=7;
-    const last=Math.max(first,length-6);
-    const count=Math.max(1,Math.floor((last-first)/spacing)+1);
+    const linkLength=26;
+    const startX=a.x;
+    const startY=a.y;
 
-    for(let i=0;i<count;i++){
-      const d=first+i*spacing;
-      if(d>last)break;
+    const group=node('g',{
+      transform:`translate(${startX} ${startY}) rotate(${direction})`
+    });
 
-      const x=a.x+(dx/length)*d;
-      const y=a.y+(dy/length)*d;
+    const outline=node('path',{
+      d:linkPath,
+      fill:'none',
+      stroke:'currentColor',
+      'stroke-width':'2.5',
+      'stroke-linecap':'round',
+      'stroke-linejoin':'round',
+      'stroke-dasharray':String(2*Math.PI*5+2*(linkLength-10)),
+      'stroke-dashoffset':String(Math.max(0,2*Math.PI*5+2*(linkLength-10)-Math.min(linkLength,drawn)))
+    });
+    group.append(outline);
+    svg.append(group);
 
-      // Tiny perpendicular offset alternates the overlap plane while the
-      // visible links remain vertically elongated like the source icon.
-      const offset=(i%2===0?-.7:.7);
-      const perpX=-dy/length;
-      const perpY=dx/length;
-
-      svg.append(node('rect',{
-        x:x+perpX*offset-linkWidth/2,
-        y:y+perpY*offset-linkHeight/2,
-        width:linkWidth,
-        height:linkHeight,
-        rx:linkWidth/2,
-        ry:linkWidth/2,
-        transform:`rotate(${direction} ${x+perpX*offset} ${y+perpY*offset})`,
+    // Once a full link has been drawn, begin the next link immediately
+    // from its bottom-left connection point, repeating the same five-pixel
+    // reveal behavior.
+    const fullLinkDistance=linkLength-1;
+    const fullCount=Math.floor(drawn/fullLinkDistance);
+    for(let i=1;i<fullCount;i++){
+      const d=i*fullLinkDistance;
+      const x=startX+ux*d,y=startY+uy*d;
+      const g=node('g',{
+        transform:`translate(${x} ${y}) rotate(${direction})`
+      });
+      g.append(node('path',{
+        d:linkPath,
         fill:'none',
         stroke:'currentColor',
-        'stroke-width':'2.5'
+        'stroke-width':'2.5',
+        'stroke-linecap':'round',
+        'stroke-linejoin':'round'
       }));
+      svg.append(g);
     }
   }
 
@@ -68,8 +86,6 @@ window.TransferChainVisual = (() => {
       const r=target.getBoundingClientRect();
       b={x:r.left+r.width/2,y:r.top+r.height/2<drag.a.y?r.bottom-5:r.top+5};
     }
-    const angle=Math.atan2(b.y-drag.a.y,b.x-drag.a.x)*180/Math.PI+90;
-    drag.handle.style.transform=`translateX(-50%) rotate(${angle}deg)`;
     draw(drag.svg,drag.a,b,!!target);
   }
   function stop(){
