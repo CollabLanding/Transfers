@@ -9,41 +9,41 @@ window.TransferChainVisual = (() => {
     const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy);
     if(length<8)return;
 
-    const ux=dx/length,uy=dy/length;
-    const direction=Math.atan2(dy,dx)*180/Math.PI;
-
-    // Each added link is a complete closed loop. The loops overlap slightly
-    // so the first one grows directly out of the original icon.
-    const linkLength=17;
-    const linkWidth=9;
-    const spacing=9;
-    const first=5;
-    const available=Math.max(0,length-4);
-    const count=Math.max(1,Math.floor((available-first)/spacing)+1);
+    // Keep every added link the same elongated, vertical-looking shape as
+    // the links in the button icon. Under tension the whole chain follows
+    // the pull direction; the individual links do not flip horizontal.
+    const direction=Math.atan2(dy,dx)*180/Math.PI+90;
+    const linkWidth=10;
+    const linkHeight=16;
+    const spacing=8;
+    const first=7;
+    const last=Math.max(first,length-6);
+    const count=Math.max(1,Math.floor((last-first)/spacing)+1);
 
     for(let i=0;i<count;i++){
       const d=first+i*spacing;
-      if(d>length-3)break;
+      if(d>last)break;
 
-      const x=a.x+ux*d;
-      const y=a.y+uy*d;
+      const x=a.x+(dx/length)*d;
+      const y=a.y+(dy/length)*d;
 
-      // Alternate the plane of each link like a real chain, while keeping
-      // the visual treatment clean at small screen sizes.
-      const rotation=direction+(i%2===0?0:90);
+      // Tiny perpendicular offset alternates the overlap plane while the
+      // visible links remain vertically elongated like the source icon.
+      const offset=(i%2===0?-.7:.7);
+      const perpX=-dy/length;
+      const perpY=dx/length;
 
       svg.append(node('rect',{
-        x:x-linkWidth/2,
-        y:y-linkLength/2,
+        x:x+perpX*offset-linkWidth/2,
+        y:y+perpY*offset-linkHeight/2,
         width:linkWidth,
-        height:linkLength,
+        height:linkHeight,
         rx:linkWidth/2,
         ry:linkWidth/2,
-        transform:`rotate(${rotation} ${x} ${y})`,
+        transform:`rotate(${direction} ${x+perpX*offset} ${y+perpY*offset})`,
         fill:'none',
         stroke:'currentColor',
-        'stroke-width':'2.5',
-        'stroke-linejoin':'round'
+        'stroke-width':'2.5'
       }));
     }
   }
