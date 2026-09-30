@@ -11,16 +11,23 @@ window.TransferChainVisual = (() => {
   }
 
   function addLink(svg,x,y,angle,scale=1){
-    const path=node('path',{
+    const g=node('g',{
+      transform:`translate(${x} ${y}) rotate(${angle}) scale(${scale}) translate(-12 -12)`,
+      class:'chain-link'
+    });
+
+    // Build one complete link from the exact two halves used by the existing
+    // chain icon. Mirroring the same path 180 degrees closes the open ends.
+    const attrs={
       d:LINK_PATH,
       fill:'none',
       stroke:'currentColor',
       'stroke-width':'2.5',
-      'stroke-linecap':'round',
-      transform:`translate(${x-12*scale} ${y-12*scale}) scale(${scale}) rotate(${angle} 12 12)`,
-      class:'chain-link'
-    });
-    svg.append(path);
+      'stroke-linecap':'round'
+    };
+    g.append(node('path',attrs));
+    g.append(node('path',{...attrs,transform:'rotate(180 12 12)'}));
+    svg.append(g);
   }
 
   function draw(svg,a,b,hooked){
@@ -32,7 +39,7 @@ window.TransferChainVisual = (() => {
 
     const ux=dx/length,uy=dy/length;
     const angle=Math.atan2(dy,dx)*180/Math.PI;
-    const spacing=17;
+    const spacing=16;
     const first=8;
     const last=length-8;
     const count=Math.max(0,Math.floor((last-first)/spacing)+1);
@@ -41,8 +48,8 @@ window.TransferChainVisual = (() => {
       const d=first+i*spacing;
       if(d>last+0.5)break;
       const x=a.x+ux*d,y=a.y+uy*d;
-      // Each extension is the same individual link shape as the existing icon.
-      // Alternate orientation so adjacent links interlock instead of becoming ovals.
+      // Every piece is a complete link, then alternate its orientation so the
+      // individual links loop through one another like the original icon.
       addLink(svg,x,y,angle+(i%2?90:0),0.82);
     }
   }
