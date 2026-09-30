@@ -5,26 +5,26 @@ window.TransferChainVisual = (() => {
   function node(tag,attrs={}){const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);return n}
   function draw(svg,a,b,hooked){
     svg.replaceChildren();svg.classList.toggle('chain-hooked',hooked);
-    // Extend the existing link icon as a chain of small interlocking links;
-    // never draw a solid connector bar between the two boxes.
+    // Reuse the exact chain-link icon from the clickable link control.
+    // The connector is simply that icon repeated between the two boxes.
     const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy);
-    if(length<6)return;
-    const ux=dx/length,uy=dy/length;
+    if(length<8)return;
+    const iconPath="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2";
+    const size=16,spacing=15,first=10,last=Math.max(first,length-10);
+    const count=Math.max(1,Math.floor((last-first)/spacing)+1);
     const angle=Math.atan2(dy,dx)*180/Math.PI;
-    const spacing=12;
-    const first=8;
-    const last=length-7;
-    const count=Math.max(0,Math.floor((last-first)/spacing)+1);
     for(let i=0;i<count;i++){
-      const d=first+i*spacing;
-      if(d>last+0.5)break;
-      const x=a.x+ux*d,y=a.y+uy*d;
-      const tilt=(i%2===0?-18:18);
-      svg.append(node('ellipse',{
-        cx:x,cy:y,rx:6.5,ry:3.6,
-        transform:`rotate(${angle+tilt} ${x} ${y})`,
-        class:'chain-link'
+      const d=count===1?(first+last)/2:first+(i*(last-first))/(count-1);
+      const x=a.x+(dx/length)*d,y=a.y+(dy/length)*d;
+      const group=node('g',{transform:`translate(${x} ${y}) rotate(${angle}) translate(-12 -12)`});
+      group.append(node('path',{
+        d:iconPath,
+        fill:'none',
+        stroke:'currentColor',
+        'stroke-width':'2.5',
+        'stroke-linecap':'round'
       }));
+      svg.append(group);
     }
   }
 
