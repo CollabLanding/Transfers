@@ -13,11 +13,11 @@ window.TransferChainVisual = (() => {
     const ux=dx/length,uy=dy/length;
     const px=-uy,py=ux;
 
-    // One closed chain link matching the proportions of the existing icon.
-    // Its top center is the attachment point to the previous link.
-    const linkWidth=10;
-    const linkHeight=26;
-    const pitch=16;
+    // Use the exact same chain-link artwork as the clickable icon in board-links.js.
+    // Do not redraw it as an elongated oval: every repeated unit keeps the icon's
+    // original 24x24 geometry and its original proportions.
+    const linkSize=16;
+    const pitch=11;
     const step=5;
 
     const travel=Math.floor(length/step)*step;
@@ -25,41 +25,37 @@ window.TransferChainVisual = (() => {
 
     const completed=Math.floor(travel/pitch);
     const remainder=travel-completed*pitch;
+    const heading=Math.atan2(dy,dx)*180/Math.PI;
 
-    // Every completed link overlaps the next one slightly. The small
-    // alternating perpendicular offset gives the links an interlocked
-    // appearance without turning them horizontal.
-    const addLink=(index,topDistance,progress=1)=>{
-      const side=index%2===0?-1:1;
-      const x=a.x+ux*topDistance+px*side*1.5;
-      const y=a.y+uy*topDistance+py*side*1.5;
-      const group=node('g',{transform:`translate(${x} ${y}) rotate(${Math.atan2(dy,dx)*180/Math.PI-90}) translate(-5 0)`});
-      const path=node('rect',{
-        x:0,
-        y:0,
-        width:linkWidth,
-        height:linkHeight,
-        rx:linkWidth/2,
-        ry:linkWidth/2,
+    const iconPath='M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2';
+
+    const addLink=(distance,progress=1)=>{
+      const x=a.x+ux*distance;
+      const y=a.y+uy*distance;
+      const group=node('g',{
+        transform:`translate(${x} ${y}) rotate(${heading}) translate(-8 -8)`
+      });
+      const path=node('path',{
+        d:iconPath,
         fill:'none',
         stroke:'currentColor',
         'stroke-width':'2.5',
+        'stroke-linecap':'round',
         'vector-effect':'non-scaling-stroke',
-        pathLength:'1'
+        transform:'scale(0.6666667)'
       });
+      // Reveal the exact icon geometry progressively; never stretch the link.
       if(progress<1){
+        path.setAttribute('pathLength','1');
         path.setAttribute('stroke-dasharray',`${progress} 1`);
-        path.setAttribute('stroke-dashoffset','0');
       }
       group.append(path);
       svg.append(group);
     };
 
-    for(let i=0;i<completed;i++)addLink(i,i*pitch,1);
+    for(let i=0;i<completed;i++)addLink(i*pitch,1);
 
-    if(remainder>0){
-      addLink(completed,completed*pitch,remainder/linkHeight);
-    }
+    if(remainder>0)addLink(completed*pitch,remainder/pitch);
   }
 
   function start(handle){
