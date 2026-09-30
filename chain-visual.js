@@ -7,38 +7,44 @@ window.TransferChainVisual = (() => {
     svg.replaceChildren();svg.classList.toggle('chain-hooked',hooked);
 
     const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy);
-    if(length<10)return;
+    if(length<8)return;
 
-    // The existing icon is vertically oriented, so rotate it to face the
-    // exact direction of the mouse/target.
-    const direction=Math.atan2(dy,dx)*180/Math.PI+90;
+    const ux=dx/length,uy=dy/length;
+    const direction=Math.atan2(dy,dx)*180/Math.PI;
 
-    // Add one complete link at a time. Earlier links stay fixed while the
-    // mouse moves farther away.
-    const linkA="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2";
-    const linkB="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2";
-    const spacing=11;
-    const first=11;
-    const maxLinks=Math.max(0,Math.floor((length-first)/spacing)+1);
+    // Each added link is a complete closed loop. The loops overlap slightly
+    // so the first one grows directly out of the original icon.
+    const linkLength=17;
+    const linkWidth=9;
+    const spacing=9;
+    const first=5;
+    const available=Math.max(0,length-4);
+    const count=Math.max(1,Math.floor((available-first)/spacing)+1);
 
-    for(let i=0;i<maxLinks;i++){
+    for(let i=0;i<count;i++){
       const d=first+i*spacing;
-      if(d>length-6)break;
-      const x=a.x+(dx/length)*d;
-      const y=a.y+(dy/length)*d;
-      const rotation=direction+(i%2===0?0:180);
-      const group=node('g',{
-        transform:`translate(${x-12} ${y-12}) rotate(${rotation} 12 12)`
-      });
-      group.append(node('path',{
-        d:i%2===0?linkA:linkB,
+      if(d>length-3)break;
+
+      const x=a.x+ux*d;
+      const y=a.y+uy*d;
+
+      // Alternate the plane of each link like a real chain, while keeping
+      // the visual treatment clean at small screen sizes.
+      const rotation=direction+(i%2===0?0:90);
+
+      svg.append(node('rect',{
+        x:x-linkWidth/2,
+        y:y-linkLength/2,
+        width:linkWidth,
+        height:linkLength,
+        rx:linkWidth/2,
+        ry:linkWidth/2,
+        transform:`rotate(${rotation} ${x} ${y})`,
         fill:'none',
         stroke:'currentColor',
         'stroke-width':'2.5',
-        'stroke-linecap':'round',
         'stroke-linejoin':'round'
       }));
-      svg.append(group);
     }
   }
 
@@ -48,7 +54,11 @@ window.TransferChainVisual = (() => {
     const svg=node('svg',{'aria-hidden':'true',class:'chain-drag-art'});
     svg.style.color=getComputedStyle(handle).color;
     document.body.append(svg);
-    drag={svg,handle,a:{x:r.left+r.width/2,y:r.bottom-3}};
+    drag={
+      svg,
+      handle,
+      a:{x:r.left+r.width/2,y:r.top+r.height/2}
+    };
     draw(svg,drag.a,drag.a,false);
   }
   function move(x,y,target){
