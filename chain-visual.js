@@ -5,40 +5,35 @@ window.TransferChainVisual = (() => {
   function node(tag,attrs={}){const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);return n}
   function draw(svg,a,b,hooked){
     svg.replaceChildren();svg.classList.toggle('chain-hooked',hooked);
-    // Generate a continuous chain in SVG. Each loop is its own link and
-    // alternates orientation so the chain visually interlocks from job to job.
+
+    // Draw a clean interlocking chain: each loop alternates orientation
+    // relative to the line between the two linked jobs.
     const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy);
-    if(length<8)return;
+    if(length<12)return;
 
     const ux=dx/length,uy=dy/length;
-    const vx=-uy,vy=ux;
     const angle=Math.atan2(dy,dx)*180/Math.PI;
-    const spacing=11;
-    const first=7;
-    const last=Math.max(first,length-7);
-    const count=Math.max(1,Math.floor((last-first)/spacing)+1);
+    const linkW=7,linkH=13,spacing=8;
+    const first=8,last=Math.max(first,length-8);
+    const count=Math.max(2,Math.floor((last-first)/spacing)+1);
 
     for(let i=0;i<count;i++){
       const d=count===1?(first+last)/2:first+(i*(last-first))/(count-1);
       const x=a.x+ux*d,y=a.y+uy*d;
-      const tilt=(i%2===0?32:-32);
-      const w=11,h=6;
-      const path=node('path',{
-        d:`M ${x-w/2} ${y}
-           a ${h/2} ${h/2} 0 0 1 ${h} 0
-           h ${w-h*2}
-           a ${h/2} ${h/2} 0 0 1 ${h} 0
-           a ${h/2} ${h/2} 0 0 1 -${h} 0
-           h -${w-h*2}
-           a ${h/2} ${h/2} 0 0 1 -${h} 0`,
+      const rotation=angle+(i%2===0?0:90);
+
+      svg.append(node('rect',{
+        x:x-linkW/2,
+        y:y-linkH/2,
+        width:linkW,
+        height:linkH,
+        rx:linkW/2,
+        ry:linkW/2,
+        transform:`rotate(${rotation} ${x} ${y})`,
         fill:'none',
         stroke:'currentColor',
-        'stroke-width':'2.2',
-        'stroke-linecap':'round',
-        'stroke-linejoin':'round',
-        transform:`rotate(${angle+tilt} ${x} ${y})`
-      });
-      svg.append(path);
+        'stroke-width':'2.1'
+      }));
     }
   }
 
