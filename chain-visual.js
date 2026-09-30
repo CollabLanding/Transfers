@@ -6,34 +6,31 @@ window.TransferChainVisual = (() => {
   function draw(svg,a,b,hooked){
     svg.replaceChildren();svg.classList.toggle('chain-hooked',hooked);
 
-    // Draw a clean interlocking chain: each loop alternates orientation
-    // relative to the line between the two linked jobs.
+    // Repeat the exact same two-link SVG artwork used by the clickable
+    // chain button. The connection is simply more copies of that icon
+    // tiled end-to-end between the two jobs.
     const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy);
-    if(length<12)return;
+    if(length<8)return;
 
+    const iconPath="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2";
     const ux=dx/length,uy=dy/length;
-    const angle=Math.atan2(dy,dx)*180/Math.PI;
-    const linkW=7,linkH=13,spacing=8;
-    const first=8,last=Math.max(first,length-8);
-    const count=Math.max(2,Math.floor((last-first)/spacing)+1);
+    const spacing=13;
+    const first=8;
+    const last=Math.max(first,length-8);
+    const count=Math.max(1,Math.floor((last-first)/spacing)+1);
 
     for(let i=0;i<count;i++){
       const d=count===1?(first+last)/2:first+(i*(last-first))/(count-1);
       const x=a.x+ux*d,y=a.y+uy*d;
-      const rotation=angle+(i%2===0?0:90);
-
-      svg.append(node('rect',{
-        x:x-linkW/2,
-        y:y-linkH/2,
-        width:linkW,
-        height:linkH,
-        rx:linkW/2,
-        ry:linkW/2,
-        transform:`rotate(${rotation} ${x} ${y})`,
+      const group=node('g',{transform:`translate(${x-12} ${y-12})`});
+      group.append(node('path',{
+        d:iconPath,
         fill:'none',
         stroke:'currentColor',
-        'stroke-width':'2.1'
+        'stroke-width':'2.5',
+        'stroke-linecap':'round'
       }));
+      svg.append(group);
     }
   }
 
