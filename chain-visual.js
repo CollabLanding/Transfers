@@ -6,35 +6,35 @@ window.TransferChainVisual = (() => {
   function draw(svg,a,b,hooked){
     svg.replaceChildren();svg.classList.toggle('chain-hooked',hooked);
 
-    // The clickable handle already contains the original two-link icon.
-    // The connector adds ONE additional link at a time, using the same
-    // individual link artwork and alternating its orientation.
+    // The existing button already supplies the original two-link icon.
+    // Only add standalone chain links beyond that icon.
     const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy);
-    if(length<14)return;
+    if(length<20)return;
 
     const ux=dx/length,uy=dy/length;
     const angle=Math.atan2(dy,dx)*180/Math.PI;
-    const linkA="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2";
-    const linkB="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2";
-    const spacing=10;
-    const first=9;
+    const spacing=11;
+    const first=19;
     const last=length-9;
-    const count=Math.max(1,Math.floor((last-first)/spacing)+1);
+    const count=Math.max(0,Math.floor((last-first)/spacing)+1);
 
     for(let i=0;i<count;i++){
-      const d=count===1?(first+last)/2:first+(i*(last-first))/(count-1);
+      const d=first+(i*(last-first))/Math.max(1,count-1);
       const x=a.x+ux*d,y=a.y+uy*d;
-      const rotation=angle+(i%2===0?0:180);
-      const group=node('g',{transform:`translate(${x-12} ${y-12}) rotate(${rotation} 12 12)`});
-      group.append(node('path',{
-        d:i%2===0?linkA:linkB,
+      const rotation=angle+(i%2===0?0:90);
+
+      svg.append(node('rect',{
+        x:x-5,
+        y:y-8,
+        width:10,
+        height:16,
+        rx:5,
+        ry:5,
+        transform:`rotate(${rotation} ${x} ${y})`,
         fill:'none',
         stroke:'currentColor',
-        'stroke-width':'2.5',
-        'stroke-linecap':'round',
-        'stroke-linejoin':'round'
+        'stroke-width':'2.5'
       }));
-      svg.append(group);
     }
   }
 
