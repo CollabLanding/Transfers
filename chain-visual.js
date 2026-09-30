@@ -11,23 +11,19 @@ window.TransferChainVisual = (() => {
   }
 
   function addLink(svg,x,y,angle,scale=1){
-    const g=node('g',{
-      transform:`translate(${x} ${y}) rotate(${angle}) scale(${scale}) translate(-12 -12)`,
-      class:'chain-link'
-    });
-
-    // Build one complete link from the exact two halves used by the existing
-    // chain icon. Mirroring the same path 180 degrees closes the open ends.
-    const attrs={
-      d:LINK_PATH,
+    // One link = one continuous closed loop based on the existing icon geometry.
+    // Do not stack/mirror a second copy of the link.
+    const path=node('path',{
+      d:LINK_PATH+' Z',
       fill:'none',
       stroke:'currentColor',
       'stroke-width':'2.5',
-      'stroke-linecap':'round'
-    };
-    g.append(node('path',attrs));
-    g.append(node('path',{...attrs,transform:'rotate(180 12 12)'}));
-    svg.append(g);
+      'stroke-linecap':'round',
+      'stroke-linejoin':'round',
+      transform:`translate(${x-12*scale} ${y-12*scale}) scale(${scale}) rotate(${angle} 12 12)`,
+      class:'chain-link'
+    });
+    svg.append(path);
   }
 
   function draw(svg,a,b,hooked){
