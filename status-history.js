@@ -163,6 +163,7 @@
           .filter(interval=>interval.end.getTime()>interval.start.getTime());
 
         const total=statusIntervals.reduce((sum,interval)=>sum+Math.max(0,interval.end-interval.start),0);
+        const share=span?Math.round(total/span*100):0;
 
         const bars=statusIntervals.map(interval=>{
           const left=pct(interval.start.getTime());
@@ -172,7 +173,7 @@
           return '<div class="history-bar" style="left:'+left+'%;width:'+Math.min(100-left,width)+'%;background:'+esc(COLORS[status]||"#7c3aed")+'" title="'+esc(status+" • "+duration+" • "+formatTime(interval.start)+" – "+formatTime(interval.end))+'"><span>'+esc(duration)+'</span></div>';
         }).join("");
 
-        return '<div class="history-row"><div class="history-status-label"><span class="history-status-dot" style="background:'+esc(COLORS[status]||"#7c3aed")+'"></span><span>'+esc(status)+'</span><strong>'+esc(durationLabel(total))+'</strong></div><div class="history-track">'+ticks.map(time=>'<span class="history-grid-line" style="left:'+pct(time)+'%"></span>').join("")+bars+'</div></div>';
+        return '<div class="history-row"><div class="history-status-label"><span class="history-status-dot" style="background:'+esc(COLORS[status]||"#7c3aed")+'"></span><span>'+esc(status)+'</span><strong>'+esc(durationLabel(total))+'</strong><em>'+share+'%</em></div><div class="history-track">'+ticks.map(time=>'<span class="history-grid-line" style="left:'+pct(time)+'%"></span>').join("")+bars+'</div></div>';
       }).join("")
     ].join("");
 
