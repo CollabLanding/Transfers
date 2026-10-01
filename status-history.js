@@ -131,6 +131,10 @@
       if(x2-x1>8)segments+='<span class="history-segment-label" style="left:'+((x1+x2)/2)+'%;top:'+yy+'px">'+esc(durationLabel(e-s))+'</span>';
       lastX=x2;lastY=yy;
     }
+    if(delivered&&lastX!==null){
+      const deliveredY=y("Delivered");
+      if(lastY!==deliveredY)segments+='<span class="history-v-segment" style="left:100%;top:'+Math.min(lastY,deliveredY)+'px;height:'+Math.abs(lastY-deliveredY)+'px"></span>';
+    }
     const labels=levels.map(status=>'<div class="history-y-label" style="top:'+y(status)+'px"><span class="history-status-dot" style="background:'+esc(COLORS[status]||"#7c3aed")+'"></span>'+esc(status)+'</div>').join("");
     const grids=levels.map(status=>'<span class="history-horizontal-line" style="top:'+y(status)+'px"></span>').join("")+ticks.map(t=>'<span class="history-vertical-line" style="left:'+pct(t)+'%"></span>').join("");
     const current=delivered?"Delivered":intervals[intervals.length-1].status;
