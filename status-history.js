@@ -152,7 +152,6 @@
     };
 
     const rows=[
-      deliveredTime!=null?renderMarkerRow("Delivered",deliveredTime,"END","end"):"",
       durationStatuses.map(status=>{
         const statusIntervals=intervals
           .filter(interval=>interval.status===status)
@@ -174,8 +173,7 @@
         }).join("");
 
         return '<div class="history-row"><div class="history-status-label"><span class="history-status-dot" style="background:'+esc(COLORS[status]||"#7c3aed")+'"></span><span>'+esc(status)+'</span><strong>'+esc(durationLabel(total))+'</strong></div><div class="history-track">'+ticks.map(time=>'<span class="history-grid-line" style="left:'+pct(time)+'%"></span>').join("")+bars+'</div></div>';
-      }).join(""),
-      renderMarkerRow("Planned",startTime,"START","start")
+      }).join("")
     ].join("");
 
     const relativeLabel=ms=>{
