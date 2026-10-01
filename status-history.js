@@ -44,12 +44,6 @@
     return parts.join(" ");
   }
 
-  function formatTime(value){
-    const d=new Date(value);
-    if(!Number.isFinite(d.getTime()))return "";
-    return d.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
-  }
-
   function parseChange(row){
     const details=String(row?.details||"").trim();
     const match=details.match(/^(.+?)\s+→\s+(.+?)\s*$/);
@@ -119,16 +113,15 @@
     const height=Math.max(260,levels.length*46);
     const y=status=>18+(height-42)-(level.get(status)??0)*((height-42)/Math.max(1,levels.length-1));
     const ticks=Array.from({length:6},(_,i)=>start+span*i/5);
-    const rel=ms=>{const m=Math.round(ms/60000);if(m<1)return "Start";if(m<60)return "+"+m+"m";const h=Math.floor(m/60),mm=m%60;return "+"+h+"h"+(mm?" "+mm+"m":"");};
     let lastX=null,lastY=null,segments="";
-    for(const interval of intervals){
+    for(const [index,interval] of intervals.entries()){
       const s=Math.max(start,interval.start.getTime()),e=Math.min(end,interval.end.getTime());
       if(e<=s)continue;
       const x1=pct(s),x2=pct(e),yy=y(interval.status);
       if(lastX!==null&&x1===lastX)segments+='<span class="history-v-segment" style="left:'+x1+'%;top:'+Math.min(lastY,yy)+'px;height:'+Math.abs(lastY-yy)+'px"></span>';
       segments+='<span class="history-h-segment" style="left:'+x1+'%;top:'+yy+'px;width:'+(x2-x1)+'%;background:'+esc(COLORS[interval.status]||"#7c3aed")+'"></span>';
       if(x2-x1>8){
-        const labelSide=segments.split('history-segment-label').length%2===0?'above':'below';
+        const labelSide=index%2===0?'above':'below';
         segments+='<span class="history-segment-label '+labelSide+'" style="left:'+((x1+x2)/2)+'%;top:'+yy+'px">'+esc(durationLabel(e-s))+'</span>';
       }
       lastX=x2;lastY=yy;
@@ -141,7 +134,7 @@
     const grids=levels.map(status=>'<span class="history-horizontal-line" style="top:'+y(status)+'px"></span>').join("")+ticks.map(t=>'<span class="history-vertical-line" style="left:'+pct(t)+'%"></span>').join("");
     const current=delivered?"Delivered":intervals[intervals.length-1].status;
     E.title.textContent=transfer.job_number?("Job "+transfer.job_number):"Status History";
-    E.graph.innerHTML='<div class="status-history-summary"><div class="status-history-summary-copy"><small>STATUS TIMELINE</small><p>Time moves left to right. Each upward step is a status change.</p></div><div class="status-history-current"><span>Current Status</span><strong style="color:'+esc(COLORS[current]||"#7c3aed")+'">'+esc(current)+'</strong></div></div><div class="history-chart"><div class="history-axis-row"><div></div><div class="history-axis-track">'+axis+'</div></div><div class="history-line-layout"><div class="history-y-axis">'+labels+'</div><div class="history-plot" style="height:'+height+'px"><div class="history-grid">'+grids+'</div>'+segments+'</div></div><div class="history-axis-bottom"><div></div><div class="history-axis-caption">Elapsed time</div></div></div>';
+    E.graph.innerHTML='<div class="status-history-summary"><div class="status-history-summary-copy"><small>STATUS TIMELINE</small><p>Time moves left to right. Each upward step is a status change.</p></div><div class="status-history-current"><span>Current Status</span><strong style="color:'+esc(COLORS[current]||"#7c3aed")+'">'+esc(current)+'</strong></div></div><div class="history-chart"><div class="history-line-layout"><div class="history-y-axis">'+labels+'</div><div class="history-plot" style="height:'+height+'px"><div class="history-grid">'+grids+'</div>'+segments+'</div></div><div class="history-axis-bottom"><div></div><div class="history-axis-caption">Elapsed time</div></div></div>';
   }
 
   async function load(){
