@@ -83,7 +83,7 @@
         destination:source.destination,
         pallet_count:source.pallet_count,
         job_number:source.job_number,
-        order_status:source.order_status||"Planned",
+        order_status:"Planned",
         created_by:currentUser.id,
         created_by_name:creatorName
       };
