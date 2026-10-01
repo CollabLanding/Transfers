@@ -24,11 +24,11 @@ window.TransferChainVisual = (() => {
     svg.append(path);
   }
 
-  // Chain geometry: links are rigid, overlap at a fixed pitch, and alternate
-  // orientation and draw order so each link reads as hooked through its neighbor.
+  // The original link icon is a two-link interlock. Reuse the first
+  // closed link as the immutable artwork and use the same center-to-center
+  // relationship to extend the chain one link at a time.
   const LINK_SCALE = 0.82;
   const LINK_PITCH = 8;
-  const LINK_END_GAP = 3;
 
   function draw(svg, a, b, hooked) {
     svg.replaceChildren();
@@ -41,32 +41,23 @@ window.TransferChainVisual = (() => {
 
     const ux = dx / length;
     const uy = dy / length;
-    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    const chainAngle = Math.atan2(dy, dx) * 180 / Math.PI;
 
-    // The first generated link loops through the original icon; each following
-    // link is placed from the previous link by the same physical pitch.
-    const usable = Math.max(0, length - LINK_END_GAP);
-    const count = Math.max(1, Math.floor(usable / LINK_PITCH) + 1);
-    const links = [];
+    // The two links in the original icon are perpendicular to one another.
+    // Keep that relationship fixed as the chain is pulled taut.
+    const count = Math.max(1, Math.floor(length / LINK_PITCH) + 1);
 
     for (let i = 0; i < count; i++) {
-      const d = Math.min(i * LINK_PITCH, usable);
-      links.push({
-        x: a.x + ux * d,
-        y: a.y + uy * d,
-        angle: angle + (i % 2 ? 0 : 90),
-        i
-      });
-    }
+      const d = Math.min(i * LINK_PITCH, length);
+      const x = a.x + ux * d;
+      const y = a.y + uy * d;
 
-    // Draw every other link underneath first, then the alternating links above.
-    // This creates the visual over/under weave of a taut chain.
-    for (const parity of [0, 1]) {
-      for (const link of links) {
-        if (link.i % 2 === parity) {
-          addLink(svg, link.x, link.y, link.angle, LINK_SCALE);
-        }
-      }
+      // Every adjacent link is perpendicular to its neighbor. The chain
+      // direction determines where the strand travels, but never changes
+      // the interlace relationship between neighboring links.
+      const linkAngle = chainAngle + (i % 2 ? 90 : 0);
+
+      addLink(svg, x, y, linkAngle, LINK_SCALE);
     }
   }
 
