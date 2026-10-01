@@ -119,7 +119,7 @@
     const deliveredTime=deliveredInterval?deliveredInterval.start.getTime():null;
     const endTime=deliveredTime??Math.max(startTime+60000,intervals[intervals.length-1].end.getTime());
     const span=Math.max(60000,endTime-startTime);
-    const tickCount=5;
+    const tickCount=6;
     const currentStatus=intervals[intervals.length-1].status;
     const currentColor=COLORS[currentStatus]||"#7c3aed";
 
@@ -128,10 +128,8 @@
 
     const ticks=Array.from({length:tickCount},(_,index)=>startTime+(span*index/(tickCount-1)));
 
-    const durationStatuses=[...new Set([
-      ...unknown,
-      ...STATUS_ORDER.slice().reverse()
-    ])].filter(status=>status!=="Planned"&&status!=="Delivered");
+    const durationStatuses=[...new Set(present)]
+      .filter(status=>status!=="Planned"&&status!=="Delivered");
 
     const renderMarkerRow=(status,time,label,position)=>{
       const markerColor=COLORS[status]||"#64748b";
@@ -180,15 +178,22 @@
       renderMarkerRow("Planned",startTime,"START","start")
     ].join("");
 
+    const relativeLabel=ms=>{
+      const minutes=Math.round(ms/60000);
+      if(minutes<1)return "Start";
+      if(minutes<60)return "+"+minutes+"m";
+      const hours=Math.floor(minutes/60),mins=minutes%60;
+      return "+"+hours+"h"+(mins?" "+mins+"m":"");
+    };
     const axis=ticks.map((time,index)=>{
       const align=index===0?"start":index===tickCount-1?"end":"center";
-      return '<div class="history-axis-label" style="left:'+pct(time)+'%;text-align:'+align+'">'+esc(formatTime(time))+'</div>';
+      return '<div class="history-axis-label" style="left:'+pct(time)+'%;text-align:'+align+'"><strong>'+esc(relativeLabel(time-startTime))+'</strong><small>'+esc(formatTime(time))+'</small></div>';
     }).join("");
 
     E.title.textContent=transfer.job_number?("Job "+transfer.job_number):"Status History";
     E.graph.innerHTML=
       '<div class="status-history-summary">'+
-        '<div class="status-history-summary-copy"><small>STATUS TIMELINE</small><p>Start and end markers with time spent in each working status.</p></div>'+
+        '<div class="status-history-summary-copy"><small>STATUS TIMELINE</small><p>Elapsed time from the start of the recorded history. Bar widths are proportional to the actual time spent in each status.</p></div>'+
         '<div class="status-history-current"><span>Current Status</span><strong style="color:'+esc(currentColor)+'">'+esc(currentStatus)+'</strong></div>'+
       '</div>'+
       '<div class="history-chart">'+
