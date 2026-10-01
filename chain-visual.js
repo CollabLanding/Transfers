@@ -10,56 +10,77 @@ window.TransferChainVisual = (() => {
     return n;
   }
 
-  function addLink(svg, x, y, angle, scale = 1) {
-    const path = node('path', {
-      d: LINK_PATH + ' Z',
-      fill: 'none',
-      stroke: 'currentColor',
-      'stroke-width': '2.5',
-      'stroke-linecap': 'round',
-      'stroke-linejoin': 'round',
-      transform: `translate(${x - 12 * scale} ${y - 12 * scale}) scale(${scale}) rotate(${angle} 12 12)`,
-      class: 'chain-link'
+  // These are the two exact strokes that make up the original link icon.
+  // They are the immutable interlace template for every added link.
+  const LINK_A_PATH='M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2Q7 9 10 13Z';
+  const LINK_B_PATH='M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2';
+  const LINK_SCALE=0.82;
+
+  function addSingleLink(svg,path,cx,cy,x,y,angle,scale=LINK_SCALE){
+    const el=node('path',{
+      d:path,
+      fill:'none',
+      stroke:'currentColor',
+      'stroke-width':'2.5',
+      'stroke-linecap':'round',
+      'stroke-linejoin':'round',
+      transform:`translate(${x} ${y}) rotate(${angle}) scale(${scale}) translate(${-cx} ${-cy})`,
+      class:'chain-link'
     });
-    svg.append(path);
+    svg.append(el);
   }
 
-  // The original link icon is a two-link interlock. Reuse the first
-  // closed link as the immutable artwork and use the same center-to-center
-  // relationship to extend the chain one link at a time.
-  const LINK_SCALE = 0.82;
-  const LINK_PITCH = 8;
+  // The original icon's lower-left link is the starting link. Each new
+  // link uses the exact next-link geometry from that icon, preserving the
+  // same overlap and interlacing relationship all the way down the strand.
+  const LINK_A_CENTER={x:14,y:9};
+  const LINK_B_CENTER={x:9,y:15};
+  const LINK_STEP_X=LINK_A_CENTER.x-LINK_B_CENTER.x;
+  const LINK_STEP_Y=LINK_A_CENTER.y-LINK_B_CENTER.y;
+  const LINK_STEP=Math.hypot(LINK_STEP_X,LINK_STEP_Y)*LINK_SCALE;
+  const LINK_STEP_ANGLE=Math.atan2(LINK_STEP_Y,LINK_STEP_X)*180/Math.PI;
 
-  function draw(svg, a, b, hooked) {
+  function draw(svg,a,b,hooked){
     svg.replaceChildren();
-    svg.classList.toggle('chain-hooked', hooked);
+    svg.classList.toggle('chain-hooked',hooked);
 
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const length = Math.hypot(dx, dy);
-    if (length < 4) return;
+    const dx=b.x-a.x;
+    const dy=b.y-a.y;
+    const length=Math.hypot(dx,dy);
+    if(length<4)return;
 
-    const ux = dx / length;
-    const uy = dy / length;
-    const chainAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+    const chainAngle=Math.atan2(dy,dx)*180/Math.PI;
+    const rotate=chainAngle-LINK_STEP_ANGLE;
+    const rad=rotate*Math.PI/180;
+    const sx=(LINK_STEP_X*LINK_SCALE)*Math.cos(rad)-(LINK_STEP_Y*LINK_SCALE)*Math.sin(rad);
+    const sy=(LINK_STEP_X*LINK_SCALE)*Math.sin(rad)+(LINK_STEP_Y*LINK_SCALE)*Math.cos(rad);
 
-    // The two links in the original icon are perpendicular to one another.
-    // Keep that relationship fixed as the chain is pulled taut.
-    const count = Math.max(1, Math.floor(length / LINK_PITCH) + 1);
+    // The visible handle already contains the original two interlaced links.
+    // Add the third link first, then continue one exact link at a time.
+    const usable=Math.max(0,length-2);
+    const count=Math.floor(usable/LINK_STEP);
 
-    for (let i = 0; i < count; i++) {
-      const d = Math.min(i * LINK_PITCH, length);
-      const x = a.x + ux * d;
-      const y = a.y + uy * d;
+    for(let i=1;i<=count;i++){
+      const x=a.x+sx*i;
+      const y=a.y+sy*i;
+      const even=i%2===0;
+      const path=even?LINK_B_PATH:LINK_A_PATH;
+      const center=even?LINK_B_CENTER:LINK_A_CENTER;
 
-      // Every adjacent link is perpendicular to its neighbor. The chain
-      // direction determines where the strand travels, but never changes
-      // the interlace relationship between neighboring links.
-      const linkAngle = chainAngle + (i % 2 ? 90 : 0);
-
-      addLink(svg, x, y, linkAngle, LINK_SCALE);
+      addSingleLink(
+        svg,
+        path,
+        center.x,
+        center.y,
+        x,
+        y,
+        rotate,
+        LINK_SCALE
+      );
     }
   }
+
+
 
   function start(handle) {
     stop();
