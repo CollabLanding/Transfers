@@ -117,10 +117,7 @@
     const deliveredInterval=intervals.find(interval=>interval.status==="Delivered");
     const startTime=intervals[0].start.getTime();
     const deliveredTime=deliveredInterval?deliveredInterval.start.getTime():null;
-    const endTime=Math.max(
-      startTime+60000,
-      deliveredTime??intervals[intervals.length-1].end.getTime()
-    );
+    const endTime=deliveredTime??Math.max(startTime+60000,intervals[intervals.length-1].end.getTime());
     const span=Math.max(60000,endTime-startTime);
     const tickCount=5;
     const currentStatus=intervals[intervals.length-1].status;
