@@ -1,7 +1,7 @@
 /* Pointer-transparent chain artwork; load/link state remains in app.js. */
 window.TransferChainVisual = (() => {
   const ns = 'http://www.w3.org/2000/svg';
-  const LINK_PATH = 'M-5 -7H5A7 7 0 0 1 5 7H-5A7 7 0 0 1-5-7Z';
+  const LINK_PATH='M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2Q7 9 10 13Z';
   let drag = null;
 
   function node(tag, attrs = {}) {
@@ -12,13 +12,13 @@ window.TransferChainVisual = (() => {
 
   function addLink(svg, x, y, angle, scale = 1) {
     const path = node('path', {
-      d: LINK_PATH,
+      d: LINK_PATH + ' Z',
       fill: 'none',
       stroke: 'currentColor',
       'stroke-width': '2.5',
       'stroke-linecap': 'round',
       'stroke-linejoin': 'round',
-      transform: `translate(${x} ${y}) rotate(${angle}) scale(${scale})`,
+      transform: `translate(${x - 12 * scale} ${y - 12 * scale}) scale(${scale}) rotate(${angle} 12 12)`,
       class: 'chain-link'
     });
     svg.append(path);
@@ -40,7 +40,7 @@ window.TransferChainVisual = (() => {
     const count = Math.floor(length / step);
 
     for (let i = 0; i < count; i++) {
-      const d = i * step + step / 2;
+      const d = i * step;
       const x = a.x + ux * d;
       const y = a.y + uy * d;
       addLink(svg, x, y, angle + (i % 2 ? 90 : 0), 0.82);
