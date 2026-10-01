@@ -237,3 +237,36 @@ html[data-theme="dark"] .history-bar{
   white-space:nowrap;
   pointer-events:none;
 }
+
+.history-axis-label{
+  height:28px;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  line-height:1.05;
+}
+.history-axis-label strong{
+  color:var(--text);
+  font-size:10px;
+  font-weight:800;
+}
+.history-axis-label small{
+  color:var(--muted);
+  font-size:9px;
+  white-space:nowrap;
+}
+.history-status-label em{
+  color:var(--muted);
+  font-size:9px;
+  font-style:normal;
+  font-weight:800;
+  white-space:nowrap;
+}
+.history-status-label{
+  grid-template-columns:12px minmax(0,1fr) auto auto;
+}
+.history-marker-row,
+.history-marker-label,
+.history-marker-track{
+  display:none;
+}
