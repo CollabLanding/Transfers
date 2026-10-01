@@ -120,7 +120,6 @@
     const y=status=>18+(height-42)-(level.get(status)??0)*((height-42)/Math.max(1,levels.length-1));
     const ticks=Array.from({length:6},(_,i)=>start+span*i/5);
     const rel=ms=>{const m=Math.round(ms/60000);if(m<1)return "Start";if(m<60)return "+"+m+"m";const h=Math.floor(m/60),mm=m%60;return "+"+h+"h"+(mm?" "+mm+"m":"");};
-    const axis=ticks.map((t,i)=>'<div class="history-axis-label" style="left:'+pct(t)+'%;text-align:'+(i===0?'start':i===5?'end':'center')+'"><strong>'+esc(rel(t-start))+'</strong><small>'+esc(formatTime(t))+'</small></div>').join("");
     let lastX=null,lastY=null,segments="";
     for(const interval of intervals){
       const s=Math.max(start,interval.start.getTime()),e=Math.min(end,interval.end.getTime());
@@ -128,7 +127,10 @@
       const x1=pct(s),x2=pct(e),yy=y(interval.status);
       if(lastX!==null&&x1===lastX)segments+='<span class="history-v-segment" style="left:'+x1+'%;top:'+Math.min(lastY,yy)+'px;height:'+Math.abs(lastY-yy)+'px"></span>';
       segments+='<span class="history-h-segment" style="left:'+x1+'%;top:'+yy+'px;width:'+(x2-x1)+'%;background:'+esc(COLORS[interval.status]||"#7c3aed")+'"></span>';
-      if(x2-x1>8)segments+='<span class="history-segment-label" style="left:'+((x1+x2)/2)+'%;top:'+yy+'px">'+esc(durationLabel(e-s))+'</span>';
+      if(x2-x1>8){
+        const labelSide=segments.split('history-segment-label').length%2===0?'above':'below';
+        segments+='<span class="history-segment-label '+labelSide+'" style="left:'+((x1+x2)/2)+'%;top:'+yy+'px">'+esc(durationLabel(e-s))+'</span>';
+      }
       lastX=x2;lastY=yy;
     }
     if(delivered&&lastX!==null){
