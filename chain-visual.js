@@ -35,14 +35,11 @@ window.TransferChainVisual = (() => {
 
     const ux=dx/length,uy=dy/length;
     const angle=Math.atan2(dy,dx)*180/Math.PI;
-    const spacing=16;
-    const first=8;
-    const last=length-8;
-    const count=Math.max(0,Math.floor((last-first)/spacing)+1);
+    const step=10;
+    const count=Math.floor(length/step);
 
     for(let i=0;i<count;i++){
-      const d=first+i*spacing;
-      if(d>last+0.5)break;
+      const d=i*step;
       const x=a.x+ux*d,y=a.y+uy*d;
       // Every piece is a complete link, then alternate its orientation so the
       // individual links loop through one another like the original icon.
@@ -56,12 +53,15 @@ window.TransferChainVisual = (() => {
     const svg=node('svg',{'aria-hidden':'true',class:'chain-drag-art'});
     svg.style.color=getComputedStyle(handle).color;
     document.body.append(svg);
-    drag={svg,a:{x:r.left+r.width/2,y:r.bottom-3}};
+    drag={svg,a:{x:r.left+2,y:r.bottom-3},handle};
     draw(svg,drag.a,drag.a,false);
   }
 
   function move(x,y,target){
     if(!drag)return;
+    const angle=Math.atan2(y-drag.a.y,x-drag.a.x)*180/Math.PI;
+    drag.handle.style.transform=`rotate(${angle}deg)`;
+    drag.handle.style.transformOrigin='50% 50%';
     let b={x,y};
     if(target){
       const r=target.getBoundingClientRect();
@@ -71,6 +71,7 @@ window.TransferChainVisual = (() => {
   }
 
   function stop(){
+    if(drag?.handle){drag.handle.style.transform='';drag.handle.style.transformOrigin='';}
     drag?.svg.remove();
     drag=null;
   }
