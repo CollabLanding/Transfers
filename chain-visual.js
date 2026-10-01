@@ -1,7 +1,7 @@
 /* Pointer-transparent chain artwork; load/link state remains in app.js. */
 window.TransferChainVisual = (() => {
   const ns='http://www.w3.org/2000/svg';
-  const LINK_PATH='M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2Q7 9 10 13Z';
+  // One link is a single closed, hollow loop. Each copy is complete before the\n  // next copy is added; alternating orientation makes the loops physically interlock.\n  const LINK_PATH='M-5 -7H5A7 7 0 0 1 5 7H-5A7 7 0 0 1-5-7Z';
   let drag=null;
 
   function node(tag,attrs={}){
@@ -14,13 +14,13 @@ window.TransferChainVisual = (() => {
     // One link = one continuous closed loop based on the existing icon geometry.
     // Do not stack/mirror a second copy of the link.
     const path=node('path',{
-      d:LINK_PATH+' Z',
+      d:LINK_PATH,
       fill:'none',
       stroke:'currentColor',
       'stroke-width':'2.5',
       'stroke-linecap':'round',
       'stroke-linejoin':'round',
-      transform:`translate(${x-12*scale} ${y-12*scale}) scale(${scale}) rotate(${angle} 12 12)`,
+      transform:`translate(${x} ${y}) rotate(${angle}) scale(${scale})`,
       class:'chain-link'
     });
     svg.append(path);
@@ -41,7 +41,7 @@ window.TransferChainVisual = (() => {
     const count=Math.floor(length/step);
 
     for(let i=0;i<count;i++){
-      const d=i*step;
+      const d=i*step + step/2;
       const x=a.x+ux*d,y=a.y+uy*d;
       // Every piece is a complete link, then alternate its orientation so the
       // individual links loop through one another like the original icon.
@@ -55,15 +55,16 @@ window.TransferChainVisual = (() => {
     const svg=node('svg',{'aria-hidden':'true',class:'chain-drag-art'});
     svg.style.color=getComputedStyle(handle).color;
     document.body.append(svg);
-    drag={svg,a:{x:r.left+2,y:r.bottom-3},handle};
+    const icon=handle.querySelector('svg');
+    if(icon){icon.style.transition='none';icon.style.transformOrigin='50% 50%';}
+    drag={svg,a:{x:r.left+2,y:r.bottom-3},handle,icon};
     draw(svg,drag.a,drag.a,false);
   }
 
   function move(x,y,target){
     if(!drag)return;
     const angle=Math.atan2(y-drag.a.y,x-drag.a.x)*180/Math.PI;
-    drag.handle.style.transform=`rotate(${angle}deg)`;
-    drag.handle.style.transformOrigin='50% 50%';
+    // Rotate only the icon artwork. The button itself keeps its exact CSS position.\n    if(drag.icon)drag.icon.style.transform=`rotate(${angle}deg)`;
     let b={x,y};
     if(target){
       const r=target.getBoundingClientRect();
@@ -73,7 +74,7 @@ window.TransferChainVisual = (() => {
   }
 
   function stop(){
-    if(drag?.handle){drag.handle.style.transform='';drag.handle.style.transformOrigin='';}
+    if(drag?.icon){drag.icon.style.transform='';drag.icon.style.transition='transform .15s ease';}
     drag?.svg.remove();
     drag=null;
   }
