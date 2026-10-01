@@ -26,7 +26,9 @@ window.TransferChainVisual = (() => {
     svg.append(path);
   }
 
-  // The renderer is intentionally isolated: drag/link behavior lives in board-links.js.\n  // This function only paints the temporary/saved chain.\n  function draw(svg,a,b,hooked){
+  // The renderer is intentionally isolated: drag/link behavior lives in board-links.js.
+  // This function only paints the temporary/saved chain.
+  function draw(svg,a,b,hooked){
     svg.replaceChildren();
     svg.classList.toggle('chain-hooked',hooked);
 
