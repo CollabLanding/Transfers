@@ -126,7 +126,7 @@
           destination:row.destination,
           pallet_count:Number(row.pallet_count||0),
           job_number:row.job_number,
-          order_status:row.order_status||"Planned",
+          order_status:"Planned",
           created_by:currentUser.id,
           created_by_name:creatorName
         };
