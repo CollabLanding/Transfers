@@ -279,3 +279,9 @@ html[data-theme="dark"] .history-bar{
 .history-horizontal-line,.history-vertical-line{position:absolute;display:block;pointer-events:none}
 .history-horizontal-line{left:0;right:0;height:1px;background:var(--line);opacity:.65}
 .history-vertical-line{top:0;bottom:0;width:1px;background:var(--line);opacity:.55}
+
+.history-h-segment{position:absolute;height:4px;min-width:2px;border-radius:999px;transform:translateY(-50%);box-shadow:0 1px 3px rgba(15,23,42,.2);z-index:2}
+.history-v-segment{position:absolute;width:4px;min-height:4px;transform:translateX(-50%);border-radius:999px;background:var(--text);z-index:3}
+.history-segment-label{position:absolute;transform:translate(-50%,-50%);font-size:9px;font-weight:800;color:var(--muted);white-space:nowrap;pointer-events:none}
+.history-axis-bottom{display:grid;grid-template-columns:150px minmax(590px,1fr);column-gap:16px;margin-top:8px}
+.history-axis-caption{color:var(--muted);font-size:10px;text-align:center;letter-spacing:.08em;text-transform:uppercase}
