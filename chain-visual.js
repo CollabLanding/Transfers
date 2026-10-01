@@ -14,8 +14,6 @@ window.TransferChainVisual = (() => {
   // They are the immutable interlace template for every added link.
   const LINK_A_PATH='M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2Q7 9 10 13Z';
   const LINK_B_PATH='M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2';
-  const LINK_SCALE=0.82;
-
   function addSingleLink(svg,path,cx,cy,x,y,angle,scale=LINK_SCALE){
     const el=node('path',{
       d:path,
