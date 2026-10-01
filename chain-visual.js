@@ -99,7 +99,7 @@ window.TransferChainVisual = (() => {
       body.append(svg);
       draw(
         svg,
-        {x:r.left+r.width/2-origin.left,y:r.bottom-3-origin.top},
+        {x:r.left+2-origin.left,y:r.bottom-3-origin.top},
         {x:t.left+t.width/2-origin.left,y:(t.top+t.height/2<r.bottom?t.bottom-5:t.top+5)-origin.top},
         true
       );
