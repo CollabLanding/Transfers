@@ -30,13 +30,13 @@ window.TransferChainVisual = (() => {
     svg.append(el);
   }
 
-  // The original icon's lower-left link is the starting link. Each new
-  // link uses the exact next-link geometry from that icon, preserving the
-  // same overlap and interlacing relationship all the way down the strand.
-  const LINK_A_CENTER={x:14,y:9};
+  // The original icon's lower-left link is the starting link.
+  // Every added link repeats the same interlace: B -> flipped A -> B -> flipped A.
   const LINK_B_CENTER={x:9,y:15};
+  const LINK_A_CENTER={x:14,y:9};
   const LINK_STEP_X=LINK_A_CENTER.x-LINK_B_CENTER.x;
   const LINK_STEP_Y=LINK_A_CENTER.y-LINK_B_CENTER.y;
+  const LINK_SCALE=0.82;
   const LINK_STEP=Math.hypot(LINK_STEP_X,LINK_STEP_Y)*LINK_SCALE;
   const LINK_STEP_ANGLE=Math.atan2(LINK_STEP_Y,LINK_STEP_X)*180/Math.PI;
 
@@ -50,36 +50,29 @@ window.TransferChainVisual = (() => {
     if(length<4)return;
 
     const chainAngle=Math.atan2(dy,dx)*180/Math.PI;
-    const rotate=chainAngle-LINK_STEP_ANGLE;
-    const rad=rotate*Math.PI/180;
-    const sx=(LINK_STEP_X*LINK_SCALE)*Math.cos(rad)-(LINK_STEP_Y*LINK_SCALE)*Math.sin(rad);
-    const sy=(LINK_STEP_X*LINK_SCALE)*Math.sin(rad)+(LINK_STEP_Y*LINK_SCALE)*Math.cos(rad);
-
-    // The visible handle already contains the original two interlaced links.
-    // Add the third link first, then continue one exact link at a time.
-    const usable=Math.max(0,length-2);
+    const baseRotation=chainAngle-LINK_STEP_ANGLE;
+    const usable=Math.max(0,length-1);
     const count=Math.floor(usable/LINK_STEP);
 
     for(let i=1;i<=count;i++){
-      const x=a.x+sx*i;
-      const y=a.y+sy*i;
-      const even=i%2===0;
-      const path=even?LINK_B_PATH:LINK_A_PATH;
-      const center=even?LINK_B_CENTER:LINK_A_CENTER;
+      const x=a.x+(dx/length)*LINK_STEP*i;
+      const y=a.y+(dy/length)*LINK_STEP*i;
+      const isA=i%2===1;
 
+      // The A link is flipped relative to its original position so it hooks
+      // the preceding B from the opposite side, exactly like a real chain.
       addSingleLink(
         svg,
-        path,
-        center.x,
-        center.y,
+        isA?LINK_A_PATH:LINK_B_PATH,
+        isA?LINK_A_CENTER.x:LINK_B_CENTER.x,
+        isA?LINK_A_CENTER.y:LINK_B_CENTER.y,
         x,
         y,
-        rotate,
+        baseRotation+(isA?180:0),
         LINK_SCALE
       );
     }
   }
-
 
 
   function start(handle) {
