@@ -146,35 +146,37 @@
       if(e<=s)continue;
 
       const x1=pct(s),x2=pct(e),yy=y(interval.status);
-      if(lastX!==null&&x1===lastX){
+
+      // Draw the vertical step whenever the status changes.
+      if(lastX!==null&&x1>=lastX&&lastY!==null&&lastY!==yy){
         segments+='<span class="history-v-segment" style="left:'+x1+'%;top:'+Math.min(lastY,yy)+'px;height:'+Math.abs(lastY-yy)+'px"></span>';
       }
 
+      // Draw the complete recorded duration as the horizontal portion of the line.
       segments+='<span class="history-h-segment" style="left:'+x1+'%;top:'+yy+'px;width:'+(x2-x1)+'%;background:'+esc(COLORS[interval.status]||"#7c3aed")+'"></span>';
 
-      if(x2-x1>8){
-        const labelSide=index%2===0?'above':'below';
-        segments+='<span class="history-segment-label '+labelSide+'" style="left:'+((x1+x2)/2)+'%;top:'+yy+'px">'+esc(durationLabel(e-s))+'</span>';
-      }
+      // Show every recorded duration, not only long segments.
+      const duration=durationLabel(e-s);
+      const labelSide=index%2===0?'above':'below';
+      segments+='<span class="history-segment-label '+labelSide+'" style="left:'+((x1+x2)/2)+'%;top:'+yy+'px">'+esc(duration)+'</span>';
 
       lastX=x2;
       lastY=yy;
     }
 
-    // Planned and Delivered are boundary timestamps only; neither gets a duration label.
-    const markerHtml=(at,label,color,align)=>{
+    const markerHtml=(at,label,color,side)=>{
       if(!at||!Number.isFinite(at.getTime()))return "";
       const x=pct(at.getTime());
       const time=at.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
       const date=at.toLocaleDateString([], {month:"short",day:"numeric"});
-      const side=align==="right"?"right":"left";
+      const yPos=side==="below"?y("Planned")+10:-8;
       return '<span class="history-boundary-line '+side+'" style="left:'+x+'%;background:'+esc(color)+'"></span>'
-        +'<span class="history-boundary-dot '+side+'" style="left:'+x+'%;background:'+esc(color)+'"></span>'
-        +'<span class="history-boundary-label '+side+'" style="left:'+x+'%"><strong>'+esc(label)+'</strong><span>'+esc(date+' · '+time)+'</span></span>';
+        +'<span class="history-boundary-dot '+side+'" style="left:'+x+'%;background:'+esc(color)+';top:'+y(label==='Planned · Start'?'Planned':'Delivered')+'px"></span>'
+        +'<span class="history-boundary-label '+side+'" style="left:'+x+'%;top:'+yPos+'px"><strong>'+esc(label)+'</strong><span>'+esc(date+' · '+time)+'</span></span>';
     };
 
     const markersHtml=
-      markerHtml(plannedAt,"Planned · Start",COLORS.Planned,"left")+
+      markerHtml(plannedAt,"Planned · Start",COLORS.Planned,"below")+
       markerHtml(deliveredAt,"Delivered · End",COLORS.Delivered,"right");
 
     const labels=levels.map(status=>'<div class="history-y-label" style="top:'+y(status)+'px"><span class="history-status-dot" style="background:'+esc(COLORS[status]||"#7c3aed")+'"></span>'+esc(status)+'</div>').join("");
@@ -183,7 +185,7 @@
 
     const current=deliveredAt?"Delivered":(intervals[intervals.length-1]?.status||transfer.order_status||"Planned");
     E.title.textContent=transfer.job_number?("Job "+transfer.job_number):"Status History";
-    E.graph.innerHTML='<div class="status-history-summary"><div class="status-history-summary-copy"><small>STATUS TIMELINE</small><p>Time moves left to right. Planned and Delivered are start/end markers only; duration is tracked for active statuses.</p></div><div class="status-history-current"><span>Current Status</span><strong style="color:'+esc(COLORS[current]||"#7c3aed")+'">'+esc(current)+'</strong></div></div><div class="history-chart"><div class="history-line-layout"><div class="history-y-axis">'+labels+'</div><div class="history-plot" style="height:'+height+'px"><div class="history-grid">'+grids+'</div>'+segments+markersHtml+'</div></div><div class="history-axis-bottom"><div></div><div class="history-axis-caption">Elapsed time</div></div></div>';
+    E.graph.innerHTML='<div class="status-history-summary"><div class="status-history-summary-copy"><small>STATUS TIMELINE</small><p>Time moves left to right. Each recorded status duration is shown as a horizontal line segment; status changes step vertically.</p></div><div class="status-history-current"><span>Current Status</span><strong style="color:'+esc(COLORS[current]||"#7c3aed")+'">'+esc(current)+'</strong></div></div><div class="history-chart"><div class="history-line-layout"><div class="history-y-axis">'+labels+'</div><div class="history-plot" style="height:'+height+'px"><div class="history-grid">'+grids+'</div>'+segments+markersHtml+'</div></div><div class="history-axis-bottom"><div></div><div class="history-axis-caption">Elapsed time</div></div></div>';
   }
 
   async function load(){
