@@ -292,70 +292,21 @@ html[data-theme="dark"] .history-bar{
 .history-axis-row{display:none}
 
 
-.history-boundary-line{
-  position:absolute;
-  top:0;
-  bottom:0;
-  width:2px;
-  transform:translateX(-50%);
-  border-radius:999px;
-  opacity:.9;
-  z-index:4;
-}
-.history-boundary-dot{
-  position:absolute;
-  top:50%;
-  width:10px;
-  height:10px;
-  border-radius:50%;
-  transform:translate(-50%,-50%);
-  box-shadow:0 0 0 3px color-mix(in srgb,var(--panel) 88%,transparent);
-  z-index:5;
-}
-.history-boundary-label{
-  position:absolute;
-  top:-8px;
+.history-status-name{
   display:flex;
   flex-direction:column;
+  align-items:flex-start;
   gap:2px;
-  width:145px;
-  padding:5px 7px;
-  box-sizing:border-box;
-  background:var(--panel);
-  border:1px solid var(--line);
-  border-radius:6px;
-  box-shadow:0 2px 5px rgba(15,23,42,.12);
-  font-size:9px;
-  line-height:1.15;
-  z-index:6;
-  pointer-events:none;
+  line-height:1.05;
 }
-.history-boundary-label.left{
-  transform:translateX(-1px);
-  text-align:left;
-}
-.history-boundary-label.right{
-  transform:translateX(-100%);
-  text-align:right;
-}
-.history-boundary-label strong{
-  color:var(--text);
-  font-size:9px;
-  font-weight:900;
-}
-.history-boundary-label span{
+.history-status-time{
   color:var(--muted);
   font-size:9px;
   font-weight:700;
+  white-space:nowrap;
 }
-
-
 .history-segment-label{
   min-width:32px;
   white-space:nowrap;
   transform:translateX(-50%);
-}
-.history-boundary-label.below{
-  top:auto !important;
-  transform:translate(-1px,0);
 }
