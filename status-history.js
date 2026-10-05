@@ -63,8 +63,9 @@
       .sort((a,b)=>a.at-b.at);
 
     const created=new Date(transfer.created_at);
+    const plannedChange=changes.find(change=>change.to==="Planned");
     const fallbackStart=Number.isFinite(created.getTime())?created:(changes[0]?.at||new Date());
-    const plannedAt=fallbackStart;
+    const plannedAt=plannedChange?.at||fallbackStart;
     const deliveredChange=changes.find(change=>change.to==="Delivered");
     const deliveredAt=deliveredChange?.at||null;
     const timelineEnd=deliveredAt||new Date();
@@ -125,10 +126,17 @@
       return;
     }
 
-    const start=plannedAt.getTime();
+    // Scale the chart to the actual tracked intervals so the recorded statuses fill the plot.
+    const firstTracked=intervals[0]?.start;
+    const lastTracked=intervals[intervals.length-1]?.end;
+    const start=(firstTracked&&Number.isFinite(firstTracked.getTime()))
+      ?firstTracked.getTime()
+      :plannedAt.getTime();
     const end=(deliveredAt&&Number.isFinite(deliveredAt.getTime()))
       ?deliveredAt.getTime()
-      :Math.max(start+60000,intervals.length?intervals[intervals.length-1].end.getTime():Date.now());
+      :(lastTracked&&Number.isFinite(lastTracked.getTime())
+        ?lastTracked.getTime()
+        :Math.max(start+60000,Date.now()));
     const span=Math.max(60000,end-start);
 
     const seen=[...new Set(intervals.map(x=>x.status))];
@@ -164,22 +172,25 @@
       lastY=yy;
     }
 
-    const markerHtml=(at,label,color,side)=>{
+    const statusTimestamp=(at)=>{
       if(!at||!Number.isFinite(at.getTime()))return "";
-      const x=pct(at.getTime());
-      const time=at.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
       const date=at.toLocaleDateString([], {month:"short",day:"numeric"});
-      const yPos=side==="below"?y("Planned")+10:-8;
-      return '<span class="history-boundary-line '+side+'" style="left:'+x+'%;background:'+esc(color)+'"></span>'
-        +'<span class="history-boundary-dot '+side+'" style="left:'+x+'%;background:'+esc(color)+';top:'+y(label==='Planned · Start'?'Planned':'Delivered')+'px"></span>'
-        +'<span class="history-boundary-label '+side+'" style="left:'+x+'%;top:'+yPos+'px"><strong>'+esc(label)+'</strong><span>'+esc(date+' · '+time)+'</span></span>';
+      const time=at.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
+      return esc(date+" · "+time);
     };
 
-    const markersHtml=
-      markerHtml(plannedAt,"Planned · Start",COLORS.Planned,"below")+
-      markerHtml(deliveredAt,"Delivered · End",COLORS.Delivered,"right");
+    const statusTimes={
+      Planned:statusTimestamp(plannedAt),
+      Delivered:statusTimestamp(deliveredAt)
+    };
 
-    const labels=levels.map(status=>'<div class="history-y-label" style="top:'+y(status)+'px"><span class="history-status-dot" style="background:'+esc(COLORS[status]||"#7c3aed")+'"></span>'+esc(status)+'</div>').join("");
+    const labels=levels.map(status=>{
+      const timestamp=statusTimes[status]
+        ?'<span class="history-status-time">'+statusTimes[status]+'</span>'
+        :"";
+      return '<div class="history-y-label" style="top:'+y(status)+'px"><span class="history-status-dot" style="background:'+esc(COLORS[status]||"#7c3aed")+'"></span><span class="history-status-name">'+esc(status)+timestamp+'</span></div>';
+    }).join("");
+
     const grids=levels.map(status=>'<span class="history-horizontal-line" style="top:'+y(status)+'px"></span>').join("")
       +ticks.map(t=>'<span class="history-vertical-line" style="left:'+pct(t)+'%"></span>').join("");
 
