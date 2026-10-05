@@ -252,7 +252,8 @@
     restoreFocus=null;
   }
 
-  window.closeStatusHistory=close;\n  window.openStatusHistory=open;
+  window.closeStatusHistory=close;
+  window.openStatusHistory=open;
 
   E.button?.addEventListener("click",open);
   E.back?.addEventListener("click",close);
