@@ -348,3 +348,14 @@ html[data-theme="dark"] .history-bar{
   font-size:9px;
   font-weight:700;
 }
+
+
+.history-segment-label{
+  min-width:32px;
+  white-space:nowrap;
+  transform:translateX(-50%);
+}
+.history-boundary-label.below{
+  top:auto !important;
+  transform:translate(-1px,0);
+}
