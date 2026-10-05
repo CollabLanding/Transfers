@@ -63,29 +63,36 @@
       .sort((a,b)=>a.at-b.at);
 
     const created=new Date(transfer.created_at);
-    const now=new Date();
-    let start=Number.isFinite(created.getTime())?created:changes[0]?.at||now;
-    let status=changes[0]?.from||transfer.order_status||"Planned";
+    const fallbackStart=Number.isFinite(created.getTime())?created:(changes[0]?.at||new Date());
+    const plannedAt=fallbackStart;
+    const deliveredChange=changes.find(change=>change.to==="Delivered");
+    const deliveredAt=deliveredChange?.at||null;
+    const timelineEnd=deliveredAt||new Date();
+
     const intervals=[];
+    let status=changes[0]?.from||transfer.order_status||"Planned";
+    let start=plannedAt;
 
     for(const change of changes){
       if(change.at<=start){
         status=change.to||status;
         continue;
       }
-      intervals.push({status,start,end:change.at});
+
+      const end=change.at;
+      // Planned and Delivered are boundary markers, never duration intervals.
+      if(status!=="Planned"&&status!=="Delivered"){
+        intervals.push({status,start,end});
+      }
+
       status=change.to||status;
       start=change.at;
+
+      if(status==="Delivered")break;
     }
 
-    if(now>start)intervals.push({status,start,end:now});
-    if(!intervals.length){
-      const fallbackStart=Number.isFinite(created.getTime())?created:now;
-      intervals.push({
-        status:transfer.order_status||"Planned",
-        start:fallbackStart,
-        end:now>fallbackStart?now:new Date(fallbackStart.getTime()+60000)
-      });
+    if(status!=="Planned"&&status!=="Delivered"&&timelineEnd>start){
+      intervals.push({status,start,end:timelineEnd});
     }
 
     const merged=[];
@@ -97,15 +104,33 @@
         merged.push({...interval});
       }
     }
-    return merged;
+
+    return {
+      intervals:merged,
+      markers:{
+        plannedAt,
+        deliveredAt
+      }
+    };
   }
 
-  function graph(intervals,transfer){
-    if(!intervals.length){E.graph.innerHTML='<div class="status-history-empty">No status history recorded.</div>';return;}
-    const start=intervals[0].start.getTime();
-    const delivered=intervals.find(x=>x.status==="Delivered");
-    const end=delivered?delivered.start.getTime():Math.max(start+60000,intervals[intervals.length-1].end.getTime());
+  function graph(history,transfer){
+    const intervals=history?.intervals||[];
+    const markers=history?.markers||{};
+    const plannedAt=markers.plannedAt;
+    const deliveredAt=markers.deliveredAt;
+
+    if(!plannedAt||!Number.isFinite(plannedAt.getTime())){
+      E.graph.innerHTML='<div class="status-history-empty">No status history recorded.</div>';
+      return;
+    }
+
+    const start=plannedAt.getTime();
+    const end=(deliveredAt&&Number.isFinite(deliveredAt.getTime()))
+      ?deliveredAt.getTime()
+      :Math.max(start+60000,intervals.length?intervals[intervals.length-1].end.getTime():Date.now());
     const span=Math.max(60000,end-start);
+
     const seen=[...new Set(intervals.map(x=>x.status))];
     const levels=[...STATUS_ORDER,...seen.filter(x=>!STATUS_ORDER.includes(x))];
     const level=new Map(levels.map((x,i)=>[x,i]));
@@ -113,28 +138,52 @@
     const height=Math.max(260,levels.length*46);
     const y=status=>18+(height-42)-(level.get(status)??0)*((height-42)/Math.max(1,levels.length-1));
     const ticks=Array.from({length:6},(_,i)=>start+span*i/5);
+
     let lastX=null,lastY=null,segments="";
     for(const [index,interval] of intervals.entries()){
-      const s=Math.max(start,interval.start.getTime()),e=Math.min(end,interval.end.getTime());
+      const s=Math.max(start,interval.start.getTime());
+      const e=Math.min(end,interval.end.getTime());
       if(e<=s)continue;
+
       const x1=pct(s),x2=pct(e),yy=y(interval.status);
-      if(lastX!==null&&x1===lastX)segments+='<span class="history-v-segment" style="left:'+x1+'%;top:'+Math.min(lastY,yy)+'px;height:'+Math.abs(lastY-yy)+'px"></span>';
+      if(lastX!==null&&x1===lastX){
+        segments+='<span class="history-v-segment" style="left:'+x1+'%;top:'+Math.min(lastY,yy)+'px;height:'+Math.abs(lastY-yy)+'px"></span>';
+      }
+
       segments+='<span class="history-h-segment" style="left:'+x1+'%;top:'+yy+'px;width:'+(x2-x1)+'%;background:'+esc(COLORS[interval.status]||"#7c3aed")+'"></span>';
+
       if(x2-x1>8){
         const labelSide=index%2===0?'above':'below';
         segments+='<span class="history-segment-label '+labelSide+'" style="left:'+((x1+x2)/2)+'%;top:'+yy+'px">'+esc(durationLabel(e-s))+'</span>';
       }
-      lastX=x2;lastY=yy;
+
+      lastX=x2;
+      lastY=yy;
     }
-    if(delivered&&lastX!==null){
-      const deliveredY=y("Delivered");
-      if(lastY!==deliveredY)segments+='<span class="history-v-segment" style="left:100%;top:'+Math.min(lastY,deliveredY)+'px;height:'+Math.abs(lastY-deliveredY)+'px"></span>';
-    }
+
+    // Planned and Delivered are boundary timestamps only; neither gets a duration label.
+    const markerHtml=(at,label,color,align)=>{
+      if(!at||!Number.isFinite(at.getTime()))return "";
+      const x=pct(at.getTime());
+      const time=at.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
+      const date=at.toLocaleDateString([], {month:"short",day:"numeric"});
+      const side=align==="right"?"right":"left";
+      return '<span class="history-boundary-line '+side+'" style="left:'+x+'%;background:'+esc(color)+'"></span>'
+        +'<span class="history-boundary-dot '+side+'" style="left:'+x+'%;background:'+esc(color)+'"></span>'
+        +'<span class="history-boundary-label '+side+'" style="left:'+x+'%"><strong>'+esc(label)+'</strong><span>'+esc(date+' · '+time)+'</span></span>';
+    };
+
+    const markersHtml=
+      markerHtml(plannedAt,"Planned · Start",COLORS.Planned,"left")+
+      markerHtml(deliveredAt,"Delivered · End",COLORS.Delivered,"right");
+
     const labels=levels.map(status=>'<div class="history-y-label" style="top:'+y(status)+'px"><span class="history-status-dot" style="background:'+esc(COLORS[status]||"#7c3aed")+'"></span>'+esc(status)+'</div>').join("");
-    const grids=levels.map(status=>'<span class="history-horizontal-line" style="top:'+y(status)+'px"></span>').join("")+ticks.map(t=>'<span class="history-vertical-line" style="left:'+pct(t)+'%"></span>').join("");
-    const current=delivered?"Delivered":intervals[intervals.length-1].status;
+    const grids=levels.map(status=>'<span class="history-horizontal-line" style="top:'+y(status)+'px"></span>').join("")
+      +ticks.map(t=>'<span class="history-vertical-line" style="left:'+pct(t)+'%"></span>').join("");
+
+    const current=deliveredAt?"Delivered":(intervals[intervals.length-1]?.status||transfer.order_status||"Planned");
     E.title.textContent=transfer.job_number?("Job "+transfer.job_number):"Status History";
-    E.graph.innerHTML='<div class="status-history-summary"><div class="status-history-summary-copy"><small>STATUS TIMELINE</small><p>Time moves left to right. Each upward step is a status change.</p></div><div class="status-history-current"><span>Current Status</span><strong style="color:'+esc(COLORS[current]||"#7c3aed")+'">'+esc(current)+'</strong></div></div><div class="history-chart"><div class="history-line-layout"><div class="history-y-axis">'+labels+'</div><div class="history-plot" style="height:'+height+'px"><div class="history-grid">'+grids+'</div>'+segments+'</div></div><div class="history-axis-bottom"><div></div><div class="history-axis-caption">Elapsed time</div></div></div>';
+    E.graph.innerHTML='<div class="status-history-summary"><div class="status-history-summary-copy"><small>STATUS TIMELINE</small><p>Time moves left to right. Planned and Delivered are start/end markers only; duration is tracked for active statuses.</p></div><div class="status-history-current"><span>Current Status</span><strong style="color:'+esc(COLORS[current]||"#7c3aed")+'">'+esc(current)+'</strong></div></div><div class="history-chart"><div class="history-line-layout"><div class="history-y-axis">'+labels+'</div><div class="history-plot" style="height:'+height+'px"><div class="history-grid">'+grids+'</div>'+segments+markersHtml+'</div></div><div class="history-axis-bottom"><div></div><div class="history-axis-caption">Elapsed time</div></div></div>';
   }
 
   async function load(){
@@ -148,7 +197,7 @@
       const status=E.status?.value||"Planned";
       const now=new Date();
       const start=new Date(now.getTime()-3600000);
-      graph([{status,start,end:now}],{job_number:"Transfer",order_status:status,created_at:start.toISOString()});
+      graph({intervals:status==="Planned"?[]:[{status,start,end:now}],markers:{plannedAt:start,deliveredAt:null}},{job_number:"Transfer",order_status:status,created_at:start.toISOString()});
       return;
     }
 
