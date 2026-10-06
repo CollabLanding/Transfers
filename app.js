@@ -230,6 +230,7 @@ function renderBoard(){
    let lane=document.createElement("div");lane.className="lane";lane.style.height=GRID_HEIGHT+"px";lane.dataset.driver=d;
    addGridLines(lane);
    lane.addEventListener("dragover",transferLaneDragOver);lane.addEventListener("dragleave",transferLaneDragLeave);lane.addEventListener("drop",dropCard);
+   lane.addEventListener("click",e=>{if(!E.edit.value)return;if(e.target.closest(".card,.slot-status-block,.load-chain,.slot-resize-handle,.slot-status-delete"))return;reset()});
    applyDriverScheduleOverlay(lane,d,date);
    const laneItems=day.filter(x=>x.driver===d&&timeToMin(x.scheduled_time)>=GRID_START&&timeToMin(x.scheduled_time)<GRID_END);
    layoutLaneCards(laneItems).forEach(entry=>lane.appendChild(makeCard(entry.x,entry.top,entry.height,entry.stacked)));
