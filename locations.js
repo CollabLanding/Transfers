@@ -11,7 +11,10 @@
     original:$("originalName"),
     name:$("locationName"),
     address:$("locationAddress"),
-    contact:$("locationContact"),
+    city:$("locationCity"),
+    state:$("locationState"),
+    contactName:$("locationContactName"),
+    contactNumber:$("locationContactNumber"),
     createdBy:$("createdBy"),
     createdAt:$("createdAt"),
     save:$("saveLocation"),
@@ -48,7 +51,10 @@
     localStorage.setItem("transfers-demo-locations-v1",JSON.stringify(locations.map(x=>({
       name:x.name,
       address:x.address||"",
-      contact:x.contact||"",
+      city:x.city||"",
+      state:x.state||"",
+      contact_name:x.contact_name||"",
+      contact_number:x.contact_number||"",
       created_by_name:x.created_by_name||"Demo User",
       created_at:x.created_at||""
     }))));
@@ -62,7 +68,7 @@
         return {name:normalizedName==="Building 100"?"Sunnyvale 100":normalizedName==="Building 200"?"Sunnyvale 200":normalizedName,address:String(row.address||""),contact:String(row.contact||""),created_by_name:row.created_by_name||"Demo User",created_at:row.created_at||""};
       });
     }catch(_err){
-      locations=[{name:"Sunnyvale 100",address:"",contact:"",created_by_name:"Demo User",created_at:""},{name:"Sunnyvale 200",address:"",contact:"",created_by_name:"Demo User",created_at:""}];
+      locations=[{name:"Sunnyvale 100",address:"",city:"",state:"",contact_name:"",contact_number:"",created_by_name:"Demo User",created_at:""},{name:"Sunnyvale 200",address:"",city:"",state:"",contact_name:"",contact_number:"",created_by_name:"Demo User",created_at:""}];
     }
   }
   function setDetails(row){
@@ -72,7 +78,10 @@
       E.original.value="";
       E.name.value="";
       E.address.value="";
-      E.contact.value="";
+      E.city.value="";
+      E.state.value="";
+      E.contactName.value="";
+      E.contactNumber.value="";
       E.createdBy.value="";
       E.createdAt.value="";
       return;
@@ -82,7 +91,10 @@
     E.original.value=row.name;
     E.name.value=row.name;
     E.address.value=row.address||"";
-    E.contact.value=row.contact||"";
+    E.city.value=row.city||"";
+    E.state.value=row.state||"";
+    E.contactName.value=row.contact_name||"";
+    E.contactNumber.value=row.contact_number||"";
     E.createdBy.value=row.created_by_name||"System";
     E.createdAt.value=formatCreatedAt(row.created_at);
     E.title.textContent=row.name;
@@ -105,7 +117,7 @@
       return;
     }
     show("Loading locations…");
-    const r=await sb.from("transfer_locations").select("name,created_by,created_by_name,created_at,address,contact").order("name");
+    const r=await sb.from("transfer_locations").select("name,created_by,created_by_name,created_at,address,city,state,contact_name,contact_number").order("name");
     if(r.error){
       locations=[];
       renderSelect();
@@ -118,7 +130,10 @@
       created_by_name:row.created_by_name||"System",
       created_at:row.created_at||"",
       address:row.address||"",
-      contact:row.contact||""
+      city:row.city||"",
+      state:row.state||"",
+      contact_name:row.contact_name||"",
+      contact_number:row.contact_number||""
     })).filter(row=>row.name);
     renderSelect(keepName);
     show("");
@@ -128,7 +143,10 @@
     const oldName=E.original.value.trim();
     const newName=E.name.value.trim();
     const newAddress=E.address.value.trim();
-    const newContact=E.contact.value.trim();
+    const newCity=E.city.value.trim();
+    const newState=E.state.value.trim();
+    const newContactName=E.contactName.value.trim();
+    const newContactNumber=E.contactNumber.value.trim();
     const existing=locations.find(row=>row.name===oldName);
 
     if(!oldName||!newName){
@@ -140,7 +158,7 @@
       show("A location with that name already exists.","error");
       return;
     }
-    if(existing&&existing.name===newName&&String(existing.address||"")===newAddress&&String(existing.contact||"")===newContact){
+    if(existing&&existing.name===newName&&String(existing.address||"")===newAddress&&String(existing.city||"")===newCity&&String(existing.state||"")===newState&&String(existing.contact_name||"")===newContactName&&String(existing.contact_number||"")===newContactNumber){
       show("No changes to save.","error");
       return;
     }
@@ -153,7 +171,10 @@
       const row=existing||{name:oldName,created_by_name:"Demo User",created_at:""};
       row.name=newName;
       row.address=newAddress;
-      row.contact=newContact;
+      row.city=newCity;
+      row.state=newState;
+      row.contact_name=newContactName;
+      row.contact_number=newContactNumber;
       if(!existing)locations.push(row);
       saveLocal();
       locations.sort((a,b)=>a.name.localeCompare(b.name));
@@ -165,7 +186,7 @@
     }
 
     const renamed=await sb.from("transfer_locations")
-      .update({name:newName,address:newAddress||null,contact:newContact||null})
+      .update({name:newName,address:newAddress||null,city:newCity||null,state:newState||null,contact_name:newContactName||null,contact_number:newContactNumber||null})
       .eq("name",oldName)
       .select("name,created_by,created_by_name,created_at,address,contact")
       .single();
@@ -186,7 +207,10 @@
         await sb.from("transfer_locations").update({
           name:oldName,
           address:existing?.address||null,
-          contact:existing?.contact||null
+          city:existing?.city||null,
+          state:existing?.state||null,
+          contact_name:existing?.contact_name||null,
+          contact_number:existing?.contact_number||null
         }).eq("name",newName);
         E.save.disabled=false;
         E.del.disabled=false;
@@ -214,7 +238,7 @@
       }
     }
 
-    const row=renamed.data||{...existing,name:newName,address:newAddress,contact:newContact};
+    const row=renamed.data||{...existing,name:newName,address:newAddress,city:newCity,state:newState,contact_name:newContactName,contact_number:newContactNumber};
     locations=locations.filter(x=>x.name!==oldName&&x.name!==newName);
     locations.push(row);
     locations.sort((a,b)=>a.name.localeCompare(b.name));
