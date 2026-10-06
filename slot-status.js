@@ -1,7 +1,7 @@
 /* Shared status ranges; independent of transfer loading and drag/drop. */
 window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start, end, px, getLinks, onSelectStatus}) {
   const table = 'transfer_slot_statuses', key = 'transfers-slot-statuses-v1';
-  const statuses = ['Driving', 'Yard Moves', 'Loading', 'Standby', 'Job Pushed'];
+  const statuses = ['Driving', 'Yard Moves', 'Loading', 'Standby', 'Job Pushed', 'Custom'];
   let rows = [], date = null, generation = 0, selection = null, busy = false, moving = null, resizeCancel = null;
   const dialog = document.createElement('dialog');
   dialog.className = 'slot-status-dialog';
@@ -17,6 +17,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
   dialog.querySelector('.slot-status-cancel').onclick = close;
   dialog.addEventListener('cancel', e => { e.preventDefault(); close(); });
   function localRows() { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } }
+  function displayStatus(row) { return row?.status === 'Custom' ? (String(row.custom_title || '').trim() || 'Custom') : row?.status || ''; }
   function paint() {
     if (resizeCancel) resizeCancel(false);
     grid.querySelectorAll('.slot-status-block,.slot-status-delete').forEach(n => n.remove());
@@ -35,8 +36,8 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
         block.addEventListener('dragend', endMove);
         block.style.top = ((row.start_minutes - start) / 15 * px) + 'px';
         block.style.height = ((row.end_minutes - row.start_minutes) / 15 * px) + 'px';
-        block.title = row.status + ': ' + time(row.start_minutes) + ' – ' + time(row.end_minutes);
-        const label = document.createElement('span'); label.className = 'slot-status-label'; label.textContent = row.status;
+        block.title = displayStatus(row) + ': ' + time(row.start_minutes) + ' – ' + time(row.end_minutes);
+        const label = document.createElement('span'); label.className = 'slot-status-label'; label.textContent = displayStatus(row);
         block.append(label);
         if (row.notes) { const note = document.createElement('span'); note.className = 'slot-status-note'; note.textContent = row.notes; note.title = row.notes; block.append(note); }
         const remove = document.createElement('button');
@@ -106,7 +107,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
       if(edge==='top')begin=Math.max(start,Math.min(finish-30,raw));
       else finish=Math.min(end,Math.max(begin+30,raw));
       block.style.top=((begin-start)/15*px)+'px';block.style.height=((finish-begin)/15*px)+'px';remove.style.top=((begin-start)/15*px+1)+'px';
-      block.querySelector('span').textContent=row.status+' · '+time(begin)+' – '+time(finish);
+      block.querySelector('.slot-status-label').textContent=displayStatus(row)+' · '+time(begin)+' – '+time(finish);
       block.classList.toggle('is-blocked',overlap({...row,start_minutes:begin,end_minutes:finish},row.id));
     };
     const cleanup=()=>{
@@ -144,7 +145,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
     e.dataTransfer.dropEffect=blocked?'none':'move';
     const preview=document.createElement('div');preview.className='slot-status-move-preview'+(blocked?' is-blocked':'');
     preview.style.top=((payload.start_minutes-start)/15*px)+'px';preview.style.height=((payload.end_minutes-payload.start_minutes)/15*px)+'px';
-    preview.textContent=moving.row.status+' · '+time(payload.start_minutes)+' – '+time(payload.end_minutes);lane.append(preview);
+    preview.textContent=displayStatus(moving.row)+' · '+time(payload.start_minutes)+' – '+time(payload.end_minutes);lane.append(preview);
   },true);
   grid.addEventListener('dragleave',e=>{if(moving&&!grid.contains(e.relatedTarget)){clearMovePreview();getLinks?.().clearPreview();}});
   grid.addEventListener('drop',async e=>{
