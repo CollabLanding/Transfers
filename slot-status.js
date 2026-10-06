@@ -115,6 +115,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
       handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',up);handle.removeEventListener('pointercancel',cancel);handle.removeEventListener('lostpointercapture',cancel);
       document.removeEventListener('keydown',escape);window.removeEventListener('blur',cancel);
       if(handle.hasPointerCapture(pointer))handle.releasePointerCapture(pointer);
+      window.stopTransferAutoScroll?.();
       resizeCancel=null;busy=false;block.draggable=true;block.classList.remove('slot-status-resizing','is-blocked');
     };
     const cancel=(repaint=true)=>{cleanup();if(repaint!==false)paint();};
