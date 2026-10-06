@@ -1544,3 +1544,11 @@ html[data-theme="dark"] .chain-saved-art,body.dark-theme .chain-saved-art{color:
   :root{--rail:58px}
   .tick{right:5px;font-size:9px}
 }
+
+
+.driver-history-panel{margin-top:16px;min-height:260px}
+.driver-history-heading{padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.driver-history-heading small{letter-spacing:.12em;color:var(--muted)}
+.driver-history-heading h2{margin:4px 0}
+.driver-history-heading p{margin:5px 0 0;color:var(--muted);font-size:12px}
+.driver-history-panel .activity-list{max-height:420px;overflow:auto}
