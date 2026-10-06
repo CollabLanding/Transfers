@@ -156,7 +156,7 @@ main{grid-template-columns:380px minmax(0,1fr) 186px}
 .chat-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
 .chat-heading h2{margin:0;font-size:18px}
 .chat-heading small{font-size:9px;font-weight:900;letter-spacing:.1em;color:#2f8f5b}
-.chat-list{display:block;min-height:140px;max-height:230px;overflow:auto;padding-right:2px}
+.chat-list{display:block;min-height:72px;max-height:112px;overflow:auto;padding-right:2px}
 .chat-message{padding:8px 0 9px;border-bottom:1px solid var(--line)}
 .chat-message:last-child{border-bottom:0}
 .chat-meta{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:3px}
