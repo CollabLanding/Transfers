@@ -390,15 +390,17 @@ function openStatusEditor(row){
 async function saveStatusNotes(){
   const id=E.slotStatusTitle.dataset.statusId;
   const row=slotStatuses.rows().find(r=>String(r.id)===String(id));
-  if(!row){E.slotStatusMsg.textContent="No status selected.";E.slotStatusMsg.style.color="#a43c3c";return;}
+  if(!row){E.slotStatusMsg.textContent="No status selected.";E.slotStatusMsg.style.color="#a43c3c";return false;}
   E.slotStatusSave.disabled=true;E.slotStatusMsg.textContent="Saving…";E.slotStatusMsg.style.color="";
   try {
     await slotStatuses.saveNotes(row,E.slotStatusNotes.value);
     row.notes=E.slotStatusNotes.value;E.slotStatusMsg.textContent="Saved.";E.slotStatusMsg.style.color="#2f6f49";
+    return true;
   } catch(e) {
     const detail=[e?.message,e?.details,e?.hint,e?.code].filter(Boolean).join(" · ")||String(e)||"Unknown database error";
     E.slotStatusMsg.textContent="Could not save notes: "+detail;
     E.slotStatusMsg.style.color="#a43c3c";
+    return false;
   } finally { E.slotStatusSave.disabled=false; }
 }
 function selectStatusEditor(row){
@@ -555,6 +557,7 @@ function confirmDiscardTransferInfo(){
   return !transferInfoChanged()||confirm("You have unsaved changes to this Transfer Info. Discard the changes?");
 }
 document.addEventListener("click",e=>{if(!E.edit.value)return;const pointTarget=document.elementFromPoint?.(e.clientX,e.clientY);const lane=e.target.closest(".lane")||pointTarget?.closest(".lane");if(!lane)return;const occupied=e.target.closest(".card,.slot-status-block,.load-chain,.slot-resize-handle,.slot-status-delete,.drop-preview")||pointTarget?.closest(".card,.slot-status-block,.load-chain,.slot-resize-handle,.slot-status-delete,.drop-preview");if(occupied)return;if(confirmDiscardTransferInfo())reset()},true);
+E.slotStatusNotes?.addEventListener("keydown",async e=>{if(e.key!=="Enter"||e.shiftKey)return;e.preventDefault();if(E.slotStatusSave?.disabled)return;const saved=await saveStatusNotes();if(saved)closeStatusEditor()});
 E.form.onsubmit=submit;E.del.onclick=remove;E.statusHistory?.addEventListener("click",()=>window.openStatusHistory?.());E.statusHistoryBack?.addEventListener("click",()=>window.closeStatusHistory?.());E.slotStatusSave.onclick=saveStatusNotes;E.slotStatusCancel.onclick=()=>closeStatusEditor();E.slotStatusClose.onclick=()=>closeStatusEditor();E.cancel.onclick=reset;E.driver.onchange=()=>managedChange("driver",E.driver);E.origin.onchange=()=>managedChange("location",E.origin);E.destination.onchange=()=>managedChange("location",E.destination);E.optionForm.onsubmit=addOption;E.optionClose.onclick=closeOption;E.optionCancel.onclick=closeOption;E.optionModal.addEventListener("click",e=>{if(e.target===E.optionModal)closeOption()});
 $("prev").onclick=()=>{E.boardDate.value=add(E.boardDate.value,-1);E.date.value=E.boardDate.value;loadBoardSchedule()};$("next").onclick=()=>{E.boardDate.value=add(E.boardDate.value,1);E.date.value=E.boardDate.value;loadBoardSchedule()};$("today").onclick=()=>{E.boardDate.value=today();E.date.value=E.boardDate.value;loadBoardSchedule()};E.boardDate.onchange=()=>{E.date.value=E.boardDate.value;loadBoardSchedule()};E.signout.onclick=()=>sb?.auth.signOut();
 document.addEventListener("pointerdown",unlockAudio,{once:true});
