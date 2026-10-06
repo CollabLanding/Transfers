@@ -1,10 +1,37 @@
 (()=>{
 const C=window.TRANSFERS_CONFIG||{},live=!!(C.supabaseUrl&&C.supabaseAnonKey),sb=live?window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey):null;
 let user=null,profile=null,items=[],drivers=[],locations=[],driverSchedule=[],presence=null,dataChannel=null,optionContext=null,ignoreClickUntil=0,draggedDriver=null,draggedTransferId=null,dragGrabOffsetPx=0,audioCtx=null,lastPlanningDing=0,transferInfoBaseline=null;
+let transferAutoScrollFrame=0,transferAutoScrollX=0,transferAutoScrollY=0;
 const $=id=>document.getElementById(id),E={form:$("form"),edit:$("editId"),date:$("date"),time:$("time"),duration:$("duration"),pickupByDate:$("pickupByDate"),pickupByTime:$("pickupByTime"),deliverByDate:$("deliverByDate"),deliverByTime:$("deliverByTime"),driver:$("driver"),origin:$("origin"),destination:$("destination"),pallet:$("pallet"),job:$("job"),status:$("status"),urgent:$("urgent"),save:$("save"),del:$("delete"),cancel:$("cancel"),textDriver:$("textDriver"),msg:$("msg"),slotStatusEditor:$("slotStatusEditor"),slotStatusTitle:$("slotStatusTitle"),slotStatusMeta:$("slotStatusMeta"),slotStatusNotes:$("slotStatusNotes"),slotStatusSave:$("slotStatusSave"),slotStatusCancel:$("slotStatusCancel"),slotStatusClose:$("slotStatusClose"),slotStatusMsg:$("slotStatusMsg"),boardDate:$("boardDate"),grid:$("grid"),title:$("title"),currentTime:$("scheduleCurrentTime"),mode:$("mode"),me:$("me"),email:$("email"),active:$("active"),login:$("login"),loginForm:$("loginForm"),loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg"),signout:$("signout"),formTitle:$("formTitle"),optionModal:$("optionModal"),optionForm:$("optionForm"),optionTitle:$("optionTitle"),optionLabel:$("optionLabel"),optionName:$("optionName"),optionMsg:$("optionMsg"),optionClose:$("optionClose"),optionCancel:$("optionCancel"),statusHistory:$("statusHistory"),statusHistoryScreen:$("statusHistoryScreen"),statusHistoryBack:$("statusHistoryBack")};
 const key="transfers-demo-v2",driverKey="transfers-demo-drivers-v1",locationKey="transfers-demo-locations-v1",PX15=20,GRID_START=210,GRID_END=1320,GRID_HEIGHT=((GRID_END-GRID_START)/15)*PX15;
 const today=()=>{let d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)},add=(iso,n)=>{let d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)},fmt=t=>{let [h,m]=String(t).slice(0,5).split(":").map(Number);return (h%12||12)+":"+String(m).padStart(2,"0")+" "+(h>=12?"PM":"AM")};
 const minToTime=m=>String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"),timeToMin=t=>{let [h,m]=String(t).slice(0,5).split(":").map(Number);return h*60+m};
+function startTransferAutoScroll(clientX,clientY){
+  transferAutoScrollX=clientX;transferAutoScrollY=clientY;
+  if(transferAutoScrollFrame)return;
+  const tick=()=>{
+    const wrap=document.getElementById("gridWrap");
+    if(!wrap){transferAutoScrollFrame=0;return}
+    const rect=wrap.getBoundingClientRect(),edge=70,maxStep=24;
+    const y=transferAutoScrollY,x=transferAutoScrollX;
+    let dx=0,dy=0;
+    if(y<rect.top+edge)dy=-Math.ceil((rect.top+edge-y)/edge*maxStep);
+    else if(y>rect.bottom-edge)dy=Math.ceil((y-(rect.bottom-edge))/edge*maxStep);
+    if(x<rect.left+edge)dx=-Math.ceil((rect.left+edge-x)/edge*maxStep);
+    else if(x>rect.right-edge)dx=Math.ceil((x-(rect.right-edge))/edge*maxStep);
+    if(wrap.scrollHeight>wrap.clientHeight&&dy)wrap.scrollTop=Math.max(0,Math.min(wrap.scrollHeight-wrap.clientHeight,wrap.scrollTop+dy));
+    if(wrap.scrollWidth>wrap.clientWidth&&dx)wrap.scrollLeft=Math.max(0,Math.min(wrap.scrollWidth-wrap.clientWidth,wrap.scrollLeft+dx));
+    transferAutoScrollFrame=requestAnimationFrame(tick);
+  };
+  transferAutoScrollFrame=requestAnimationFrame(tick);
+}
+function stopTransferAutoScroll(){
+  if(transferAutoScrollFrame)cancelAnimationFrame(transferAutoScrollFrame);
+  transferAutoScrollFrame=0;
+}
+window.startTransferAutoScroll=startTransferAutoScroll;
+window.stopTransferAutoScroll=stopTransferAutoScroll;
+
 function cardBaseTopPx(x){return ((timeToMin(x.scheduled_time)-GRID_START)/15)*PX15}
 function cardHeightPx(x){return Math.max(22,(Number(x.duration_minutes||60)/15)*PX15)}
 function cardSortStamp(x){
@@ -244,9 +271,9 @@ function driverHeaderDragOver(e){if(!draggedDriver||draggedDriver===e.currentTar
 async function driverHeaderDrop(e){e.preventDefault();const target=e.currentTarget.dataset.driver,source=draggedDriver||e.dataTransfer.getData("application/x-transfer-driver");e.currentTarget.classList.remove("driver-dragover");if(!source||!target||source===target)return;const old=drivers.slice(),next=drivers.filter(d=>d!==source),rect=e.currentTarget.getBoundingClientRect(),after=e.clientX>rect.left+rect.width/2;let index=next.indexOf(target);if(index<0)return;if(after)index++;next.splice(index,0,source);drivers=orderedUniq(next);renderOptions();renderBoard();if(!live){saveLocal();return}const r=await sb.rpc("reorder_transfer_drivers",{p_names:drivers});if(r.error){drivers=old;renderOptions();renderBoard();msg("Could not reorder drivers: "+r.error.message,"error");return}msg("Driver column order updated.","ok")}
 function clearDropPreviews(){boxLinks.clearPreview();document.querySelectorAll(".drop-preview").forEach(x=>x.remove());document.querySelectorAll(".lane.dragover").forEach(x=>x.classList.remove("dragover"))}
 function landingMinutes(e,lane,x){const rect=lane.getBoundingClientRect(),raw=GRID_START+Math.round((e.clientY-rect.top-dragGrabOffsetPx)/PX15)*15;return boxLinks.landing('job:'+x.id,raw)}
-function transferLaneDragOver(e){if(!draggedTransferId)return;e.preventDefault();const lane=e.currentTarget,x=items.find(i=>i.id===draggedTransferId);if(!x)return;clearDropPreviews();lane.classList.add('dragover');boxLinks.preview('job:'+x.id,lane,landingMinutes(e,lane,x))}
+function transferLaneDragOver(e){if(!draggedTransferId)return;e.preventDefault();window.startTransferAutoScroll?.(e.clientX,e.clientY);const lane=e.currentTarget,x=items.find(i=>i.id===draggedTransferId);if(!x)return;clearDropPreviews();lane.classList.add('dragover');boxLinks.preview('job:'+x.id,lane,landingMinutes(e,lane,x))}
 
-function transferLaneDragLeave(e){const lane=e.currentTarget;if(e.relatedTarget&&lane.contains(e.relatedTarget))return;lane.classList.remove("dragover");lane.querySelectorAll(".drop-preview,.linked-box-preview").forEach(p=>p.remove())}
+function transferLaneDragLeave(e){const lane=e.currentTarget;if(e.relatedTarget&&lane.contains(e.relatedTarget))return;lane.classList.remove("dragover");lane.querySelectorAll(".drop-preview,.linked-box-preview").forEach(p=>p.remove());if(!draggedTransferId)window.stopTransferAutoScroll?.()}
 function statusClass(s){return "status-"+String(s||"Planned").toLowerCase().replace(/\s+/g,"-")}
 function deadlineText(date,time){
  const day=date?new Date(date+"T12:00:00").toLocaleDateString("en-US",{month:"numeric",day:"numeric"}):"";
@@ -297,6 +324,7 @@ function beginTransferResize(e,x,b,edge){
  };
  const move=ev=>{
    ev.preventDefault();
+   window.startTransferAutoScroll?.(ev.clientX,ev.clientY);
    const point=pointerMinutes(ev.clientY);
    if(edge==="top"){
      const minStart=Math.max(GRID_START,originalEnd-720);
