@@ -18,6 +18,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
   dialog.addEventListener('cancel', e => { e.preventDefault(); close(); });
   function localRows() { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } }
   function displayStatus(row) { return row?.status === 'Custom' ? (String(row.custom_title || '').trim() || 'Custom') : row?.status || ''; }
+  function displayStatus(row) { return row?.status === 'Custom' ? (String(row.custom_title || '').trim() || 'Custom') : row?.status || ''; }
   function paint() {
     if (resizeCancel) resizeCancel(false);
     grid.querySelectorAll('.slot-status-block,.slot-status-delete').forEach(n => n.remove());
@@ -208,7 +209,25 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
     const button = document.createElement('button'); button.type = 'button'; button.textContent = status;
     button.onclick = async () => {
       if (!selection || busy) return;
-      const b = bounds(selection), payload = {driver: selection.driver, scheduled_date: selection.date, ...b, status, created_by: getUser()?.id};
+      let custom_title = null;
+      if (status === 'Custom') {
+        custom_title = window.prompt('Enter a custom status title:', '');
+        if (custom_title === null) return;
+        custom_title = custom_title.trim();
+        if (!custom_title) {
+          dialog.querySelector('.slot-status-error').textContent = 'Enter a custom status title.';
+          return;
+        }
+        if (custom_title.length > 80) custom_title = custom_title.slice(0, 80);
+      }
+      const b = bounds(selection), payload = {
+        driver: selection.driver,
+        scheduled_date: selection.date,
+        ...b,
+        status,
+        custom_title,
+        created_by: getUser()?.id
+      };
       if (rows.some(r => r.driver === payload.driver && r.scheduled_date === payload.scheduled_date && r.start_minutes < b.end_minutes && r.end_minutes > b.start_minutes)) {
         dialog.querySelector('.slot-status-error').textContent = 'This selection overlaps an existing status. Delete that status first.'; return;
       }
