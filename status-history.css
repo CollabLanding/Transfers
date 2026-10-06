@@ -310,3 +310,87 @@ html[data-theme="dark"] .history-bar{
   white-space:nowrap;
   transform:translateX(-50%);
 }
+
+
+.history-h-segment.editable,
+.history-segment-label.editable,
+.history-status-time.editable{
+  cursor:pointer;
+}
+.history-h-segment.editable{
+  transition:height .12s ease,filter .12s ease;
+}
+.history-h-segment.editable:hover{
+  height:6px;
+  filter:brightness(.92);
+}
+.history-segment-label.editable{
+  cursor:pointer;
+}
+.history-segment-label.editable:hover,
+.history-status-time.editable:hover{
+  color:var(--text);
+  text-decoration:underline;
+}
+.status-history-editor{
+  margin-top:18px;
+  padding-top:16px;
+  border-top:1px solid var(--line);
+}
+.status-history-editor.hidden{display:none}
+.status-history-editor-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:12px;
+}
+.status-history-editor-head small{
+  display:block;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.12em;
+}
+.status-history-editor-head h4{
+  margin:4px 0 0;
+  font-size:16px;
+}
+.status-history-editor-field{
+  display:block;
+  margin:0;
+  color:var(--text);
+  font-size:11px;
+  font-weight:700;
+}
+.status-history-editor-time{
+  display:block;
+  width:min(280px,100%);
+  margin-top:6px;
+  min-height:34px;
+  box-sizing:border-box;
+}
+.status-history-editor-help{
+  margin:8px 0 0;
+  color:var(--muted);
+  font-size:10px;
+}
+.status-history-editor-msg{
+  min-height:16px;
+  margin:6px 0 0;
+  color:#a43c3c;
+  font-size:11px;
+}
+.status-history-editor-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:10px;
+}
+.status-history-editor-actions button{
+  min-height:32px;
+}
+html[data-theme="dark"] .status-history-editor-msg,
+body.dark-theme .status-history-editor-msg{
+  color:#f0a2a2;
+}
