@@ -107,6 +107,27 @@
     const next=localISO(new Date(y,q*3,1,12,0,0));
     return {start,end:addDays(next,-1)};
   }
+  function activityTime(t){return time12(t)||"Off"}
+  function scheduleEntries(rows){
+    const map=new Map();
+    (rows||[]).forEach(r=>map.set(String(r.driver_name)+"|"+String(r.schedule_date),{start:String(r.start_time||"").slice(0,5),end:String(r.end_time||"").slice(0,5)}));
+    return map;
+  }
+  function recordScheduleChanges(beforeRows,afterRows){
+    const before=scheduleEntries(beforeRows),after=scheduleEntries(afterRows),entries=[];
+    for(const driver of drivers){
+      for(const date of weekDates()){
+        const key=driver+"|"+date;
+        const b=before.get(key)||{start:"",end:""};
+        const a=after.get(key)||{start:"",end:""};
+        if(b.start===a.start&&b.end===a.end)continue;
+        const from=b.start&&b.end?activityTime(b.start)+"–"+activityTime(b.end):"Off";
+        const to=a.start&&a.end?activityTime(a.start)+"–"+activityTime(a.end):"Off";
+        entries.push({driver_name:driver,action:"Schedule changed",details:friendly(date,{weekday:"long",month:"short",day:"numeric"})+" · "+from+" → "+to,actor_name:userName()});
+      }
+    }
+    if(entries.length)window.recordDriverActivity?.(entries);
+  }
   function setDirty(value=true){
     dirty=value;
     E.save.textContent=dirty?"Save Schedule *":"Save Schedule";
@@ -286,6 +307,7 @@
   }
   async function save(quiet=false){
     if(!live||!user)return false;
+    const beforeRows=scheduleRows.map(r=>({...r}));
     const {rows,invalid}=collect();
     if(invalid){
       show("Enter both a start and end time for "+invalid+", or clear both fields.","error");
@@ -302,6 +324,7 @@
         if(ins.error){show("Could not save schedule: "+ins.error.message,"error");return false}
       }
       setDirty(false);
+      recordScheduleChanges(beforeRows,rows);
       await loadWeek();
       if(!quiet)show("Driver schedule saved.","ok");
       return true;
@@ -373,6 +396,12 @@
     }
 
     await loadWeek();
+    window.recordDriverActivity?.([{
+      driver_name:driver,
+      action:"Schedule copied",
+      details:label+" · "+(period==="day"?"day":period)+" schedule copied forward",
+      actor_name:userName()
+    }]);
     show(driver+" "+period+" schedule copied forward.","ok");
   }
 
