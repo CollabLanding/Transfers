@@ -10,6 +10,8 @@
     form:$("locationForm"),
     original:$("originalName"),
     name:$("locationName"),
+    address:$("locationAddress"),
+    contact:$("locationContact"),
     createdBy:$("createdBy"),
     createdAt:$("createdAt"),
     save:$("saveLocation"),
@@ -43,14 +45,24 @@
     return Number.isNaN(d.getTime())?String(value):d.toLocaleString();
   }
   function saveLocal(){
-    localStorage.setItem("transfers-demo-locations-v1",JSON.stringify(locations.map(x=>x.name)));
+    localStorage.setItem("transfers-demo-locations-v1",JSON.stringify(locations.map(x=>({
+      name:x.name,
+      address:x.address||"",
+      contact:x.contact||"",
+      created_by_name:x.created_by_name||"Demo User",
+      created_at:x.created_at||""
+    }))));
   }
   function loadLocal(){
     try{
       const names=JSON.parse(localStorage.getItem("transfers-demo-locations-v1")||'["Sunnyvale 100","Sunnyvale 200"]')||[];
-      locations=names.filter(Boolean).map(name=>({name:String(name)==="Building 100"?"Sunnyvale 100":String(name)==="Building 200"?"Sunnyvale 200":String(name),created_by_name:"Demo User",created_at:""}));
+      locations=names.filter(Boolean).map(item=>{
+        const row=typeof item==="string"?{name:item}:item||{};
+        const normalizedName=String(row.name||"");
+        return {name:normalizedName==="Building 100"?"Sunnyvale 100":normalizedName==="Building 200"?"Sunnyvale 200":normalizedName,address:String(row.address||""),contact:String(row.contact||""),created_by_name:row.created_by_name||"Demo User",created_at:row.created_at||""};
+      });
     }catch(_err){
-      locations=[{name:"Sunnyvale 100",created_by_name:"Demo User",created_at:""},{name:"Sunnyvale 200",created_by_name:"Demo User",created_at:""}];
+      locations=[{name:"Sunnyvale 100",address:"",contact:"",created_by_name:"Demo User",created_at:""},{name:"Sunnyvale 200",address:"",contact:"",created_by_name:"Demo User",created_at:""}];
     }
   }
   function setDetails(row){
@@ -59,6 +71,8 @@
       E.empty.classList.remove("hidden");
       E.original.value="";
       E.name.value="";
+      E.address.value="";
+      E.contact.value="";
       E.createdBy.value="";
       E.createdAt.value="";
       return;
@@ -67,6 +81,8 @@
     E.details.classList.remove("hidden");
     E.original.value=row.name;
     E.name.value=row.name;
+    E.address.value=row.address||"";
+    E.contact.value=row.contact||"";
     E.createdBy.value=row.created_by_name||"System";
     E.createdAt.value=formatCreatedAt(row.created_at);
     E.title.textContent=row.name;
@@ -89,7 +105,7 @@
       return;
     }
     show("Loading locations…");
-    const r=await sb.from("transfer_locations").select("name,created_by,created_by_name,created_at").order("name");
+    const r=await sb.from("transfer_locations").select("name,created_by,created_by_name,created_at,address,contact").order("name");
     if(r.error){
       locations=[];
       renderSelect();
@@ -100,7 +116,9 @@
       name:String(row.name||"").trim(),
       created_by:row.created_by,
       created_by_name:row.created_by_name||"System",
-      created_at:row.created_at||""
+      created_at:row.created_at||"",
+      address:row.address||"",
+      contact:row.contact||""
     })).filter(row=>row.name);
     renderSelect(keepName);
     show("");
@@ -109,17 +127,21 @@
   async function save(){
     const oldName=E.original.value.trim();
     const newName=E.name.value.trim();
+    const newAddress=E.address.value.trim();
+    const newContact=E.contact.value.trim();
+    const existing=locations.find(row=>row.name===oldName);
+
     if(!oldName||!newName){
       show("Enter a location name.","error");
-      return;
-    }
-    if(oldName.toLowerCase()===newName.toLowerCase()){
-      show("No changes to save.","error");
       return;
     }
     const duplicate=locations.find(row=>row.name.toLowerCase()===newName.toLowerCase()&&row.name!==oldName);
     if(duplicate){
       show("A location with that name already exists.","error");
+      return;
+    }
+    if(existing&&existing.name===newName&&String(existing.address||"")===newAddress&&String(existing.contact||"")===newContact){
+      show("No changes to save.","error");
       return;
     }
 
@@ -128,9 +150,13 @@
     show("Saving location…");
 
     if(!live){
-      const row=locations.find(x=>x.name===oldName);
-      if(row)row.name=newName;
+      const row=existing||{name:oldName,created_by_name:"Demo User",created_at:""};
+      row.name=newName;
+      row.address=newAddress;
+      row.contact=newContact;
+      if(!existing)locations.push(row);
       saveLocal();
+      locations.sort((a,b)=>a.name.localeCompare(b.name));
       renderSelect(newName);
       E.save.disabled=false;
       E.del.disabled=false;
@@ -139,9 +165,9 @@
     }
 
     const renamed=await sb.from("transfer_locations")
-      .update({name:newName})
+      .update({name:newName,address:newAddress||null,contact:newContact||null})
       .eq("name",oldName)
-      .select("name,created_by,created_by_name,created_at")
+      .select("name,created_by,created_by_name,created_at,address,contact")
       .single();
 
     if(renamed.error){
@@ -151,35 +177,45 @@
       return;
     }
 
-    const originUpdate=await sb.from("transfers")
-      .update({origin:newName,updated_at:new Date().toISOString()})
-      .eq("origin",oldName);
+    if(oldName!==newName){
+      const originUpdate=await sb.from("transfers")
+        .update({origin:newName,updated_at:new Date().toISOString()})
+        .eq("origin",oldName);
 
-    if(originUpdate.error){
-      await sb.from("transfer_locations").update({name:oldName}).eq("name",newName);
-      E.save.disabled=false;
-      E.del.disabled=false;
-      show("Location saved, but existing transfer origins could not be updated: "+originUpdate.error.message,"error");
-      await load();
-      return;
+      if(originUpdate.error){
+        await sb.from("transfer_locations").update({
+          name:oldName,
+          address:existing?.address||null,
+          contact:existing?.contact||null
+        }).eq("name",newName);
+        E.save.disabled=false;
+        E.del.disabled=false;
+        show("Location saved, but existing transfer origins could not be updated: "+originUpdate.error.message,"error");
+        await load();
+        return;
+      }
+
+      const destinationUpdate=await sb.from("transfers")
+        .update({destination:newName,updated_at:new Date().toISOString()})
+        .eq("destination",oldName);
+
+      if(destinationUpdate.error){
+        await sb.from("transfers").update({origin:oldName,updated_at:new Date().toISOString()}).eq("origin",newName);
+        await sb.from("transfer_locations").update({
+          name:oldName,
+          address:existing?.address||null,
+          contact:existing?.contact||null
+        }).eq("name",newName);
+        E.save.disabled=false;
+        E.del.disabled=false;
+        show("Location saved, but existing transfer destinations could not be updated: "+destinationUpdate.error.message,"error");
+        await load();
+        return;
+      }
     }
 
-    const destinationUpdate=await sb.from("transfers")
-      .update({destination:newName,updated_at:new Date().toISOString()})
-      .eq("destination",oldName);
-
-    if(destinationUpdate.error){
-      await sb.from("transfers").update({origin:oldName,updated_at:new Date().toISOString()}).eq("origin",newName);
-      await sb.from("transfer_locations").update({name:oldName}).eq("name",newName);
-      E.save.disabled=false;
-      E.del.disabled=false;
-      show("Location saved, but existing transfer destinations could not be updated: "+destinationUpdate.error.message,"error");
-      await load();
-      return;
-    }
-
-    const row=renamed.data||{...locations.find(x=>x.name===oldName),name:newName};
-    locations=locations.filter(x=>x.name!==oldName);
+    const row=renamed.data||{...existing,name:newName,address:newAddress,contact:newContact};
+    locations=locations.filter(x=>x.name!==oldName&&x.name!==newName);
     locations.push(row);
     locations.sort((a,b)=>a.name.localeCompare(b.name));
     renderSelect(newName);
@@ -187,7 +223,6 @@
     E.del.disabled=false;
     show("Location updated.","ok");
   }
-
   async function remove(){
     const name=E.original.value.trim();
     if(!name)return;
