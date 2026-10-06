@@ -222,10 +222,13 @@
 
     const labels=levels.map(status=>{
       const markerId=status==="Planned"?markers.plannedChangeId:status==="Delivered"?markers.deliveredChangeId:null;
-      const editable=markerId?' editable':'';
-      const attrs=markerId?' data-history-edit-id="'+esc(markerId)+'" data-history-edit-status="'+esc(status)+'"':'';
-      const timestamp=statusTimes[status]?'<span class="history-status-time'+editable+'"'+attrs+'>'+statusTimes[status]+'</span>':"";
-      return '<div class="history-y-label" style="top:'+y(status)+'px"><span class="history-status-dot" style="background:'+esc(COLORS[status]||"#7c3aed")+'"></span><span class="history-status-name">'+esc(status)+timestamp+'</span></div>';
+      const statusIntervals=intervals.filter(interval=>interval.status===status&&interval.startChangeId);
+      const uniqueIntervalId=statusIntervals.length===1?statusIntervals[0].startChangeId:null;
+      const editId=markerId||uniqueIntervalId;
+      const editable=editId?' editable':'';
+      const attrs=editId?' data-history-edit-id="'+esc(editId)+'" data-history-edit-status="'+esc(status)+'"':'';
+      const timestamp=statusTimes[status]?'<span class="history-status-time'+editable+'"'+(markerId?attrs:'')+'>'+statusTimes[status]+'</span>':"";
+      return '<div class="history-y-label" style="top:'+y(status)+'px"><span class="history-status-dot" style="background:'+esc(COLORS[status]||"#7c3aed")+'"></span><span class="history-status-name'+editable+'"'+attrs+'>'+esc(status)+timestamp+'</span></div>';
     }).join("");
 
     const grids=levels.map(status=>'<span class="history-horizontal-line" style="top:'+y(status)+'px"></span>').join("")
