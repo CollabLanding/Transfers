@@ -380,6 +380,7 @@ function openStatusEditor(row){
   E.form.classList.add("hidden");
   document.querySelector(".urgent-toggle")?.classList.add("hidden");
   E.slotStatusEditor.classList.remove("hidden");
+  E.formTitle.textContent="Time Slot Status";
   E.slotStatusTitle.textContent=row.status||"Status";
   E.slotStatusMeta.textContent=(row.driver||"")+" · "+fmt(minToTime(row.start_minutes))+" – "+fmt(minToTime(row.end_minutes));
   E.slotStatusNotes.value=row.notes||"";
