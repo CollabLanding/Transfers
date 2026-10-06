@@ -34,7 +34,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
           e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('application/x-slot-status',row.id);
           block.classList.add('slot-status-dragging');
         });
-        block.addEventListener('dragend', endMove);
+        block.addEventListener('dragend', ()=>{endMove();window.stopTransferAutoScroll?.()});
         block.style.top = ((row.start_minutes - start) / 15 * px) + 'px';
         block.style.height = ((row.end_minutes - row.start_minutes) / 15 * px) + 'px';
         block.title = displayStatus(row) + ': ' + time(row.start_minutes) + ' – ' + time(row.end_minutes);
@@ -103,7 +103,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
     let begin=row.start_minutes,finish=row.end_minutes;
     busy=true;block.draggable=false;block.classList.add('slot-status-resizing');handle.setPointerCapture(pointer);
     const move=ev=>{
-      if(ev.pointerId!==pointer)return;ev.preventDefault();ev.stopPropagation();
+      if(ev.pointerId!==pointer)return;ev.preventDefault();ev.stopPropagation();window.startTransferAutoScroll?.(ev.clientX,ev.clientY);
       const raw=start+Math.round((ev.clientY-lane.getBoundingClientRect().top)/px)*15;
       if(edge==='top')begin=Math.max(start,Math.min(finish-30,raw));
       else finish=Math.min(end,Math.max(begin+30,raw));
@@ -140,7 +140,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
   }
   function overlap(payload,id) { return rows.some(r=>r.id!==id&&r.driver===payload.driver&&r.scheduled_date===payload.scheduled_date&&r.start_minutes<payload.end_minutes&&r.end_minutes>payload.start_minutes); }
   grid.addEventListener('dragover',e=>{
-    if(!moving)return; e.preventDefault();e.stopPropagation();clearMovePreview();
+    if(!moving)return; e.preventDefault();e.stopPropagation();window.startTransferAutoScroll?.(e.clientX,e.clientY);clearMovePreview();
     const lane=e.target.closest('.lane');if(!lane||moving.date!==getDate())return;
     const payload=movePosition(e,lane);if(getLinks){e.dataTransfer.dropEffect='move';getLinks().preview('status:'+moving.row.id,lane,payload.start_minutes);return;}const blocked=overlap(payload,moving.row.id);
     e.dataTransfer.dropEffect=blocked?'none':'move';
