@@ -79,12 +79,25 @@
             <input id="locationName" type="text" maxlength="120" autocomplete="off" required>
           </label>
 
+          <label>Address
+            <input id="locationAddress" type="text" maxlength="300" autocomplete="street-address">
+          </label>
+
           <div class="location-meta-grid location-contact-grid">
-            <label>Address
-              <input id="locationAddress" type="text" maxlength="300" autocomplete="street-address">
+            <label>City
+              <input id="locationCity" type="text" maxlength="120" autocomplete="address-level2">
             </label>
-            <label>Contact
-              <input id="locationContact" type="text" maxlength="200" autocomplete="off">
+            <label>State
+              <input id="locationState" type="text" maxlength="60" autocomplete="address-level1">
+            </label>
+          </div>
+
+          <div class="location-meta-grid location-contact-grid">
+            <label>Contact Name
+              <input id="locationContactName" type="text" maxlength="200" autocomplete="name">
+            </label>
+            <label>Contact Number
+              <input id="locationContactNumber" type="tel" maxlength="40" autocomplete="tel">
             </label>
           </div>
 
@@ -125,6 +138,6 @@
 </div>
 
 <script src="theme.js"></script>
-<script src="locations.js?v=20261006-location-details-2"></script>
+<script src="locations.js?v=20261006-location-details-3"></script>
 </body>
 </html>
