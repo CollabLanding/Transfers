@@ -1,6 +1,6 @@
 (()=>{
 const C=window.TRANSFERS_CONFIG||{},live=!!(C.supabaseUrl&&C.supabaseAnonKey),sb=live?window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey):null;
-let user=null,profile=null,items=[],drivers=[],locations=[],driverSchedule=[],presence=null,dataChannel=null,optionContext=null,ignoreClickUntil=0,draggedDriver=null,draggedTransferId=null,dragGrabOffsetPx=0,audioCtx=null,lastPlanningDing=0;
+let user=null,profile=null,items=[],drivers=[],locations=[],driverSchedule=[],presence=null,dataChannel=null,optionContext=null,ignoreClickUntil=0,draggedDriver=null,draggedTransferId=null,dragGrabOffsetPx=0,audioCtx=null,lastPlanningDing=0,transferInfoBaseline=null;
 const $=id=>document.getElementById(id),E={form:$("form"),edit:$("editId"),date:$("date"),time:$("time"),duration:$("duration"),pickupByDate:$("pickupByDate"),pickupByTime:$("pickupByTime"),deliverByDate:$("deliverByDate"),deliverByTime:$("deliverByTime"),driver:$("driver"),origin:$("origin"),destination:$("destination"),pallet:$("pallet"),job:$("job"),status:$("status"),urgent:$("urgent"),save:$("save"),del:$("delete"),cancel:$("cancel"),textDriver:$("textDriver"),msg:$("msg"),slotStatusEditor:$("slotStatusEditor"),slotStatusTitle:$("slotStatusTitle"),slotStatusMeta:$("slotStatusMeta"),slotStatusNotes:$("slotStatusNotes"),slotStatusSave:$("slotStatusSave"),slotStatusCancel:$("slotStatusCancel"),slotStatusClose:$("slotStatusClose"),slotStatusMsg:$("slotStatusMsg"),boardDate:$("boardDate"),grid:$("grid"),title:$("title"),currentTime:$("scheduleCurrentTime"),mode:$("mode"),me:$("me"),email:$("email"),active:$("active"),login:$("login"),loginForm:$("loginForm"),loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg"),signout:$("signout"),formTitle:$("formTitle"),optionModal:$("optionModal"),optionForm:$("optionForm"),optionTitle:$("optionTitle"),optionLabel:$("optionLabel"),optionName:$("optionName"),optionMsg:$("optionMsg"),optionClose:$("optionClose"),optionCancel:$("optionCancel"),statusHistory:$("statusHistory"),statusHistoryScreen:$("statusHistoryScreen"),statusHistoryBack:$("statusHistoryBack")};
 const key="transfers-demo-v2",driverKey="transfers-demo-drivers-v1",locationKey="transfers-demo-locations-v1",PX15=20,GRID_START=210,GRID_END=1320,GRID_HEIGHT=((GRID_END-GRID_START)/15)*PX15;
 const today=()=>{let d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)},add=(iso,n)=>{let d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)},fmt=t=>{let [h,m]=String(t).slice(0,5).split(":").map(Number);return (h%12||12)+":"+String(m).padStart(2,"0")+" "+(h>=12?"PM":"AM")};
@@ -405,8 +405,8 @@ function selectStatusEditor(row){
   E.slotStatusTitle.dataset.statusId=String(row.id);
   openStatusEditor(row);
 }
-function reset(){closeStatusEditor();E.form.reset();E.edit.value="";E.date.value=E.boardDate.value;E.time.value="08:00";E.duration.value="60";if(E.status)E.status.value="Planned";if(E.urgent)E.urgent.checked=false;E.formTitle.textContent="Build Transfer Load";E.save.textContent="Add Transfer";E.del.classList.add("hidden");E.cancel.classList.add("hidden");E.textDriver?.classList.add("hidden");E.statusHistory?.classList.add("hidden");E.statusHistoryScreen?.classList.add("hidden");renderOptions();msg("")}
-function edit(id){closeStatusEditor();let x=items.find(i=>i.id===String(id));if(!x)return;E.edit.value=x.id;E.date.value=x.scheduled_date;E.time.value=x.scheduled_time;if(![...E.duration.options].some(o=>Number(o.value)===Number(x.duration_minutes))){const o=document.createElement("option");o.value=String(x.duration_minutes);o.textContent=durationLabel(x.duration_minutes);E.duration.appendChild(o)}E.duration.value=String(x.duration_minutes);E.pickupByDate.value=x.pickup_by_date||"";E.pickupByTime.value=x.pickup_by_time||"";E.deliverByDate.value=x.deliver_by_date||"";E.deliverByTime.value=x.deliver_by_time||"";renderOptions();E.driver.value=x.driver;E.origin.value=x.origin;E.destination.value=x.destination;E.pallet.value=x.pallet_count;E.job.value=x.job_number;E.status.value=x.order_status||"Planned";if(E.urgent)E.urgent.checked=Boolean(x.urgent);E.formTitle.textContent="Transfer Info";E.save.textContent="Update";E.del.classList.remove("hidden");E.cancel.classList.remove("hidden");E.textDriver?.classList.remove("hidden");E.statusHistory?.classList.remove("hidden");createdByMessage(x)}
+function reset(){transferInfoBaseline=null;closeStatusEditor();E.form.reset();E.edit.value="";E.date.value=E.boardDate.value;E.time.value="08:00";E.duration.value="60";if(E.status)E.status.value="Planned";if(E.urgent)E.urgent.checked=false;E.formTitle.textContent="Build Transfer Load";E.save.textContent="Add Transfer";E.del.classList.add("hidden");E.cancel.classList.add("hidden");E.textDriver?.classList.add("hidden");E.statusHistory?.classList.add("hidden");E.statusHistoryScreen?.classList.add("hidden");renderOptions();msg("")}
+function edit(id){closeStatusEditor();let x=items.find(i=>i.id===String(id));if(!x)return;E.edit.value=x.id;E.date.value=x.scheduled_date;E.time.value=x.scheduled_time;if(![...E.duration.options].some(o=>Number(o.value)===Number(x.duration_minutes))){const o=document.createElement("option");o.value=String(x.duration_minutes);o.textContent=durationLabel(x.duration_minutes);E.duration.appendChild(o)}E.duration.value=String(x.duration_minutes);E.pickupByDate.value=x.pickup_by_date||"";E.pickupByTime.value=x.pickup_by_time||"";E.deliverByDate.value=x.deliver_by_date||"";E.deliverByTime.value=x.deliver_by_time||"";renderOptions();E.driver.value=x.driver;E.origin.value=x.origin;E.destination.value=x.destination;E.pallet.value=x.pallet_count;E.job.value=x.job_number;E.status.value=x.order_status||"Planned";if(E.urgent)E.urgent.checked=Boolean(x.urgent);E.formTitle.textContent="Transfer Info";E.save.textContent="Update";E.del.classList.remove("hidden");E.cancel.classList.remove("hidden");E.textDriver?.classList.remove("hidden");E.statusHistory?.classList.remove("hidden");transferInfoBaseline=transferInfoValues();createdByMessage(x)}
 async function openTransferEditor(id){
   let x=items.find(i=>String(i.id)===String(id));
   if(!x&&live){
@@ -528,7 +528,33 @@ async function addOption(ev){ev.preventDefault();if(!optionContext)return;const 
 async function session(s){if(!s?.user){boxLinks.reset();slotStatuses.reset();user=null;E.login.classList.remove("hidden");return}user=s.user;E.login.classList.add("hidden");E.signout.classList.remove("hidden");let r=await sb.from("profiles").select("display_name").eq("id",user.id).maybeSingle();profile=r.data||{display_name:user.email?.split("@")[0]||"User"};E.me.textContent=name();E.email.textContent=user.email||"";await loadData();await slotStatuses.refresh();await boxLinks.refresh();await subscribe()}
 const slotStatuses=window.createSlotStatuses({sb,grid:E.grid,getDate:()=>E.boardDate.value,getUser:()=>user,report:msg,start:GRID_START,end:GRID_END,px:PX15,getLinks:()=>boxLinks,onSelectStatus:selectStatusEditor});
 const boxLinks=window.createBoardLinks({sb,grid:E.grid,getDate:()=>E.boardDate.value,getUser:()=>user,getJobs:()=>items,getStatuses:()=>slotStatuses.rows(),report:msg,start:GRID_START,end:GRID_END,px:PX15,applyMove:result=>{(result.jobs||[]).forEach(replaceItem);slotStatuses.applyRows(result.statuses||[]);if(!live)saveLocal();renderBoard()}});
-document.addEventListener("click",e=>{if(!E.edit.value)return;const pointTarget=document.elementFromPoint?.(e.clientX,e.clientY);const lane=e.target.closest(".lane")||pointTarget?.closest(".lane");if(!lane)return;const occupied=e.target.closest(".card,.slot-status-block,.load-chain,.slot-resize-handle,.slot-status-delete,.drop-preview")||pointTarget?.closest(".card,.slot-status-block,.load-chain,.slot-resize-handle,.slot-status-delete,.drop-preview");if(occupied)return;reset()},true);
+function transferInfoValues(){
+  return {
+    date:E.date?.value||"",
+    time:E.time?.value||"",
+    duration:E.duration?.value||"",
+    pickupByDate:E.pickupByDate?.value||"",
+    pickupByTime:E.pickupByTime?.value||"",
+    deliverByDate:E.deliverByDate?.value||"",
+    deliverByTime:E.deliverByTime?.value||"",
+    driver:E.driver?.value||"",
+    origin:E.origin?.value||"",
+    destination:E.destination?.value||"",
+    pallet:E.pallet?.value||"",
+    job:E.job?.value||"",
+    status:E.status?.value||"",
+    urgent:Boolean(E.urgent?.checked)
+  };
+}
+function transferInfoChanged(){
+  if(!E.edit.value||!transferInfoBaseline)return false;
+  const current=transferInfoValues();
+  return Object.keys(transferInfoBaseline).some(key=>current[key]!==transferInfoBaseline[key]);
+}
+function confirmDiscardTransferInfo(){
+  return !transferInfoChanged()||confirm("You have unsaved changes to this Transfer Info. Discard the changes?");
+}
+document.addEventListener("click",e=>{if(!E.edit.value)return;const pointTarget=document.elementFromPoint?.(e.clientX,e.clientY);const lane=e.target.closest(".lane")||pointTarget?.closest(".lane");if(!lane)return;const occupied=e.target.closest(".card,.slot-status-block,.load-chain,.slot-resize-handle,.slot-status-delete,.drop-preview")||pointTarget?.closest(".card,.slot-status-block,.load-chain,.slot-resize-handle,.slot-status-delete,.drop-preview");if(occupied)return;if(confirmDiscardTransferInfo())reset()},true);
 E.form.onsubmit=submit;E.del.onclick=remove;E.statusHistory?.addEventListener("click",()=>window.openStatusHistory?.());E.statusHistoryBack?.addEventListener("click",()=>window.closeStatusHistory?.());E.slotStatusSave.onclick=saveStatusNotes;E.slotStatusCancel.onclick=()=>closeStatusEditor();E.slotStatusClose.onclick=()=>closeStatusEditor();E.cancel.onclick=reset;E.driver.onchange=()=>managedChange("driver",E.driver);E.origin.onchange=()=>managedChange("location",E.origin);E.destination.onchange=()=>managedChange("location",E.destination);E.optionForm.onsubmit=addOption;E.optionClose.onclick=closeOption;E.optionCancel.onclick=closeOption;E.optionModal.addEventListener("click",e=>{if(e.target===E.optionModal)closeOption()});
 $("prev").onclick=()=>{E.boardDate.value=add(E.boardDate.value,-1);E.date.value=E.boardDate.value;loadBoardSchedule()};$("next").onclick=()=>{E.boardDate.value=add(E.boardDate.value,1);E.date.value=E.boardDate.value;loadBoardSchedule()};$("today").onclick=()=>{E.boardDate.value=today();E.date.value=E.boardDate.value;loadBoardSchedule()};E.boardDate.onchange=()=>{E.date.value=E.boardDate.value;loadBoardSchedule()};E.signout.onclick=()=>sb?.auth.signOut();
 document.addEventListener("pointerdown",unlockAudio,{once:true});
