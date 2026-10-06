@@ -188,7 +188,7 @@
     const renamed=await sb.from("transfer_locations")
       .update({name:newName,address:newAddress||null,city:newCity||null,state:newState||null,contact_name:newContactName||null,contact_number:newContactNumber||null})
       .eq("name",oldName)
-      .select("name,created_by,created_by_name,created_at,address,contact")
+      .select("name,created_by,created_by_name,created_at,address,city,state,contact_name,contact_number")
       .single();
 
     if(renamed.error){
@@ -228,7 +228,10 @@
         await sb.from("transfer_locations").update({
           name:oldName,
           address:existing?.address||null,
-          contact:existing?.contact||null
+          city:existing?.city||null,
+          state:existing?.state||null,
+          contact_name:existing?.contact_name||null,
+          contact_number:existing?.contact_number||null
         }).eq("name",newName);
         E.save.disabled=false;
         E.del.disabled=false;
