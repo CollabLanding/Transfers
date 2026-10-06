@@ -273,7 +273,7 @@ html[data-theme="dark"] .history-bar{
 
 .history-line-layout{display:grid;grid-template-columns:150px minmax(590px,1fr);column-gap:16px}
 .history-y-axis{position:relative;height:100%;min-height:260px}
-.history-y-label{position:absolute;right:8px;display:flex;align-items:center;gap:7px;transform:translateY(-50%);font-size:11px;font-weight:700;white-space:nowrap}
+.history-y-label{position:absolute;left:0;right:auto;display:flex;align-items:center;gap:7px;transform:translateY(-50%);font-size:11px;font-weight:700;white-space:nowrap}
 .history-plot{position:relative;border-left:1px solid var(--line);border-bottom:1px solid var(--line);overflow:visible}
 .history-grid{position:absolute;inset:0;pointer-events:none}
 .history-horizontal-line,.history-vertical-line{position:absolute;display:block;pointer-events:none}
