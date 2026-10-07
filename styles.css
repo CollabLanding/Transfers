@@ -1561,3 +1561,22 @@ html[data-theme="dark"] .chain-saved-art,body.dark-theme .chain-saved-art{color:
 #grid .bodyrow{isolation:isolate}
 #grid .times{z-index:30}
 #grid .corner{background:var(--panel)}
+
+/* Keep the full Transfers panel visible; the schedule owns its scrollbars. */
+main > .board{
+  position:sticky;
+  top:16px;
+  align-self:start;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  height:var(--transfers-panel-height,calc(100dvh - 114px));
+  max-height:calc(100dvh - 32px);
+}
+main > .board > .boardhead{flex:0 0 auto}
+main > .board > #gridWrap{
+  flex:1 1 0;
+  min-height:0;
+  max-height:none;
+  overflow:auto;
+}

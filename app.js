@@ -596,3 +596,31 @@ setInterval(updateCurrentTimeLine,30000);
 E.loginForm.onsubmit=async e=>{e.preventDefault();E.loginMsg.textContent="Signing in…";let r=await sb.auth.signInWithPassword({email:E.loginEmail.value.trim(),password:E.loginPassword.value});E.loginMsg.textContent=r.error?r.error.message:""};
 (async()=>{E.boardDate.value=today();E.date.value=today();E.time.value="08:00";E.duration.value="60";if(!live){user={id:"demo-user",email:"Local preview mode",user_metadata:{display_name:"Demo User"}};profile={display_name:"Demo User"};renderUsers([{display_name:"Demo User"}]);loadLocal();renderOptions();renderBoard();boxLinks.refresh();return}E.mode.textContent="Live";let s=await sb.auth.getSession();await session(s.data.session);sb.auth.onAuthStateChange((_e,s)=>session(s))})();
 })();
+
+/* Fit the sticky schedule panel below its current viewport position. */
+(() => {
+  const board = document.querySelector("main > .board");
+  if (!board) return;
+  let frame = 0;
+  function fitPanel() {
+    frame = 0;
+    const viewport = window.visualViewport;
+    const viewportTop = viewport?.offsetTop || 0;
+    const viewportHeight = viewport?.height || window.innerHeight;
+    const top = Math.max(16, board.getBoundingClientRect().top - viewportTop);
+    const height = Math.max(0, Math.floor(viewportHeight - top - 16));
+    board.style.setProperty("--transfers-panel-height", height + "px");
+  }
+  function scheduleFit() {
+    if (!frame) frame = requestAnimationFrame(fitPanel);
+  }
+  window.addEventListener("scroll", scheduleFit, { passive: true });
+  window.addEventListener("resize", scheduleFit, { passive: true });
+  window.visualViewport?.addEventListener("resize", scheduleFit, { passive: true });
+  window.visualViewport?.addEventListener("scroll", scheduleFit, { passive: true });
+  const header = document.querySelector("body > header");
+  if (header && typeof ResizeObserver !== "undefined") {
+    new ResizeObserver(scheduleFit).observe(header);
+  }
+  fitPanel();
+})();
