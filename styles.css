@@ -1555,3 +1555,9 @@ html[data-theme="dark"] .chain-saved-art,body.dark-theme .chain-saved-art{color:
 .driver-history-heading h2{margin:4px 0}
 .driver-history-heading p{margin:5px 0 0;color:var(--muted);font-size:12px}
 .driver-history-panel .activity-list{max-height:420px;overflow:auto}
+
+
+/* Keep scrolling board content below the fixed time rail and sticky headers. */
+#grid .bodyrow{isolation:isolate}
+#grid .times{z-index:30}
+#grid .corner{background:var(--panel)}
