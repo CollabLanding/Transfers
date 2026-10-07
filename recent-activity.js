@@ -35,10 +35,10 @@
   let hasMore=true;
 
   function actionText(row){
-    const job=row.job_number?("Job "+row.job_number):"Transfer";
+    const move=row.move_number!=null?("Move #"+row.move_number):"Move #—";
     const driver=row.driver?(" · "+row.driver):"";
     const details=row.details?(" · "+row.details):"";
-    return "<strong>"+esc(job)+"</strong>: "+esc(row.action||"Updated")+esc(driver)+esc(details);
+    return "<strong>"+esc(move)+"</strong>: "+esc(row.action||"Updated")+esc(driver)+esc(details);
   }
 
   function render(){
@@ -79,7 +79,7 @@
     if(!sessionUserId||!transferId)return false;
     if(focusRenderedActivity(transferId,action))return true;
     const {data,error}=await sb.from("transfer_activity")
-      .select("id,transfer_id,action,actor_name,job_number,driver,details,created_at")
+      .select("id,transfer_id,action,actor_name,move_number,job_number,driver,details,created_at")
       .eq("transfer_id",transferId)
       .eq("action",action)
       .order("created_at",{ascending:true})
