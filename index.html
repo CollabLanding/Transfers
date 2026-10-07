@@ -26,11 +26,6 @@
     <section class="panel">
       <div class="transfer-form-head">
         <h2 id="formTitle">Build Transfer Load</h2>
-        <label class="urgent-toggle" title="Mark this transfer as urgent">
-          <span class="urgent-toggle-label">Urgent</span>
-          <input id="urgent" type="checkbox" form="form" aria-label="Mark transfer urgent">
-          <span class="urgent-toggle-track" aria-hidden="true"><span class="urgent-toggle-thumb"></span></span>
-        </label>
       </div>
       <form id="form">
         <input id="editId" type="hidden">
@@ -43,6 +38,8 @@
             </select>
           </label>
         </div>
+        <div class="deadline-controls">
+          <div class="deadline-fields-stack">
         <fieldset class="deadline-fields">
           <legend>Pickup By:</legend>
           <div class="row"><label><input id="pickupByTime" type="time" step="3600" aria-label="Pickup By hour"></label><label><input id="pickupByDate" type="date" aria-label="Pickup By day"></label></div>
@@ -51,6 +48,13 @@
           <legend>Deliver By:</legend>
           <div class="row"><label><input id="deliverByTime" type="time" step="3600" aria-label="Deliver By hour"></label><label><input id="deliverByDate" type="date" aria-label="Deliver By day"></label></div>
         </fieldset>
+          </div>
+          <label class="urgent-toggle" title="Mark this transfer as urgent">
+            <span class="urgent-toggle-label">Urgent</span>
+            <input id="urgent" type="checkbox" form="form" aria-label="Mark transfer urgent">
+            <span class="urgent-toggle-track" aria-hidden="true"><span class="urgent-toggle-thumb"></span></span>
+          </label>
+        </div>
         <div class="row driver-status-row">
           <label>Driver<select id="driver" required></select></label>
           <label>Order Status
