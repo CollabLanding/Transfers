@@ -1,170 +1,117 @@
-/* Pointer-transparent chain artwork; load/link state remains in app.js. */
+/* Artwork only: board-links.js owns all linking and group movement. */
 window.TransferChainVisual = (() => {
   const ns = 'http://www.w3.org/2000/svg';
-  const LINK_PATH='M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2Q7 9 10 13Z';
-  let drag = null;
-
+  // Complete the hidden side of one original icon link, preserving its arcs.
+  const ring = 'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-3 3a5 5 0 0 0 0 7Z';
+  const pitch = 10;
+  let drag = null, serial = 0;
+  const turned = new Map();
   function node(tag, attrs = {}) {
     const n = document.createElementNS(ns, tag);
-    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    for (const [k,v] of Object.entries(attrs)) n.setAttribute(k,v);
     return n;
   }
-
-  // These are the two exact strokes that make up the original link icon.
-  // They are the immutable interlace template for every added link.
-  const LINK_A_PATH='M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2Q7 9 10 13Z';
-  const LINK_B_PATH='M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2';
-  function addSingleLink(svg,path,cx,cy,x,y,angle,scale=LINK_SCALE){
-    const el=node('path',{
-      d:path,
-      fill:'none',
-      stroke:'currentColor',
-      'stroke-width':'2.5',
-      'stroke-linecap':'round',
-      'stroke-linejoin':'round',
-      transform:`translate(${x} ${y}) rotate(${angle}) scale(${scale}) translate(${-cx} ${-cy})`,
-      class:'chain-link'
-    });
-    svg.append(el);
+  function path(x, stroke = 'currentColor', width = 2.5) {
+    return node('path', {d:ring, fill:'none', stroke, 'stroke-width':width,
+      'stroke-linecap':'round', 'stroke-linejoin':'round',
+      transform:`translate(${x} 0) rotate(45) translate(-15 -8)`});
   }
-
-  // The original icon's lower-left link is the starting link.
-  // Every added link repeats the same interlace: B -> flipped A -> B -> flipped A.
-  const LINK_B_CENTER={x:9,y:15};
-  const LINK_A_CENTER={x:14,y:9};
-  const LINK_STEP_X=LINK_A_CENTER.x-LINK_B_CENTER.x;
-  const LINK_STEP_Y=LINK_A_CENTER.y-LINK_B_CENTER.y;
-  const LINK_SCALE=0.82;
-  const LINK_STEP=Math.hypot(LINK_STEP_X,LINK_STEP_Y)*LINK_SCALE;
-  const LINK_STEP_ANGLE=Math.atan2(LINK_STEP_Y,LINK_STEP_X)*180/Math.PI;
-
-  function draw(svg,a,b,hooked){
+  function orient(handle, b) {
+    const icon = handle.querySelector('svg');
+    const r = handle.getBoundingClientRect();
+    const c = {x:r.left+r.width/2, y:r.top+r.height/2};
+    const angle = Math.atan2(b.y-c.y,b.x-c.x);
+    const rotation = angle - Math.atan2(4,-3);
+    const scale = (icon?.clientWidth || 16)/24;
+    if (icon) {
+      if (!turned.has(icon)) turned.set(icon,{transform:icon.style.transform,transition:icon.style.transition});
+      icon.style.transition='none';
+      icon.style.transform=`rotate(${rotation}rad)`;
+    }
+    // The lower-left link center rotates with the actual icon.
+    return {x:c.x+(-3*Math.cos(rotation)-4*Math.sin(rotation))*scale,
+      y:c.y+(-3*Math.sin(rotation)+4*Math.cos(rotation))*scale, scale};
+  }
+  function restore(icon) {
+    const old=turned.get(icon);
+    if (!old) return;
+    icon.style.transform=old.transform;
+    icon.style.transition=old.transition;
+    turned.delete(icon);
+  }
+  function draw(svg,a,b,hooked) {
     svg.replaceChildren();
     svg.classList.toggle('chain-hooked',hooked);
-
-    const dx=b.x-a.x;
-    const dy=b.y-a.y;
-    const length=Math.hypot(dx,dy);
-    if(length<4)return;
-
-    const chainAngle=Math.atan2(dy,dx)*180/Math.PI;
-    const baseRotation=chainAngle-LINK_STEP_ANGLE;
-    const usable=Math.max(0,length-1);
-    const count=Math.floor(usable/LINK_STEP);
-
-    for(let i=1;i<=count;i++){
-      const x=a.x+(dx/length)*LINK_STEP*i;
-      const y=a.y+(dy/length)*LINK_STEP*i;
-      const isA=i%2===1;
-
-      // The A link is flipped relative to its original position so it hooks
-      // the preceding B from the opposite side, exactly like a real chain.
-      addSingleLink(
-        svg,
-        isA?LINK_A_PATH:LINK_B_PATH,
-        isA?LINK_A_CENTER.x:LINK_B_CENTER.x,
-        isA?LINK_A_CENTER.y:LINK_B_CENTER.y,
-        x,
-        y,
-        baseRotation+(isA?180:0),
-        LINK_SCALE
-      );
+    const length=Math.hypot(b.x-a.x,b.y-a.y);
+    const count=Math.floor(length/(pitch*a.scale));
+    if (!count) return;
+    const id=`transfer-chain-${++serial}`;
+    const defs=node('defs');
+    const top=node('clipPath',{id:id+'-top',clipPathUnits:'userSpaceOnUse'});
+    top.append(node('rect',{x:-30,y:-20,width:count*pitch+60,height:20}));
+    const bottom=node('clipPath',{id:id+'-bottom',clipPathUnits:'userSpaceOnUse'});
+    bottom.append(node('rect',{x:-30,y:0,width:count*pitch+60,height:20}));
+    defs.append(top,bottom);svg.append(defs);
+    const group=node('g',{transform:`translate(${a.x} ${a.y}) rotate(${Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI}) scale(${a.scale})`});
+    svg.append(group);
+    for(let i=1;i<=count;i++) {
+      const x=i*pitch;
+      const mask=node('mask',{id:`${id}-${i}`,maskUnits:'userSpaceOnUse',x:x-12,y:-12,width:24,height:24,'mask-type':'luminance'});
+      mask.append(node('rect',{x:x-12,y:-12,width:24,height:24,fill:'white'}));
+      // Each joint goes over at one crossing and under at the other.
+      // Masks expose the actual background, including on translucent cards.
+      const previous=node('g',{'clip-path':`url(#${id}-bottom)`});
+      previous.append(path(x-pitch,'black',4.5));mask.append(previous);
+      if(i<count) {
+        const next=node('g',{'clip-path':`url(#${id}-top)`});
+        next.append(path(x+pitch,'black',4.5));mask.append(next);
+      }
+      defs.append(mask);
+      const link=node('g',{mask:`url(#${id}-${i})`});link.append(path(x));
+      link.setAttribute('data-chain-link',String(i));group.append(link);
     }
   }
-
-
+  function endpoint(target,from) {
+    const r=target.getBoundingClientRect();
+    return {x:r.left+r.width/2,y:r.top+r.height/2<from.y?r.bottom-5:r.top+5};
+  }
   function start(handle) {
     stop();
-    const r = handle.getBoundingClientRect();
-    const svg = node('svg', { 'aria-hidden': 'true', class: 'chain-drag-art' });
-    svg.style.color = getComputedStyle(handle).color;
-    document.body.append(svg);
-
-    const icon = handle.querySelector('svg');
-    if (icon) {
-      icon.style.transition = 'none';
-      icon.style.transformOrigin = '50% 50%';
-    }
-
-    drag = {
-      svg,
-      a: { x: r.left + 2, y: r.bottom - 3 },
-      handle,
-      icon
-    };
-    draw(svg, drag.a, drag.a, false);
+    const svg=node('svg',{'aria-hidden':'true',class:'chain-drag-art'});
+    svg.style.color=getComputedStyle(handle).color;
+    document.body.append(svg);drag={svg,handle};
   }
-
-  function move(x, y, target) {
-    if (!drag) return;
-
-    const angle = Math.atan2(y - drag.a.y, x - drag.a.x) * 180 / Math.PI;
-    if (drag.icon) drag.icon.style.transform = `rotate(${angle}deg)`;
-
-    let b = { x, y };
-    if (target) {
-      const r = target.getBoundingClientRect();
-      b = {
-        x: r.left + r.width / 2,
-        y: r.top + r.height / 2 < drag.a.y ? r.bottom - 5 : r.top + 5
-      };
-    }
-
-    draw(drag.svg, drag.a, b, !!target);
+  function move(x,y,target) {
+    if(!drag)return;
+    const r=drag.handle.getBoundingClientRect();
+    const b=target?endpoint(target,{y:r.top+r.height/2}):{x,y};
+    const a=orient(drag.handle,b);
+    draw(drag.svg,a,b,!!target);
   }
-
   function stop() {
-    if (drag?.icon) {
-      drag.icon.style.transform = '';
-      drag.icon.style.transition = 'transform .15s ease';
-    }
-    drag?.svg.remove();
-    drag = null;
+    if(!drag)return;
+    restore(drag.handle.querySelector('svg'));
+    drag.svg.remove();drag=null;
   }
-
-  function renderLinks(grid, links) {
+  function renderLinks(grid,links) {
     stop();
-    grid.querySelectorAll('.chain-connected').forEach(n => n.classList.remove('chain-connected'));
-    grid.querySelectorAll('.chain-saved-art').forEach(n => n.remove());
-
-    const body = grid.querySelector('.bodyrow');
-    if (!body) return;
-
-    const cards = new Map(
-      [...body.querySelectorAll('[data-box-key]')].map(n => [n.dataset.boxKey, n])
-    );
-    const origin = body.getBoundingClientRect();
-
-    for (const row of links) {
-      const from = cards.get(row.source_key);
-      const to = cards.get(row.target_key);
-      if (!from || !to) continue;
-
-      const handle = from.querySelector('.load-chain');
-      if (!handle) continue;
+    for(const icon of [...turned.keys()])restore(icon);
+    grid.querySelectorAll('.chain-connected').forEach(n=>n.classList.remove('chain-connected'));
+    grid.querySelectorAll('.chain-saved-art').forEach(n=>n.remove());
+    const body=grid.querySelector('.bodyrow');if(!body)return;
+    const cards=new Map([...body.querySelectorAll('[data-box-key]')].map(n=>[n.dataset.boxKey,n]));
+    const origin=body.getBoundingClientRect();
+    for(const row of links) {
+      const from=cards.get(row.source_key),to=cards.get(row.target_key);
+      const handle=from?.querySelector('.load-chain');if(!handle||!to)continue;
       handle.classList.add('chain-connected');
-
-      const r = handle.getBoundingClientRect();
-      const t = to.getBoundingClientRect();
-      const svg = node('svg', {
-        'aria-hidden': 'true',
-        class: 'chain-saved-art',
-        width: body.scrollWidth,
-        height: body.scrollHeight
-      });
-      body.append(svg);
-
-      draw(
-        svg,
-        { x: r.left + 2 - origin.left, y: r.bottom - 3 - origin.top },
-        {
-          x: t.left + t.width / 2 - origin.left,
-          y: (t.top + t.height / 2 < r.bottom ? t.bottom - 5 : t.top + 5) - origin.top
-        },
-        true
-      );
+      const r=handle.getBoundingClientRect();
+      const b=endpoint(to,{y:r.top+r.height/2}),a=orient(handle,b);
+      const svg=node('svg',{'aria-hidden':'true',class:'chain-saved-art',width:body.scrollWidth,height:body.scrollHeight});
+      svg.style.color=getComputedStyle(handle).color;body.append(svg);
+      draw(svg,{x:a.x-origin.left,y:a.y-origin.top,scale:a.scale},
+        {x:b.x-origin.left,y:b.y-origin.top},true);
     }
   }
-
-  return { start, move, stop, renderLinks };
+  return {start,move,stop,renderLinks};
 })();
