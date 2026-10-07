@@ -117,7 +117,51 @@ Deno.serve(async (req) => {
   const infobipBaseUrl = (Deno.env.get("INFOBIP_BASE_URL") || "https://api.infobip.com").replace(/\/$/, "");
   const infobipSender = Deno.env.get("INFOBIP_SENDER") || "ServiceSMS";
 
-  if (infobipApiKey) {
+
+  // Explicit selection keeps existing SMS active until Dialpad setup is complete.
+  const selectedProvider = (Deno.env.get("SMS_PROVIDER") || "").trim().toLowerCase();
+  if (selectedProvider && !["dialpad", "infobip", "twilio"].includes(selectedProvider)) {
+    return json({ error: "SMS_PROVIDER must be dialpad, infobip, or twilio." }, 503);
+  }
+  if (selectedProvider === "dialpad") {
+    provider = "Dialpad";
+    const apiKey = (Deno.env.get("DIALPAD_API_KEY") || "").trim();
+    const rawFrom = (Deno.env.get("DIALPAD_FROM_NUMBER") || "").trim();
+    if (!apiKey || !rawFrom) {
+      return json({ error: "Add DIALPAD_API_KEY and DIALPAD_FROM_NUMBER to Edge Function secrets.", provider }, 503);
+    }
+    let from: string;
+    try { from = normalizePhone(rawFrom); }
+    catch { return json({ error: "DIALPAD_FROM_NUMBER must be a valid Dialpad phone number.", provider }, 503); }
+    let response: Response;
+    let data: Record<string, unknown> = {};
+    try {
+      response = await fetch("https://dialpad.com/api/v2/sms", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + apiKey, "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ from_number: from, to_numbers: [to], text: message }),
+        signal: AbortSignal.timeout(20000),
+      });
+      try {
+        const parsed = await response.json();
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) data = parsed;
+      } catch { /* HTTP status still determines acceptance. */ }
+    } catch {
+      return json({ error: "No confirmation received from Dialpad. Check Dialpad message history before retrying to avoid a duplicate text.", provider }, 502);
+    }
+    if (!response.ok) {
+      const hints: Record<number, string> = {
+        400: "Dialpad rejected the message. Check the sender number, recipient, and SMS registration.",
+        401: "Dialpad rejected the API key. Check that it is valid and has not expired.",
+        403: "Dialpad denied SMS access. Check API permissions, trial restrictions, and SMS campaign approval.",
+        429: "Dialpad's messaging limit was reached. Wait before trying again.",
+      };
+      return json({ error: hints[response.status] || "Dialpad could not accept the message. Check its messaging settings and service status.", provider, code: response.status }, 502);
+    }
+    providerMessageId = String(data.id ?? "");
+    // API acceptance is not proof of delivery to the handset.
+    providerStatus = "accepted";
+  } else if (infobipApiKey && selectedProvider !== "twilio") {
     provider = "Infobip";
     let response: Response;
     let data: Record<string, unknown> = {};
