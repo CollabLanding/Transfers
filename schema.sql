@@ -101,6 +101,7 @@ create table if not exists public.transfer_activity(
   action text not null,
   actor_id uuid,
   actor_name text not null default 'User',
+  move_number bigint,
   job_number text,
   driver text,
   details text,
