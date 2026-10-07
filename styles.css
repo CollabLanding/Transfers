@@ -924,7 +924,8 @@ header .brand-cluster>.company-logo{
   align-items:center;
   justify-content:space-between;
   gap:12px;
-  margin-bottom:12px
+  margin-top:-6px;
+  margin-bottom:6px
 }
 .transfer-form-head h2{margin:0}
 .urgent-toggle{
