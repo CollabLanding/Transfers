@@ -135,6 +135,7 @@
       rows.sort((a,b)=>Date.parse(b.created_at||0)-Date.parse(a.created_at||0));
       oldestCreatedAt=rows[rows.length-1]?.created_at||oldestCreatedAt;
       hasMore=data.length>=40;
+      await hydrateMoveNumbers(data);
       render();
     }else if(!error){
       hasMore=false;
