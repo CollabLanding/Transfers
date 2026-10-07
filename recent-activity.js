@@ -33,9 +33,11 @@
   let oldestCreatedAt=null;
   let loadingOlder=false;
   let hasMore=true;
+  const transferMoves=new Map();
 
   function actionText(row){
-    const move=row.move_number!=null?("Move #"+row.move_number):"Move #—";
+    const currentMove=transferMoves.get(String(row.transfer_id));
+    const move=currentMove!=null?("Move #"+currentMove):(row.move_number!=null?("Move #"+row.move_number):"Move #—");
     const driver=row.driver?(" · "+row.driver):"";
     const details=row.details?(" · "+row.details):"";
     return "<strong>"+esc(move)+"</strong>: "+esc(row.action||"Updated")+esc(driver)+esc(details);
@@ -75,6 +77,14 @@
     return true;
   }
 
+  async function hydrateMoveNumbers(sourceRows){
+    const ids=[...new Set((sourceRows||[]).map(row=>String(row?.transfer_id||"")).filter(Boolean))];
+    if(!ids.length)return;
+    const {data,error}=await sb.from("transfers").select("id,move_number").in("id",ids);
+    if(error||!data)return;
+    data.forEach(row=>transferMoves.set(String(row.id),row.move_number));
+  }
+
   async function loadActivityForTransfer(transferId,action="Created"){
     if(!sessionUserId||!transferId)return false;
     if(focusRenderedActivity(transferId,action))return true;
@@ -86,6 +96,7 @@
       .limit(1)
       .maybeSingle();
     if(error||!data)return false;
+    await hydrateMoveNumbers([data]);
     const existing=rows.findIndex(x=>String(x.id)===String(data.id));
     if(existing>=0)rows[existing]=data;else rows.push(data);
     rows.sort((a,b)=>Date.parse(b.created_at||0)-Date.parse(a.created_at||0));
@@ -100,6 +111,7 @@
     if(!row||row.id==null)return;
     const i=rows.findIndex(x=>String(x.id)===String(row.id));
     if(i>=0)rows[i]=row;else rows.push(row);
+    hydrateMoveNumbers([row]).then(()=>render());
     rows.sort((a,b)=>Date.parse(b.created_at||0)-Date.parse(a.created_at||0));
     oldestCreatedAt=rows[rows.length-1]?.created_at||oldestCreatedAt;
     if(rows.length>40)rows=rows.slice(0,40);
@@ -150,6 +162,7 @@
     }
 
     rows=data||[];
+    await hydrateMoveNumbers(rows);
     oldestCreatedAt=rows.length?rows[rows.length-1].created_at:null;
     hasMore=rows.length>=40;
     render();
