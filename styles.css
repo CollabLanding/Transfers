@@ -1409,6 +1409,8 @@ body.dark-theme .schedule-overrun-warning{
 }
 
 /* Optional pickup/delivery deadlines */
+.deadline-controls{display:grid;grid-template-columns:minmax(0,1fr) 88px;column-gap:10px;align-items:stretch}
+.deadline-fields-stack{min-width:0}
 .deadline-fields{border:0;padding:0;margin:6px 0 0;min-width:0;display:grid;grid-template-columns:76px minmax(0,1fr);align-items:center;column-gap:7px}
 .deadline-fields legend{font-size:12px;font-weight:700;padding:0;white-space:nowrap}
 .deadline-fields .row{grid-template-columns:1fr 1fr;gap:6px;min-width:0}
