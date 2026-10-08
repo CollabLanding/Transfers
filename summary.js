@@ -25,9 +25,38 @@
     generation++;rows=[];visible=[];scope=null;el("reportResults").classList.add("hidden");
     el("driverSlot").innerHTML='<option value="">All driver slots</option>';busy(false);
   }
+  const jobStatuses=["Planned","Waiting","Loading","Loaded","In Transit","On Site","Delivered"];
+  const slotStatuses=["Driving","Yard Moves","Loading","Standby","Job Pushed","Custom"];
   function recordMarkup(list){
-    if(!list.length)return '<tr><td colspan="8" class="summary-empty">No records match these filters.</td></tr>';
-    return list.map(r=>'<tr><td>'+esc(date(r.date))+'<small>'+esc(D.clock(r.start))+'</small></td><td>'+esc(r.driver)+'</td><td>'+esc(r.type)+'</td><td>'+esc(r.job||"—")+(r.move!==""?'<small>Move #'+esc(r.move)+'</small>':"")+'</td><td>'+esc(r.route||r.notes||"—")+'</td><td><span class="status-pill'+(r.status==="Delivered"?" delivered":"")+'">'+esc(r.status)+'</span></td><td>'+(r.type==="Job"?count(r.pallets):"—")+'</td><td>'+count(r.duration)+' min</td></tr>').join("");
+    if(!list.length)return '<tr><td colspan="9" class="summary-empty">No records match these filters.</td></tr>';
+    return list.map(r=>{
+      const options=r.type==="Job"?jobStatuses:slotStatuses;
+      const key=esc(r.type+":"+r.id);
+      const statusOptions=(!options.includes(r.rawStatus)?'<option value="">Unknown (not recorded)</option>':"")+options.map(s=>'<option value="'+esc(s)+'"'+(s===r.rawStatus?' selected':"")+'>'+esc(s)+'</option>').join("");
+      const dateText=esc(date(r.date));
+      return '<tr data-record="'+key+'"><td><span class="record-print-value">'+dateText+'</span><input class="record-edit-control record-date" type="date" value="'+esc(r.date)+'" aria-label="Date for '+esc(r.job||r.type)+'"><small>'+(r.start==null?"Time unavailable":esc(D.clock(r.start)))+'</small>'+(r.inferredDate?'<small>Original date unavailable; using deletion date</small>':"")+'</td><td>'+esc(r.driver)+'</td><td>'+esc(r.type)+(r.deleted?'<small>Deleted'+(r.partial?' · partial history':"")+'</small>':"")+'</td><td>'+esc(r.job||"—")+(r.move!==""?'<small>Move #'+esc(r.move)+'</small>':"")+'</td><td>'+esc(r.route||r.notes||"—")+'</td><td><span class="record-print-value">'+esc(r.status)+'</span><select class="record-edit-control record-status" aria-label="Status for '+esc(r.job||r.type)+'">'+statusOptions+'</select>'+(r.type==="Time-slot status"?'<input class="record-edit-control record-custom'+(r.rawStatus==="Custom"?"":" hidden")+'" maxlength="80" value="'+esc(r.customTitle)+'" placeholder="Custom status title" aria-label="Custom status title">':"")+'</td><td>'+(r.type==="Job"&&r.pallets!=null?count(r.pallets):"—")+'</td><td>'+(r.duration==null?"—":count(r.duration)+' min')+'</td><td><button class="record-save record-edit-control" type="button">Save</button></td></tr>';
+    }).join("");
+  }
+  async function saveRecord(button){
+    const tr=button.closest("tr[data-record]"),record=rows.find(r=>r.type+":"+r.id===tr.dataset.record);
+    if(!record||!userId)return;
+    const newDate=tr.querySelector(".record-date").value,newStatus=tr.querySelector(".record-status").value,custom=tr.querySelector(".record-custom")?.value.trim()||null;
+    if(!newDate||(!newStatus&&!record.deleted)){message("Choose both a date and a status.",true);return;}
+    if(newStatus==="Custom"&&!custom){message("Enter a custom status title.",true);return;}
+    const token=generation;
+    button.disabled=true;button.textContent="Saving…";
+    try{
+      const {error}=await sb.rpc("edit_summary_record",{p_type:record.type,p_id:record.id,p_deleted:!!record.deleted,p_date:newDate,p_status:newStatus,p_custom_title:custom});
+      if(error)throw error;if(token!==generation)return;
+      record.date=newDate;record.rawStatus=newStatus;record.status=newStatus==="Custom"?custom:newStatus;record.customTitle=custom||"";record.inferredDate=false;
+      const now=new Date(),today=D.dateKey(now),time=now.getHours()*60+now.getMinutes();
+      rows=rows.filter(r=>(!scope.from||r.date>=scope.from)&&r.date<=scope.to&&(r.deleted||r.date<today||(r.date===today&&r.start<=time)));
+      const selections={type:el("recordType").value,status:el("recordStatus").value,location:el("recordLocation").value,search:el("recordSearch").value};
+      render();
+      el("recordType").value=selections.type;el("recordStatus").value=selections.status;el("recordLocation").value=selections.location;el("recordSearch").value=selections.search;details();
+      message(record.deleted?"Archived record updated. It remains deleted.":"Record updated.",false);
+    }catch(error){if(token===generation)message("Could not save record: "+error.message,true);}
+    finally{button.disabled=false;button.textContent="Save";}
   }
   function details(){
     page=0;visible=D.filter(rows,{type:el("recordType").value,status:el("recordStatus").value,location:el("recordLocation").value,search:el("recordSearch").value});renderPage();busy(false);
@@ -48,7 +77,7 @@
     el("statusTotals").innerHTML=group("Job statuses",t.jobStatuses,n=>count(n)+" jobs")+group("Time-slot statuses",t.slotStatuses,v=>hours(v.minutes)+" hrs · "+count(v.count)+" records");
     el("reportScope").textContent=(scope.from?date(scope.from):"All history")+" — "+date(scope.to)+" · "+(scope.driver||"All driver slots");
     el("reportUpdated").textContent="Run "+new Date().toLocaleString();
-    const statuses=[...new Set(rows.map(r=>r.status))].sort();el("recordStatus").innerHTML='<option value="">All statuses</option>'+statuses.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join("");
+    const statuses=[...new Set(rows.filter(r=>!r.deleted).map(r=>r.status))].sort();statuses.push("Deleted");el("recordStatus").innerHTML='<option value="">All statuses</option>'+statuses.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join("");
     const locations=[...new Set(rows.filter(r=>r.type==="Job").flatMap(r=>[r.origin,r.destination]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
     el("recordLocation").innerHTML='<option value="">All locations</option>'+locations.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join("");
     el("recordLocation").value="";
@@ -66,12 +95,13 @@
       return q.order("scheduled_date").order(timeColumn).order("id");
     };
     try{
-      const [jobs,slots]=await Promise.all([
+      const [jobs,slots,deleted]=await Promise.all([
         D.fetchAll(query("transfers","id,scheduled_date,scheduled_time,driver,job_number,move_number,origin,destination,order_status,pallet_count,duration_minutes","scheduled_time"),()=>token===generation),
-        D.fetchAll(query("transfer_slot_statuses","id,scheduled_date,start_minutes,end_minutes,driver,status,custom_title,notes","start_minutes"),()=>token===generation)
+        D.fetchAll(query("transfer_slot_statuses","id,scheduled_date,start_minutes,end_minutes,driver,status,custom_title,notes","start_minutes"),()=>token===generation),
+        D.fetchAll(query("summary_deleted_records","*","deleted_at"),()=>token===generation)
       ]);
       if(token!==generation)return;
-      rows=D.records(jobs,slots);scope={from,to,driver};render();message(rows.length?count(rows.length)+" past records loaded. Export uses the detailed-record filters.":"No past records found. Try another date range or driver slot.");
+      rows=[...D.records(jobs,slots),...D.archivedRecords(deleted)].sort((a,b)=>b.date.localeCompare(a.date)||(b.start||0)-(a.start||0));scope={from,to,driver};render();message(rows.length?count(rows.length)+" past records loaded. Export uses the detailed-record filters.":"No past records found. Try another date range or driver slot.");
     }catch(error){
       if(token!==generation)return;
       rows=[];visible=[];scope=null;message("Could not run the report: "+(error.message||"Please try again."),true);
@@ -86,13 +116,14 @@
     if(!id){message("Sign in to run a report.");return;}
     const token=generation;busy(true);message("Loading driver slots…");
     try{
-      const [current,jobs,slots]=await Promise.all([
+      const [current,jobs,slots,deleted]=await Promise.all([
         sb.from("transfer_drivers").select("name,sort_order").order("sort_order").order("name"),
         D.fetchAll(()=>sb.from("transfers").select("id,driver").order("id"),()=>token===generation),
-        D.fetchAll(()=>sb.from("transfer_slot_statuses").select("id,driver").order("id"),()=>token===generation)
+        D.fetchAll(()=>sb.from("transfer_slot_statuses").select("id,driver").order("id"),()=>token===generation),
+        D.fetchAll(()=>sb.from("summary_deleted_records").select("id,driver").order("id"),()=>token===generation)
       ]);
       if(token!==generation)return;if(current.error)throw current.error;
-      const names=[...new Set(["Planning",...(current.data||[]).map(d=>d.name),...jobs.map(d=>d.driver),...slots.map(d=>d.driver)].filter(Boolean))];
+      const names=[...new Set(["Planning",...(current.data||[]).map(d=>d.name),...jobs.map(d=>d.driver),...slots.map(d=>d.driver),...deleted.map(d=>d.driver)].filter(Boolean))];
       el("driverSlot").innerHTML='<option value="">All driver slots</option>'+names.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join("");
     }catch(error){if(token!==generation)return;busy(false);message("Could not load driver slots: "+error.message+". You can still run a report for all driver slots.",true);return;}
     run();
@@ -102,6 +133,8 @@
   for(const id of ["dateFrom","dateTo"])el(id).addEventListener("change",()=>{el("period").value="custom";});
   el("reportFilters").addEventListener("submit",e=>{e.preventDefault();run();});
   for(const id of ["recordType","recordStatus","recordLocation"])el(id).addEventListener("change",details);
+  el("recordRows").addEventListener("click",e=>{const b=e.target.closest(".record-save");if(b)saveRecord(b);});
+  el("recordRows").addEventListener("change",e=>{if(e.target.matches(".record-status"))e.target.closest("tr").querySelector(".record-custom")?.classList.toggle("hidden",e.target.value!=="Custom");});
   el("recordSearch").addEventListener("input",details);
   el("previousPage").addEventListener("click",()=>{page--;renderPage();});el("nextPage").addEventListener("click",()=>{page++;renderPage();});
   el("exportCsv").addEventListener("click",()=>{

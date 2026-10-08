@@ -47,3 +47,9 @@ html[data-theme="dark"] .status-pill.delivered{color:#9ee0b6;background:#183728;
 @media(max-width:600px){main.summary-main{padding:12px}.summary-heading{align-items:flex-start;flex-direction:column}.summary-actions{width:100%}.summary-actions button{flex:1}.summary-filters form,.record-controls{grid-template-columns:1fr}.summary-metrics{gap:10px}.metric{padding:14px}.metric strong{font-size:26px}.records-heading{flex-direction:column}.report-pagination{flex-wrap:wrap}}
 @media print{body{background:white!important;color:black!important}body>header,.summary-actions,.summary-filters,.record-controls,.report-pagination,.login{display:none!important}main.summary-main{max-width:none;padding:0}.summary-main .panel{background:white!important;box-shadow:none;border-color:#ccc;break-inside:avoid}.summary-breakdowns{display:block}.summary-breakdowns>.panel{margin-bottom:12px}.summary-table-wrap{overflow:visible}.summary-records{break-inside:auto!important}.summary-main th,.summary-main td{padding:6px;font-size:10px}.summary-main thead{display:table-header-group}.summary-main tr{break-inside:avoid}.summary-metrics{gap:8px}.metric strong{font-size:24px}#reportUpdated{color:#444}.summary-main *{color:black!important}}
 
+
+.record-print-value{display:none}
+.summary-main .record-date{width:145px}
+.summary-main .record-status{width:auto;max-width:230px;min-width:135px}
+.summary-main .record-custom{display:block;min-width:160px;max-width:230px;margin-top:6px}
+@media print{.record-edit-control{display:none!important}.record-print-value{display:inline}}
