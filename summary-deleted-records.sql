@@ -69,7 +69,7 @@ begin
    update public.summary_deleted_records set scheduled_date=p_date,recorded_status=p_status,
      record_data=record_data||jsonb_build_object('scheduled_date',p_date,
        case when p_type='Job' then 'order_status' else 'status' end,p_status,
-       'custom_title',case when p_status='Custom' then btrim(p_custom_title) else null end,'schedule_date_inferred',false)
+       'custom_title',case when p_status='Custom' then btrim(p_custom_title) else null end,'schedule_date_inferred',case when scheduled_date is distinct from p_date then false else coalesce((record_data->>'schedule_date_inferred')::boolean,false) end)
    where record_type=p_type and record_id=p_id;
  elsif p_type='Job' then
    update public.transfers set scheduled_date=p_date,order_status=p_status,updated_at=now() where id=p_id;

@@ -48,7 +48,7 @@
     try{
       const {error}=await sb.rpc("edit_summary_record",{p_type:record.type,p_id:record.id,p_deleted:!!record.deleted,p_date:newDate,p_status:newStatus,p_custom_title:custom});
       if(error)throw error;if(token!==generation)return;
-      record.date=newDate;record.rawStatus=newStatus;record.status=newStatus==="Custom"?custom:newStatus;record.customTitle=custom||"";record.inferredDate=false;
+      const correctedDate=record.date!==newDate;record.date=newDate;record.rawStatus=newStatus;record.status=newStatus==="Custom"?custom:newStatus;record.customTitle=custom||"";record.inferredDate=record.inferredDate&&!correctedDate;
       const now=new Date(),today=D.dateKey(now),time=now.getHours()*60+now.getMinutes();
       rows=rows.filter(r=>(!scope.from||r.date>=scope.from)&&r.date<=scope.to&&(r.deleted||r.date<today||(r.date===today&&r.start<=time)));
       const selections={type:el("recordType").value,status:el("recordStatus").value,location:el("recordLocation").value,search:el("recordSearch").value};
