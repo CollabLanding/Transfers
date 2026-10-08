@@ -11,7 +11,7 @@
     }catch(_err){}
   </script>
   <link rel="stylesheet" href="styles.css?v=20261008-summary-1">
-  <link rel="stylesheet" href="summary.css?v=20261008-record-edits-3">
+  <link rel="stylesheet" href="summary.css?v=20261008-restore-deleted-4">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
 </head>
@@ -82,7 +82,7 @@
       </div>
       <div class="summary-table-wrap"><table><thead><tr><th>Date / time</th><th>Driver slot</th><th>Type</th><th>Job / move</th><th>Route / notes</th><th>Status</th><th>Pallets</th><th>Scheduled duration</th><th class="record-edit-control">Edit</th></tr></thead><tbody id="recordRows"></tbody></table></div>
       <div class="report-pagination"><span id="pageLabel"></span><div><button id="previousPage">Previous</button><button id="nextPage">Next</button></div></div>
-      <p class="summary-help">Date and Status changes take effect when you click the row’s Save button. Deleted records remain deleted when edited. Older recovered jobs may have incomplete details; previously deleted time-slot boxes were not retained.<br>Totals describe active records in the date and driver-slot report above. Show, Status, Location, and Search narrow the detailed records and CSV export.</p>
+      <p class="summary-help">Date and Status changes take effect when you click the row’s Save button. Changing a deleted record’s status to a regular status and clicking Save restores it to the Transfers board on the selected date. Keep Deleted selected to change only its date. Older recovered jobs may have incomplete details; previously deleted time-slot boxes were not retained.<br>Totals describe active records in the date and driver-slot report above. Show, Status, Location, and Search narrow the detailed records and CSV export.</p>
     </section>
   </div>
 </main>
@@ -100,7 +100,7 @@
 
 <script src="theme.js"></script>
 <script src="summary-data.js?v=20261008-record-edits-3"></script>
-<script src="summary.js?v=20261008-record-edits-3"></script>
+<script src="summary.js?v=20261008-restore-deleted-4"></script>
 </body>
 </html>
 

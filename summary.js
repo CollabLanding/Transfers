@@ -32,29 +32,43 @@
     return list.map(r=>{
       const options=r.type==="Job"?jobStatuses:slotStatuses;
       const key=esc(r.type+":"+r.id);
-      const statusOptions=(!options.includes(r.rawStatus)?'<option value="">Unknown (not recorded)</option>':"")+options.map(s=>'<option value="'+esc(s)+'"'+(s===r.rawStatus?' selected':"")+'>'+esc(s)+'</option>').join("");
+      const statusOptions=(r.deleted?'<option value="Deleted" selected>Deleted</option>':"")+(!r.deleted&&!options.includes(r.rawStatus)?'<option value="">Unknown (not recorded)</option>':"")+options.map(s=>'<option value="'+esc(s)+'"'+(!r.deleted&&s===r.rawStatus?' selected':"")+'>'+esc(s)+'</option>').join("");
       const dateText=esc(date(r.date));
-      return '<tr data-record="'+key+'"><td><span class="record-print-value">'+dateText+'</span><input class="record-edit-control record-date" type="date" value="'+esc(r.date)+'" aria-label="Date for '+esc(r.job||r.type)+'"><small>'+(r.start==null?"Time unavailable":esc(D.clock(r.start)))+'</small>'+(r.inferredDate?'<small>Original date unavailable; using deletion date</small>':"")+'</td><td>'+esc(r.driver)+'</td><td>'+esc(r.type)+(r.deleted?'<small>Deleted'+(r.partial?' · partial history':"")+'</small>':"")+'</td><td>'+esc(r.job||"—")+(r.move!==""?'<small>Move #'+esc(r.move)+'</small>':"")+'</td><td>'+esc(r.route||r.notes||"—")+'</td><td><span class="record-print-value">'+esc(r.status)+'</span><select class="record-edit-control record-status" aria-label="Status for '+esc(r.job||r.type)+'">'+statusOptions+'</select>'+(r.type==="Time-slot status"?'<input class="record-edit-control record-custom'+(r.rawStatus==="Custom"?"":" hidden")+'" maxlength="80" value="'+esc(r.customTitle)+'" placeholder="Custom status title" aria-label="Custom status title">':"")+'</td><td>'+(r.type==="Job"&&r.pallets!=null?count(r.pallets):"—")+'</td><td>'+(r.duration==null?"—":count(r.duration)+' min')+'</td><td><button class="record-save record-edit-control" type="button">Save</button></td></tr>';
+      return '<tr data-record="'+key+'"><td><span class="record-print-value">'+dateText+'</span><input class="record-edit-control record-date" type="date" value="'+esc(r.date)+'" aria-label="Date for '+esc(r.job||r.type)+'"><small>'+(r.start==null?"Time unavailable":esc(D.clock(r.start)))+'</small>'+(r.inferredDate?'<small>Original date unavailable; using deletion date</small>':"")+'</td><td>'+esc(r.driver)+'</td><td>'+esc(r.type)+(r.deleted?'<small>Deleted'+(r.partial?' · partial history':"")+'</small>':"")+'</td><td>'+esc(r.job||"—")+(r.move!==""?'<small>Move #'+esc(r.move)+'</small>':"")+'</td><td>'+esc(r.route||r.notes||"—")+(r.deleted&&r.type==="Job"?'<div class="restore-details record-edit-control"><small>Restore load details</small><label>Time<input class="restore-time" type="time" min="04:00" max="20:00" step="900" value="'+(r.start==null?"":esc(D.clock(r.start)))+'"></label><label>Duration (min)<input class="restore-duration" type="number" min="15" max="720" step="15" value="'+(r.duration==null?"":esc(r.duration))+'"></label><label>Pallets<input class="restore-pallets" type="number" min="0" step="1" value="'+(r.pallets==null?"":esc(r.pallets))+'"></label></div>':"")+'</td><td><span class="record-print-value">'+esc(r.deleted?'Deleted':r.status)+'</span><select class="record-edit-control record-status" aria-label="Status for '+esc(r.job||r.type)+'">'+statusOptions+'</select>'+(r.type==="Time-slot status"?'<input class="record-edit-control record-custom'+(!r.deleted&&r.rawStatus==="Custom"?"":" hidden")+'" maxlength="80" value="'+esc(r.customTitle)+'" placeholder="Custom status title" aria-label="Custom status title">':"")+'</td><td>'+(r.type==="Job"&&r.pallets!=null?count(r.pallets):"—")+'</td><td>'+(r.duration==null?"—":count(r.duration)+' min')+'</td><td><button class="record-save record-edit-control" type="button">Save</button></td></tr>';
     }).join("");
   }
   async function saveRecord(button){
     const tr=button.closest("tr[data-record]"),record=rows.find(r=>r.type+":"+r.id===tr.dataset.record);
     if(!record||!userId)return;
     const newDate=tr.querySelector(".record-date").value,newStatus=tr.querySelector(".record-status").value,custom=tr.querySelector(".record-custom")?.value.trim()||null;
-    if(!newDate||(!newStatus&&!record.deleted)){message("Choose both a date and a status.",true);return;}
+    if(!newDate||!newStatus){message("Choose both a date and a status.",true);return;}
     if(newStatus==="Custom"&&!custom){message("Enter a custom status title.",true);return;}
+    const restoreTime=tr.querySelector(".restore-time"),restoreDuration=tr.querySelector(".restore-duration"),restorePallets=tr.querySelector(".restore-pallets");
+    if(record.deleted&&record.type==="Job"&&newStatus!=="Deleted"){
+      for(const input of [restoreTime,restoreDuration,restorePallets]){
+        if(!input||input.value===""||!input.reportValidity()){message("Complete the time, duration, and pallet count to restore this load.",true);return;}
+      }
+    }
     const token=generation;
     button.disabled=true;button.textContent="Saving…";
     try{
-      const {error}=await sb.rpc("edit_summary_record",{p_type:record.type,p_id:record.id,p_deleted:!!record.deleted,p_date:newDate,p_status:newStatus,p_custom_title:custom});
+      const {data,error}=await sb.rpc("save_summary_record",{p_type:record.type,p_id:record.id,p_deleted:!!record.deleted,p_date:newDate,p_status:newStatus,p_custom_title:custom,p_time:restoreTime?.value||null,p_duration:restoreDuration?.value!==""&&restoreDuration?Number(restoreDuration.value):null,p_pallets:restorePallets?.value!==""&&restorePallets?Number(restorePallets.value):null});
       if(error)throw error;if(token!==generation)return;
-      const correctedDate=record.date!==newDate;record.date=newDate;record.rawStatus=newStatus;record.status=newStatus==="Custom"?custom:newStatus;record.customTitle=custom||"";record.inferredDate=record.inferredDate&&!correctedDate;
+      const correctedDate=record.date!==newDate;record.date=newDate;record.inferredDate=record.inferredDate&&!correctedDate;
+      if(newStatus!=="Deleted"){record.rawStatus=newStatus;record.status=newStatus==="Custom"?custom:newStatus;record.customTitle=custom||"";}
+      if(data?.restored){
+        record.deleted=false;record.partial=false;
+        if(record.type==="Job"){
+          const restored=data.record;record.start=Number(restored.scheduled_time.slice(0,2))*60+Number(restored.scheduled_time.slice(3,5));
+          record.duration=restored.duration_minutes;record.pallets=restored.pallet_count;record.move=restored.move_number;
+        }
+      }
       const now=new Date(),today=D.dateKey(now),time=now.getHours()*60+now.getMinutes();
       rows=rows.filter(r=>(!scope.from||r.date>=scope.from)&&r.date<=scope.to&&(r.deleted||r.date<today||(r.date===today&&r.start<=time)));
       const selections={type:el("recordType").value,status:el("recordStatus").value,location:el("recordLocation").value,search:el("recordSearch").value};
       render();
       el("recordType").value=selections.type;el("recordStatus").value=selections.status;el("recordLocation").value=selections.location;el("recordSearch").value=selections.search;details();
-      message(record.deleted?"Archived record updated. It remains deleted.":"Record updated.",false);
+      message(data?.restored?"Record restored to the Transfers board on "+date(newDate)+".":record.deleted?"Deleted record date updated.":"Record updated.",false);
     }catch(error){if(token===generation)message("Could not save record: "+error.message,true);}
     finally{button.disabled=false;button.textContent="Save";}
   }
@@ -92,6 +106,7 @@
     const query=(table,columns,timeColumn)=>()=>{
       let q=sb.from(table).select(columns).lte("scheduled_date",to);
       if(from)q=q.gte("scheduled_date",from);if(driver)q=q.eq("driver",driver);
+      if(table==="summary_deleted_records")q=q.is("restored_at",null);
       return q.order("scheduled_date").order(timeColumn).order("id");
     };
     try{
@@ -120,7 +135,7 @@
         sb.from("transfer_drivers").select("name,sort_order").order("sort_order").order("name"),
         D.fetchAll(()=>sb.from("transfers").select("id,driver").order("id"),()=>token===generation),
         D.fetchAll(()=>sb.from("transfer_slot_statuses").select("id,driver").order("id"),()=>token===generation),
-        D.fetchAll(()=>sb.from("summary_deleted_records").select("id,driver").order("id"),()=>token===generation)
+        D.fetchAll(()=>sb.from("summary_deleted_records").select("id,driver").is("restored_at",null).order("id"),()=>token===generation)
       ]);
       if(token!==generation)return;if(current.error)throw current.error;
       const names=[...new Set(["Planning",...(current.data||[]).map(d=>d.name),...jobs.map(d=>d.driver),...slots.map(d=>d.driver),...deleted.map(d=>d.driver)].filter(Boolean))];

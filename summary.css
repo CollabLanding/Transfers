@@ -53,3 +53,9 @@ html[data-theme="dark"] .status-pill.delivered{color:#9ee0b6;background:#183728;
 .summary-main .record-status{width:auto;max-width:230px;min-width:135px}
 .summary-main .record-custom{display:block;min-width:160px;max-width:230px;margin-top:6px}
 @media print{.record-edit-control{display:none!important}.record-print-value{display:inline}}
+
+.restore-details{display:flex;flex-wrap:wrap;gap:6px 10px;min-width:240px;margin-top:8px}
+.restore-details>small{width:100%}
+.restore-details label{margin:0;font-size:10px;gap:3px}
+.restore-details input{min-height:32px;padding:4px 6px;width:85px}
+.restore-details .restore-time{width:110px}
