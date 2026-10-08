@@ -90,9 +90,9 @@
     if(dirty()&&!(await save()))return;
     const token=version;lock(true);message("Applying saved schedule…");
     try{
-      const {data,error}=await sb.rpc("apply_driver_week",{p_driver:original,p_month:$("applyMonth").value+"-01"});
+      const {data,error}=await sb.rpc("replace_driver_schedule_month",{p_driver:original,p_month:$("applyMonth").value+"-01"});
       if(token!==version)return;if(error)throw error;
-      message(data+" dates filled. Existing scheduled dates were kept.","ok");scheduleLink();
+      message(data+" dates updated to the weekly schedule, including OFF days.","ok");scheduleLink();
     }catch(e){message("Could not apply schedule: "+e.message,"error");}finally{if(token===version)lock(false);}
   });
   window.addEventListener("beforeunload",e=>{if(dirty()||working){e.preventDefault();e.returnValue="";}});

@@ -331,6 +331,23 @@
     }
   }
 
+  function copiedDates(sourceRows,period,sourceStart,sourceEnd,targetStart,targetEnd){
+    const sourceMap=new Map(sourceRows.map(r=>[r.schedule_date,r]));
+    const weekdays=Array.from({length:7},()=>[]);
+    for(let date=sourceStart;date<=sourceEnd;date=addDays(date,1))weekdays[parseISO(date).getDay()].push(date);
+    const seen=Array(7).fill(0),result=[];
+    for(let date=targetStart,offset=0;date<=targetEnd;date=addDays(date,1),offset++){
+      let sourceDate=addDays(sourceStart,offset);
+      if(period==="month"){
+        const day=parseISO(date).getDay(),choices=weekdays[day];
+        sourceDate=choices[Math.min(seen[day]++,choices.length-1)];
+      }
+      const row=sourceMap.get(sourceDate);
+      result.push({schedule_date:date,start_time:row?.start_time?String(row.start_time).slice(0,5):null,end_time:row?.end_time?String(row.end_time).slice(0,5):null});
+    }
+    return result;
+  }
+
   async function copyPeriod(driver,period,sourceDate){
     if(!live||!user)return;
     if(dirty){
@@ -365,33 +382,11 @@
       .lte("schedule_date",sourceEnd);
     if(src.error){show("Could not read source schedule: "+src.error.message,"error");return}
 
-    const del=await sb.from("driver_schedules")
-      .delete()
-      .eq("driver_name",driver)
-      .gte("schedule_date",targetStart)
-      .lte("schedule_date",targetEnd);
-    if(del.error){show("Could not replace destination schedule: "+del.error.message,"error");return}
-
-    const targetEndDate=parseISO(targetEnd);
-    const copies=(src.data||[]).map(row=>{
-      const offset=Math.round((parseISO(row.schedule_date)-parseISO(sourceStart))/86400000);
-      const targetDate=addDays(targetStart,offset);
-      if(parseISO(targetDate)>targetEndDate)return null;
-      return {
-        driver_name:driver,
-        schedule_date:targetDate,
-        start_time:row.start_time?String(row.start_time).slice(0,5):null,
-        end_time:row.end_time?String(row.end_time).slice(0,5):null,
-        updated_by:user.id,
-        updated_by_name:userName(),
-        updated_at:new Date().toISOString()
-      };
-    }).filter(Boolean);
-
-    if(copies.length){
-      const ins=await sb.from("driver_schedules").insert(copies);
-      if(ins.error){show("Could not copy schedule: "+ins.error.message,"error");return}
-    }
+    const copies=copiedDates(src.data||[],period,sourceStart,sourceEnd,targetStart,targetEnd).map(row=>({
+      ...row,driver_name:driver,updated_by:user.id,updated_by_name:userName(),updated_at:new Date().toISOString()
+    }));
+    const ins=await sb.from("driver_schedules").upsert(copies,{onConflict:"driver_name,schedule_date"});
+    if(ins.error){show("Could not copy schedule: "+ins.error.message,"error");return}
 
     await loadWeek();
     window.recordDriverActivity?.([{
