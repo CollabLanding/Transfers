@@ -286,7 +286,6 @@ function makeCard(x,visualTop=null,visualHeight=null,stacked=false){
  b.style.top=(Number.isFinite(visualTop)?visualTop:cardBaseTopPx(x))+"px";
  b.style.height=(Number.isFinite(visualHeight)?visualHeight:cardHeightPx(x))+"px";
  b.innerHTML=(x.urgent?'<span class="urgent-tape" aria-hidden="true"></span>':'')+
-   '<span class="draghint">↕</span>'+
    '<span class="card-topline"><span class="card-status">'+esc(x.order_status||"Planned")+'</span><span class="card-move">Move #'+esc(x.move_number??"—")+'</span></span>'+
    '<small class="card-route">'+esc(x.origin)+' → '+esc(x.destination)+'</small>'+
    '<b class="card-job">'+esc(x.job_number)+'</b>'+
