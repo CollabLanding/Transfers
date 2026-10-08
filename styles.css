@@ -1657,3 +1657,17 @@ main > .board .schedule-date{
 
 /* Raise job status and move number by one pixel. */
 .card .card-topline{position:relative;top:-1px}
+
+/* Shared field sizing matches the driver schedule Start input. */
+:is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="reset"]),select,textarea){
+  box-sizing:border-box!important;
+  height:30px!important;
+  min-height:30px!important;
+  max-height:none!important;
+  padding:0 7px!important;
+  font-family:Arial,sans-serif!important;
+  font-size:12px!important;
+  font-weight:700!important;
+  line-height:16px!important;
+}
+textarea{padding-top:6px!important;padding-bottom:6px!important;resize:vertical}
