@@ -1648,3 +1648,9 @@ main > .board .schedule-date{
   main > .board .schedule-date,
   main > .board .planning-month-total{justify-self:center;text-align:center}
 }
+
+/* Double the urgent tape's thickness while keeping the top-row labels above it. */
+.card.urgent .urgent-tape{height:16px;z-index:0}
+.card.urgent .card-topline{position:relative;z-index:1}
+.card.urgent .card-topline .card-status,
+.card.urgent .card-topline .card-move{color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.85)}
