@@ -1671,3 +1671,6 @@ main > .board .schedule-date{
   line-height:16px!important;
 }
 textarea{padding-top:6px!important;padding-bottom:6px!important;resize:vertical}
+
+/* Let users resize the chat typing area vertically. */
+.chat-form textarea{height:auto!important;min-height:30px!important;max-height:none!important;resize:vertical!important;overflow:auto}
