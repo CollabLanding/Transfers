@@ -162,7 +162,7 @@
     const map=scheduleMap();
     E.body.innerHTML="";
     if(!drivers.length){
-      E.body.innerHTML='<tr><td colspan="9" class="schedule-empty">No drivers have been added yet. Add drivers from the Transfers page.</td></tr>';
+      E.body.innerHTML='<tr><td colspan="9" class="schedule-empty">No drivers have been added yet. Use Add Driver above to set up a driver.</td></tr>';
       return;
     }
     const dates=weekDates();
@@ -172,7 +172,7 @@
       const name=document.createElement("th");
       name.scope="row";
       name.className="driver-name-cell";
-      name.innerHTML='<span class="driver-name-text">'+esc(driver)+'</span><div class="driver-period-copy"><button type="button" class="copy-week" title="Copy this driver\'s current week to next week">Week →</button><button type="button" class="copy-month" title="Copy this driver\'s current month to next month">Month →</button></div>';
+      name.innerHTML='<a class="driver-name-text" href="driver-profile.html?driver='+encodeURIComponent(driver)+'">'+esc(driver)+'</a><div class="driver-period-copy"><button type="button" class="copy-week" title="Copy this driver\'s current week to next week">Week →</button><button type="button" class="copy-month" title="Copy this driver\'s current month to next month">Month →</button></div>';
       tr.appendChild(name);
 
       dates.forEach(date=>{
@@ -290,12 +290,12 @@
           invalid=invalid||driver+" on "+friendly(cell.dataset.date,{weekday:"long",month:"short",day:"numeric"});
           return;
         }
-        if(start&&end){
+        {
           rows.push({
             driver_name:driver,
             schedule_date:cell.dataset.date,
-            start_time:start,
-            end_time:end,
+            start_time:start||null,
+            end_time:end||null,
             updated_by:user.id,
             updated_by_name:userName(),
             updated_at:new Date().toISOString()
@@ -317,10 +317,8 @@
     if(!quiet)show("Saving driver schedule…");
     const start=E.week.value,end=addDays(start,6);
     try{
-      const del=await sb.from("driver_schedules").delete().gte("schedule_date",start).lte("schedule_date",end);
-      if(del.error){show("Could not save schedule: "+del.error.message,"error");return false}
       if(rows.length){
-        const ins=await sb.from("driver_schedules").insert(rows);
+        const ins=await sb.from("driver_schedules").upsert(rows,{onConflict:"driver_name,schedule_date"});
         if(ins.error){show("Could not save schedule: "+ins.error.message,"error");return false}
       }
       setDirty(false);
@@ -382,8 +380,8 @@
       return {
         driver_name:driver,
         schedule_date:targetDate,
-        start_time:String(row.start_time).slice(0,5),
-        end_time:String(row.end_time).slice(0,5),
+        start_time:row.start_time?String(row.start_time).slice(0,5):null,
+        end_time:row.end_time?String(row.end_time).slice(0,5):null,
         updated_by:user.id,
         updated_by_name:userName(),
         updated_at:new Date().toISOString()
@@ -567,7 +565,7 @@
             doc.setTextColor(25,35,45);
             doc.setFont("helvetica","normal");
           }
-          doc.text(time12(r.start_time),margin+220,y);
+          doc.text(time12(r.start_time)||"OFF",margin+220,y);
           doc.text(time12(r.end_time),margin+300,y);
           doc.text(fmtHours(hrs),margin+380,y);
           doc.setDrawColor(232,236,240);
@@ -667,6 +665,7 @@
   E.next.onclick=()=>{if(dirty&&!confirm("Discard unsaved schedule changes?"))return;E.week.value=addDays(E.week.value,7);lastWeekValue=E.week.value;loadWeek()};
   E.thisWeek.onclick=()=>{if(dirty&&!confirm("Discard unsaved schedule changes?"))return;E.week.value=mondayOf(new Date());lastWeekValue=E.week.value;loadWeek()};
   E.week.onchange=()=>{const next=mondayOf(E.week.value);if(dirty&&!confirm("Discard unsaved schedule changes?")){E.week.value=lastWeekValue;return}E.week.value=next;lastWeekValue=next;loadWeek()};
+  $("addDriver").onclick=()=>{location.href="driver-profile.html";};
   E.save.onclick=save;
   E.reports.onclick=openReports;
   E.reportClose.onclick=closeReports;
@@ -685,7 +684,8 @@
   };
   window.addEventListener("beforeunload",e=>{if(!dirty)return;e.preventDefault();e.returnValue=""});
 
-  E.week.value=mondayOf(new Date());
+  const requestedWeek=new URLSearchParams(location.search).get("week");
+  E.week.value=mondayOf(requestedWeek&&/^\d{4}-\d{2}-\d{2}$/.test(requestedWeek)?requestedWeek:new Date());
   lastWeekValue=E.week.value;
   if(!live){
     E.body.innerHTML='<tr><td colspan="9" class="schedule-empty">Supabase is not configured.</td></tr>';

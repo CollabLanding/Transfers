@@ -167,7 +167,7 @@ function scheduleOverlay(lane,top,height,kind,label=""){
 function applyDriverScheduleOverlay(lane,driver,date){
   if(String(driver).trim().toLowerCase()==="planning")return;
   const row=driverSchedule.find(r=>String(r.driver_name)===String(driver)&&String(r.schedule_date)===String(date));
-  if(!row){
+  if(!row||!row.start_time||!row.end_time){
     lane.classList.add("driver-off-lane");
     scheduleOverlay(lane,0,GRID_HEIGHT,"driver-off-overlay","OFF");
     return;

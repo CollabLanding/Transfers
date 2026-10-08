@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="styles.css?v=20261008-summary-1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <link rel="stylesheet" href="driver-profile.css?v=20261008-1">
   <script src="config.js"></script>
 </head>
 <body>
@@ -55,7 +56,7 @@
         <h2 id="weekTitle">Driver Hours</h2>
         <p>Set each driver's scheduled start and end time. Leave both fields blank for a day off.</p>
       </div>
-      <div class="schedule-heading-actions"><button id="saveSchedule" class="primary" type="button">Save Schedule</button><button id="runReports" type="button">Run Reports</button></div>
+      <div class="schedule-heading-actions"><button id="addDriver" type="button">Add Driver</button><button id="saveSchedule" class="primary" type="button">Save Schedule</button><button id="runReports" type="button">Run Reports</button></div>
     </div>
 
     <div id="scheduleMsg" class="schedule-message" aria-live="polite"></div>
@@ -171,7 +172,7 @@
   </form>
 </div>
 
-<script src="driver-schedule.js?v=20261006-driver-history-1"></script>
+<script src="driver-schedule.js?v=20261008-profiles-1"></script>
 <script src="driver-history.js?v=20261006-driver-history-1"></script>
 <script src="theme.js"></script>
 </body>

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Driver Information | Transfers</title>
+  <script>
+    try{
+      const saved=localStorage.getItem("transfers-theme");
+      document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
+    }catch(_err){}
+  </script>
+  <link rel="stylesheet" href="styles.css?v=20261008-summary-1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="driver-profile.css?v=20261008-1">
+  <script src="config.js"></script>
+</head>
+<body>
+<header>
+  <div class="brand-cluster"><img class="company-logo" src="/Transfers/site-logo.png?v=2" alt="Fanatics Collectibles"><div class="app-brand">
+    <nav class="app-tabs" aria-label="Main navigation">
+      <a href="index.html">Transfers</a>
+      <a class="active" href="drivers.html" aria-current="page">Drivers</a>
+      <a href="locations.html">Locations</a>
+        <a href="summary.html">Summary</a>
+    </nav>
+    <small><a class="live-board-link" href="/live-dock-board/">Live Trailer Board</a></small>
+  </div></div>
+  <div class="header-right">
+    <label class="theme-switch" for="themeToggle">
+      <span class="theme-label light-label">Light</span>
+      <input id="themeToggle" type="checkbox" role="switch" aria-label="Toggle dark theme">
+      <span class="switch-track"><span class="switch-thumb"></span></span>
+      <span class="theme-label dark-label">Dark</span>
+    </label>
+    <div class="user-session">
+      <span id="me"></span>
+      <small id="email"></small>
+      <button id="signout" class="hidden" type="button">Sign Out</button>
+    </div>
+  </div>
+</header>
+
+<main class="driver-profile-main">
+  <section class="panel profile-heading"><div><small>DRIVERS</small><h1 id="profileTitle">Add Driver</h1><p>Driver information and recurring schedules.</p></div><a class="profile-back" href="drivers.html">← Driver schedules</a></section>
+  <p id="profileMessage" role="status" aria-live="polite"></p>
+  <form id="driverProfileForm" class="hidden">
+    <div class="profile-layout">
+      <section class="panel"><h2>Driver information</h2>
+        <label>Driver slot name<input id="driverSlotName" maxlength="120" required placeholder="Name shown on the Transfers board"></label>
+        <p class="profile-help" id="slotNameHelp">The slot name identifies this driver throughout the schedule.</p>
+        <label>Full name<input id="driverFullName" maxlength="200" autocomplete="name"></label>
+        <label>Phone number<input id="driverPhone" type="tel" autocomplete="tel" maxlength="30" placeholder="(555) 555-1234"></label>
+        <p class="profile-help">Automatically fills the number in Text Driver. US numbers can be entered with or without +1.</p>
+        <label>Email<input id="driverEmail" type="email" maxlength="254" autocomplete="email"></label>
+        <label>Notes<textarea id="driverNotes" rows="4" maxlength="3000" placeholder="Dispatch notes or driver details"></textarea></label>
+      </section>
+      <section class="panel"><h2>Weekly schedule</h2><p class="profile-help">Define the week to repeat. Blank start and end times mean OFF. An end time earlier than the start is an overnight shift.</p>
+        <div class="template-import"><label>Use an existing week<input id="templateWeek" type="date"></label><button id="loadTemplateWeek" type="button">Load week</button></div>
+        <div class="profile-week-wrap"><table class="profile-week"><thead><tr><th>Day</th><th>Start</th><th>End</th><th></th></tr></thead><tbody id="weeklyTemplate"></tbody></table></div>
+        <label class="repeat-option"><input id="autoRepeat" type="checkbox"><span>Automatically prepare next month</span></label>
+        <p class="profile-help">Repeats this weekly schedule across the next calendar month. Enabling it prepares next month immediately; future months are prepared on the first day of the preceding month (Central Time). Existing scheduled dates and saved days off are kept.</p>
+        <p id="repeatStatus" class="profile-help"></p>
+      </section>
+    </div>
+    <section class="panel profile-footer"><button id="saveDriver" class="primary" type="submit">Save Driver</button><a href="drivers.html" class="profile-back">Back to schedules</a><span id="unsavedNotice"></span></section>
+    <section id="applySchedulePanel" class="panel hidden"><h2>Apply saved weekly schedule</h2><p class="profile-help">Fill dates that have no saved schedule in the selected month. Existing shifts and saved days off stay as they are. Edit individual dates on the Drivers page.</p><div class="apply-controls"><label>Month<input id="applyMonth" type="month"></label><button id="applySchedule" type="button">Fill empty dates</button><a id="viewSchedule" href="drivers.html">View schedule →</a></div></section>
+  </form>
+</main>
+
+<div id="login" class="login hidden">
+  <form id="loginForm" class="loginbox">
+    <h1>Transfers</h1>
+    <p>Sign in to manage driver information.</p>
+    <input id="loginEmail" type="email" placeholder="Email" required>
+    <input id="loginPassword" type="password" placeholder="Password" required>
+    <button class="primary">Sign In</button>
+    <p id="loginMsg"></p>
+  </form>
+</div>
+
+<script src="theme.js"></script>
+<script src="driver-profile.js?v=20261008-1"></script>
+</body>
+</html>
