@@ -11,7 +11,7 @@
     }catch(_err){}
   </script>
   <link rel="stylesheet" href="styles.css?v=20261008-summary-1">
-  <link rel="stylesheet" href="summary.css?v=20261008-summary-1">
+  <link rel="stylesheet" href="summary.css?v=20261008-location-2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
 </head>
@@ -73,14 +73,16 @@
     </div>
     <section class="panel summary-records">
       <div class="records-heading"><div><h2>Detailed records</h2><p class="summary-help">Dates and times follow the Transfers schedule. Future scheduled records are excluded.</p></div><span id="recordCount"></span></div>
+      <p id="locationHelp" class="summary-help">Location matches a job’s origin or destination. Time-slot statuses have no location.</p>
       <div class="record-controls">
         <label>Show<select id="recordType"><option value="">Jobs + time-slot statuses</option><option value="Job">Jobs only</option><option value="Time-slot status">Time-slot statuses only</option></select></label>
         <label>Status<select id="recordStatus"><option value="">All statuses</option></select></label>
+        <label>Location<select id="recordLocation" aria-describedby="locationHelp"><option value="">All locations</option></select></label>
         <label class="record-search">Search<input id="recordSearch" type="search" placeholder="Job, move, route, driver, or note"></label>
       </div>
       <div class="summary-table-wrap"><table><thead><tr><th>Date / time</th><th>Driver slot</th><th>Type</th><th>Job / move</th><th>Route / notes</th><th>Status</th><th>Pallets</th><th>Scheduled duration</th></tr></thead><tbody id="recordRows"></tbody></table></div>
       <div class="report-pagination"><span id="pageLabel"></span><div><button id="previousPage">Previous</button><button id="nextPage">Next</button></div></div>
-      <p class="summary-help">Totals describe the date and driver-slot report above. Show, Status, and Search narrow the detailed records and CSV export.</p>
+      <p class="summary-help">Totals describe the date and driver-slot report above. Show, Status, Location, and Search narrow the detailed records and CSV export.</p>
     </section>
   </div>
 </main>
@@ -97,8 +99,8 @@
 </div>
 
 <script src="theme.js"></script>
-<script src="summary-data.js?v=20261008-summary-1"></script>
-<script src="summary.js?v=20261008-summary-1"></script>
+<script src="summary-data.js?v=20261008-location-2"></script>
+<script src="summary.js?v=20261008-location-2"></script>
 </body>
 </html>
 

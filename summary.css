@@ -31,7 +31,10 @@ main.summary-main{display:block!important;max-width:1600px;margin:0 auto;padding
 .status-pill.delivered{color:#147341;background:#e7f6ed;border-color:#aed9bf}
 .records-heading{display:flex;align-items:start;justify-content:space-between;gap:16px}
 #recordCount{color:var(--muted);white-space:nowrap;font-size:12px}
-.record-controls{display:grid;grid-template-columns:1fr 1fr 2fr;gap:14px;margin-bottom:12px}
+.record-controls{display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px;margin-bottom:12px}
+.record-controls>label{flex:0 1 auto;min-width:0;max-width:100%}
+.record-controls select{width:auto;max-width:100%}
+.record-controls>.record-search{flex:1 1 220px}
 .record-controls label{margin:6px 0}
 .report-pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
 .report-pagination>div{display:flex;gap:8px}#pageLabel{font-size:12px;color:var(--muted)}

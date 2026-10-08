@@ -30,7 +30,7 @@
     return list.map(r=>'<tr><td>'+esc(date(r.date))+'<small>'+esc(D.clock(r.start))+'</small></td><td>'+esc(r.driver)+'</td><td>'+esc(r.type)+'</td><td>'+esc(r.job||"—")+(r.move!==""?'<small>Move #'+esc(r.move)+'</small>':"")+'</td><td>'+esc(r.route||r.notes||"—")+'</td><td><span class="status-pill'+(r.status==="Delivered"?" delivered":"")+'">'+esc(r.status)+'</span></td><td>'+(r.type==="Job"?count(r.pallets):"—")+'</td><td>'+count(r.duration)+' min</td></tr>').join("");
   }
   function details(){
-    page=0;visible=D.filter(rows,{type:el("recordType").value,status:el("recordStatus").value,search:el("recordSearch").value});renderPage();busy(false);
+    page=0;visible=D.filter(rows,{type:el("recordType").value,status:el("recordStatus").value,location:el("recordLocation").value,search:el("recordSearch").value});renderPage();busy(false);
   }
   function renderPage(){
     const pages=Math.max(1,Math.ceil(visible.length/pageSize));page=Math.min(page,pages-1);
@@ -49,6 +49,9 @@
     el("reportScope").textContent=(scope.from?date(scope.from):"All history")+" — "+date(scope.to)+" · "+(scope.driver||"All driver slots");
     el("reportUpdated").textContent="Run "+new Date().toLocaleString();
     const statuses=[...new Set(rows.map(r=>r.status))].sort();el("recordStatus").innerHTML='<option value="">All statuses</option>'+statuses.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join("");
+    const locations=[...new Set(rows.filter(r=>r.type==="Job").flatMap(r=>[r.origin,r.destination]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    el("recordLocation").innerHTML='<option value="">All locations</option>'+locations.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join("");
+    el("recordLocation").value="";
     el("recordType").value="";el("recordSearch").value="";el("reportResults").classList.remove("hidden");details();
   }
   async function run(){
@@ -98,7 +101,7 @@
   el("period").addEventListener("change",preset);
   for(const id of ["dateFrom","dateTo"])el(id).addEventListener("change",()=>{el("period").value="custom";});
   el("reportFilters").addEventListener("submit",e=>{e.preventDefault();run();});
-  for(const id of ["recordType","recordStatus"])el(id).addEventListener("change",details);
+  for(const id of ["recordType","recordStatus","recordLocation"])el(id).addEventListener("change",details);
   el("recordSearch").addEventListener("input",details);
   el("previousPage").addEventListener("click",()=>{page--;renderPage();});el("nextPage").addEventListener("click",()=>{page++;renderPage();});
   el("exportCsv").addEventListener("click",()=>{
