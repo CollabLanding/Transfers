@@ -5,7 +5,7 @@ main.driver-profile-main{display:block!important;max-width:1200px;margin:auto;pa
 .profile-layout{display:grid;grid-template-columns:1fr 1.35fr;gap:16px}
 .driver-profile-main h2{font-size:18px;margin:0 0 14px}
 .driver-profile-main a{color:var(--accent);font-weight:700}
-.driver-profile-main textarea{width:100%;padding:10px;font:inherit;resize:vertical;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text)}
+.driver-profile-main textarea{width:100%;padding:9px;font:inherit;resize:vertical;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text)}
 .driver-profile-main input[readonly]{opacity:.7}
 .profile-week-wrap{overflow:auto}.profile-week{width:100%;border-collapse:collapse;font-size:12px}
 .profile-week th,.profile-week td{padding:8px 6px;text-align:left;border-bottom:1px solid var(--line)}
