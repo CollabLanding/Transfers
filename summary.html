@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Summary | Transfers</title>
+  <script>
+    try{
+      const saved=localStorage.getItem("transfers-theme");
+      document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
+    }catch(_err){}
+  </script>
+  <link rel="stylesheet" href="styles.css?v=20261008-summary-1">
+  <link rel="stylesheet" href="summary.css?v=20261008-summary-1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+</head>
+<body>
+<header>
+  <div class="brand-cluster">
+    <img class="company-logo" src="/Transfers/site-logo.png?v=2" alt="Fanatics Collectibles">
+    <div class="app-brand">
+      <small><a class="live-board-link" href="/live-dock-board/">Live Trailer Board</a></small>
+      <nav class="app-tabs" aria-label="Main navigation">
+        <a href="index.html">Transfers</a>
+        <a href="drivers.html">Drivers</a>
+        <a href="locations.html">Locations</a>
+        <a class="active" href="summary.html" aria-current="page">Summary</a>
+      </nav>
+    </div>
+  </div>
+  <div class="header-right">
+    <label class="theme-switch" for="themeToggle">
+      <span class="theme-label light-label">Light</span>
+      <input id="themeToggle" type="checkbox" role="switch" aria-label="Toggle dark theme">
+      <span class="switch-track"><span class="switch-thumb"></span></span>
+      <span class="theme-label dark-label">Dark</span>
+    </label>
+    <div class="user-session">
+      <span id="me"></span>
+      <small id="email"></small>
+      <button id="signout" class="hidden" type="button">Sign Out</button>
+    </div>
+  </div>
+</header>
+
+<main class="summary-main">
+  <section class="panel summary-heading">
+    <div><small>TRANSFER REPORTS</small><h1>Summary</h1><p>Past jobs and time-slot statuses, all in one place.</p></div>
+    <div class="summary-actions"><button id="exportCsv" disabled>Export CSV</button><button id="printReport" disabled>Print report</button></div>
+  </section>
+  <section class="panel summary-filters" aria-label="Report filters">
+    <form id="reportFilters">
+      <label>Period<select id="period"><option value="30">Last 30 days</option><option value="7">Last 7 days</option><option value="month">This month</option><option value="all">All history</option><option value="custom">Custom dates</option></select></label>
+      <label>From<input id="dateFrom" type="date"></label>
+      <label>Through<input id="dateTo" type="date" required></label>
+      <label>Driver slot<select id="driverSlot"><option value="">All driver slots</option></select></label>
+      <button id="runReport" class="primary" type="submit">Run report</button>
+    </form>
+    <p id="reportMessage" role="status" aria-live="polite">Sign in to run a report.</p>
+  </section>
+  <div id="reportResults" class="hidden">
+    <div class="report-caption"><strong id="reportScope"></strong><span id="reportUpdated"></span></div>
+    <section class="summary-metrics" aria-label="Report totals">
+      <div class="panel metric"><span>Jobs</span><strong id="jobTotal">0</strong><small id="deliveredTotal">0 delivered</small></div>
+      <div class="panel metric"><span>Pallets</span><strong id="palletTotal">0</strong><small>Across reported jobs</small></div>
+      <div class="panel metric"><span>Scheduled job hours</span><strong id="jobHours">0</strong><small>Booked duration, not actual elapsed time</small></div>
+      <div class="panel metric"><span>Time-slot status hours</span><strong id="slotHours">0</strong><small id="slotTotal">0 status records</small></div>
+    </section>
+    <div class="summary-breakdowns">
+      <section class="panel"><h2>By driver slot</h2><div class="summary-table-wrap"><table><thead><tr><th>Driver slot</th><th>Jobs</th><th>Delivered</th><th>Pallets</th><th>Job hrs</th><th>Status hrs</th></tr></thead><tbody id="driverTotals"></tbody></table></div></section>
+      <section class="panel"><h2>Status breakdown</h2><p class="summary-help">Jobs show their latest saved status. Time-slot hours come from the saved status boxes.</p><div id="statusTotals"></div></section>
+    </div>
+    <section class="panel summary-records">
+      <div class="records-heading"><div><h2>Detailed records</h2><p class="summary-help">Dates and times follow the Transfers schedule. Future scheduled records are excluded.</p></div><span id="recordCount"></span></div>
+      <div class="record-controls">
+        <label>Show<select id="recordType"><option value="">Jobs + time-slot statuses</option><option value="Job">Jobs only</option><option value="Time-slot status">Time-slot statuses only</option></select></label>
+        <label>Status<select id="recordStatus"><option value="">All statuses</option></select></label>
+        <label class="record-search">Search<input id="recordSearch" type="search" placeholder="Job, move, route, driver, or note"></label>
+      </div>
+      <div class="summary-table-wrap"><table><thead><tr><th>Date / time</th><th>Driver slot</th><th>Type</th><th>Job / move</th><th>Route / notes</th><th>Status</th><th>Pallets</th><th>Scheduled duration</th></tr></thead><tbody id="recordRows"></tbody></table></div>
+      <div class="report-pagination"><span id="pageLabel"></span><div><button id="previousPage">Previous</button><button id="nextPage">Next</button></div></div>
+      <p class="summary-help">Totals describe the date and driver-slot report above. Show, Status, and Search narrow the detailed records and CSV export.</p>
+    </section>
+  </div>
+</main>
+
+<div id="login" class="login hidden">
+  <form id="loginForm" class="loginbox">
+    <h1>Summary</h1>
+    <p>Sign in to run transfer reports.</p>
+    <input id="loginEmail" type="email" placeholder="Email" required>
+    <input id="loginPassword" type="password" placeholder="Password" required>
+    <button class="primary">Sign In</button>
+    <p id="loginMsg"></p>
+  </form>
+</div>
+
+<script src="theme.js"></script>
+<script src="summary-data.js?v=20261008-summary-1"></script>
+<script src="summary.js?v=20261008-summary-1"></script>
+</body>
+</html>
+

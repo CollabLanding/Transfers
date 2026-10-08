@@ -1580,3 +1580,7 @@ main > .board > #gridWrap{
   max-height:none;
   overflow:auto;
 }
+
+/* Keep all navigation links accessible as the header narrows. */
+.app-tabs{flex-wrap:wrap}
+header{height:auto;min-height:82px}
