@@ -1718,3 +1718,18 @@ html[data-access-role="Vendor"] main>aside>.panel:not(.build-transfer-panel){dis
 html[data-access-role="Vendor"] .build-transfer-panel{width:100%}
 html[data-access-role="Vendor"] #msg{min-height:20px;margin-top:12px;line-height:1.5}
 #vendorSignout{font-size:11px;padding:4px 8px;margin-left:auto}
+
+.user-access-tools{display:flex;align-items:center;gap:8px}
+.permissions-dialog{width:min(960px,calc(100vw - 32px));max-height:85dvh;padding:20px;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.permissions-dialog::backdrop{background:rgba(15,22,29,.75)}
+.permissions-dialog>p{color:var(--muted);font-size:12px;line-height:1.5}
+.permissions-table-wrap{max-height:calc(85dvh - 135px);overflow:auto;border:1px solid var(--line);border-radius:8px}
+.permissions-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
+.permissions-table th,.permissions-table td{padding:10px 12px;border-bottom:1px solid var(--line)}
+.permissions-table thead th{position:sticky;top:0;background:var(--panel);z-index:2;font-size:13px}
+.permissions-table th:first-child{text-align:left;min-width:270px}
+.permissions-table thead th:not(:first-child),.permissions-table td{text-align:center;min-width:75px}
+.permissions-table tbody th{font-weight:400}
+.permissions-table .permission-group th{background:var(--bg);font-weight:700;color:var(--text)}
+.permissions-table .permission-check{width:17px;height:17px;min-height:17px;margin:0;padding:0;accent-color:var(--accent);opacity:1;vertical-align:middle}
+@media(max-width:600px){.permissions-dialog{padding:12px}.permissions-table th,.permissions-table td{padding:9px 6px}.permissions-table th:first-child{min-width:220px}.permissions-table thead th:not(:first-child),.permissions-table td{min-width:65px}}

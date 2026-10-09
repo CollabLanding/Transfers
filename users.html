@@ -10,7 +10,7 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20261009-vendor-1">
+  <link rel="stylesheet" href="styles.css?v=20261009-permissions-grid">
   <link rel="stylesheet" href="summary.css?v=20261008-compact-fields-2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
@@ -48,12 +48,17 @@
 
 <main class="user-access-main">
  <section class="panel">
-  <div class="panelhead"><h1>User Access</h1><button id="refreshUsers" type="button">Refresh</button></div>
+  <div class="panelhead"><h1>User Access</h1><div class="user-access-tools"><button id="refreshUsers" type="button">Refresh</button><button id="permissionsButton" data-admin-only type="button">Permissions</button></div></div>
   <p>Owner and Admin have full access. Regular users have the Transfers board and build-transfer panel. Vendors can only build new transfers. New accounts start as Vendor.</p>
   <p id="usersMessage" role="status"></p>
   <div style="overflow:auto"><table class="user-access-table"><thead><tr><th>Email</th><th class="user-display-name">Name</th><th>Role</th><th></th></tr></thead><tbody id="userAccessRows"></tbody></table></div>
  </section>
 </main>
+<dialog id="permissionsDialog" class="permissions-dialog" aria-labelledby="permissionsTitle">
+ <div class="panelhead"><h2 id="permissionsTitle">Permissions</h2><button id="closePermissions" class="iconbtn" type="button" aria-label="Close permissions">×</button></div>
+ <p id="permissionsHelp">Current access by role. Checked boxes indicate an available feature. This grid shows the permissions currently in effect.</p>
+ <div class="permissions-table-wrap"><table class="permissions-table" aria-describedby="permissionsHelp"><thead><tr><th scope="col">Feature</th><th scope="col">Owner</th><th scope="col">Admin</th><th scope="col">User</th><th scope="col">Vendor</th></tr></thead><tbody id="permissionsRows"></tbody></table></div>
+</dialog>
 <script src="theme.js"></script>
-<script src="users.js?v=20261009-vendor-1"></script>
+<script src="users.js?v=20261009-permissions-grid"></script>
 </body></html>
