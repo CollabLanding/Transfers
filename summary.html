@@ -11,7 +11,7 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20261009-permissions">
+  <link rel="stylesheet" href="styles.css?v=20261009-account-menu">
   <link rel="stylesheet" href="summary.css?v=20261009-permissions">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js?v=20261009-permissions"></script>
@@ -39,9 +39,9 @@
       <span class="theme-label dark-label">Dark</span>
     </label>
     <div class="user-session">
-      <span id="me"></span>
+      <a id="me" class="account-toggle" href="#accountMenu" aria-controls="accountMenu" aria-expanded="false" aria-label="Open account options"></a><nav id="accountMenu" class="account-menu" aria-label="Account options" hidden><a href="password.html">Change Password</a></nav>
       <small id="email"></small>
-      <a href="password.html" class="change-password-link">Change Password</a><button id="signout" class="hidden" type="button">Sign Out</button>
+      <button id="signout" class="hidden" type="button">Sign Out</button>
     </div>
   </div>
 </header>
@@ -103,6 +103,7 @@
 <script src="theme.js?v=20261009-permissions"></script>
 <script src="summary-data.js?v=20261009-permissions"></script>
 <script src="summary.js?v=20261009-permissions"></script>
+<script src="account-menu.js?v=20261009-account-menu"></script>
 </body>
 </html>
 

@@ -11,7 +11,7 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20261009-permissions">
+  <link rel="stylesheet" href="styles.css?v=20261009-account-menu">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js?v=20261009-permissions"></script>
   <script src="access-control.js?v=20261009-permissions"></script>
@@ -22,7 +22,7 @@
 <header>
   <div class="brand-cluster"><img class="company-logo" src="/Transfers/site-logo.png?v=2" alt="Fanatics Collectibles"><div class="app-brand"><nav class="app-tabs" aria-label="Main navigation"><a class="active" href="index.html" aria-current="page">Transfers</a><a href="drivers.html">Drivers</a><a href="locations.html">Locations</a>
         <a href="summary.html">Summary</a></nav><small><a class="live-board-link" href="/live-dock-board/">Live Trailer Board</a></small></div></div>
-  <div class="header-right"><div class="nav"><button id="duplicateDay" class="duplicate-day-btn" type="button">Duplicate Day</button><button id="prev">←</button><button id="today">Today</button><input id="boardDate" type="date"><button id="next">→</button></div><label class="theme-switch" for="themeToggle"><span class="theme-label light-label">Light</span><input id="themeToggle" type="checkbox" role="switch" aria-label="Toggle dark theme"><span class="switch-track"><span class="switch-thumb"></span></span><span class="theme-label dark-label">Dark</span></label><div class="user-session"><span id="me"></span><small id="accessRoleLabel"></small><small id="email"></small><a href="password.html" class="change-password-link">Change Password</a><button id="signout" class="hidden">Sign Out</button></div></div>
+  <div class="header-right"><div class="nav"><button id="duplicateDay" class="duplicate-day-btn" type="button">Duplicate Day</button><button id="prev">←</button><button id="today">Today</button><input id="boardDate" type="date"><button id="next">→</button></div><label class="theme-switch" for="themeToggle"><span class="theme-label light-label">Light</span><input id="themeToggle" type="checkbox" role="switch" aria-label="Toggle dark theme"><span class="switch-track"><span class="switch-thumb"></span></span><span class="theme-label dark-label">Dark</span></label><div class="user-session"><a id="me" class="account-toggle" href="#accountMenu" aria-controls="accountMenu" aria-expanded="false" aria-label="Open account options"></a><nav id="accountMenu" class="account-menu" aria-label="Account options" hidden><a href="password.html">Change Password</a></nav><small id="accessRoleLabel"></small><small id="email"></small><button id="signout" class="hidden">Sign Out</button></div></div>
 </header>
 <main>
   <aside>
@@ -218,5 +218,6 @@
 <script src="theme.js?v=20261009-permissions"></script>
 <script src="chat.js?v=20261009-permissions"></script>
 <script src="sms.js?v=20261009-permissions"></script>
+<script src="account-menu.js?v=20261009-account-menu"></script>
 </body>
 </html>
