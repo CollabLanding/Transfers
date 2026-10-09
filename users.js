@@ -12,6 +12,8 @@
 
 
  const roles=["Admin","User","Vendor"],owner=window.TransfersAccess.role==="Owner";
+ const canEditRole=role=>owner||(window.TransfersAccess.role==="Admin"&&["User","Vendor"].includes(role)&&window.TransfersAccess.can("view_permissions"));
+ const canEditPermissions=owner||canEditRole("User");
  const permissionRows=document.getElementById("permissionsRows"),permissionsDialog=document.getElementById("permissionsDialog"),permissionMessage=document.getElementById("permissionsMessage"),savePermissions=document.getElementById("savePermissions");
  let catalog=[],draft=null,revision=null,dirty=false,saving=false;
  function renderPermissions(){
@@ -19,11 +21,11 @@
   permissionRows.innerHTML=catalog.map(feature=>{
    const heading=feature.group!==group?'<tr class="permission-group"><th colspan="4" scope="colgroup">'+esc(feature.group)+'</th></tr>':"";group=feature.group;
    return heading+'<tr><th scope="row">'+esc(feature.label)+'</th>'+roles.map(role=>{
-    const locked=!owner||feature.fixed||(feature.adminOnly&&role!=="Admin");
+    const locked=!canEditRole(role)||feature.fixed||(feature.adminOnly&&role!=="Admin");
     return '<td><input class="permission-check" type="checkbox" data-role="'+role+'" data-feature="'+esc(feature.key)+'"'+(draft[role][feature.key]?' checked':'')+(locked?' disabled':'')+' aria-label="'+esc(role+": "+feature.label)+'"></td>';
    }).join("")+'</tr>';
   }).join("");
-  savePermissions.hidden=!owner;savePermissions.disabled=!dirty||saving;
+  savePermissions.hidden=!canEditPermissions;savePermissions.disabled=!dirty||saving;
  }
  function setPermission(role,key,value,seen=new Set()){
   if(seen.has(key))return;seen.add(key);draft[role][key]=value;
@@ -31,7 +33,7 @@
   else{for(const child of catalog.filter(x=>x.dependencies?.includes(key)))setPermission(role,child.key,false,seen)}
  }
  permissionRows.addEventListener("change",event=>{
-  if(!owner||saving||!event.target.matches(".permission-check"))return;
+  if(saving||!event.target.matches(".permission-check")||!canEditRole(event.target.dataset.role))return;
   setPermission(event.target.dataset.role,event.target.dataset.feature,event.target.checked);dirty=true;permissionMessage.textContent="Unsaved changes.";renderPermissions();
  });
  async function loadPermissions(){
@@ -39,12 +41,12 @@
   const r=await sb.rpc("get_transfer_role_permissions");
   if(r.error){permissionMessage.textContent=r.error.message;return}
   catalog=r.data.catalog;draft=r.data.roles;revision=r.data.revision;dirty=false;renderPermissions();
-  permissionMessage.textContent=owner?"Change checkboxes, then Save Permissions. Sign out is always available; user administration remains limited to Admins.":"Only the Owner can edit permissions.";
+  permissionMessage.textContent=owner?"Change checkboxes, then Save Permissions. Sign out is always available; user administration remains limited to Admins.":"You can change User and Vendor permissions. Only the Owner can change Admin permissions.";
  }
  document.getElementById("permissionsButton").onclick=async()=>{if(!window.TransfersAccess.can("view_permissions"))return;permissionsDialog.showModal();await loadPermissions()};
  document.getElementById("closePermissions").onclick=()=>permissionsDialog.close();
  savePermissions.onclick=async()=>{
-  if(!owner||!dirty||saving)return;saving=true;renderPermissions();
+  if(!canEditPermissions||!dirty||saving)return;saving=true;renderPermissions();
   const r=await sb.rpc("save_transfer_role_permissions",{p_roles:draft,p_revision:revision});
   saving=false;if(r.error){permissionMessage.textContent=r.error.message;renderPermissions();return}
   await loadPermissions();permissionMessage.textContent="Permissions saved.";await window.TransfersAccess.refresh();

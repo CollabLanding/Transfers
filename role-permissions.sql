@@ -35,14 +35,20 @@ begin
  return (select jsonb_build_object('revision',revision,'catalog',catalog,'roles',(select jsonb_object_agg(role,permissions) from transfers_private.role_permissions)) from transfers_private.permission_config);
 end $$;
 create function public.get_transfer_role_permissions() returns jsonb language sql stable security invoker set search_path='' as $$select transfers_private.read_role_permissions();$$;
-create function transfers_private.save_role_permissions(p_roles jsonb,p_revision integer) returns void
-language plpgsql security definer set search_path='' as $$
-declare r text;f jsonb;k text;d text;v integer;
+CREATE OR REPLACE FUNCTION transfers_private.save_role_permissions(p_roles jsonb, p_revision integer)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare r text;f jsonb;k text;d text;v integer;actor_role text;
 begin
- if auth.uid() is null or transfers_private.current_access_role()<>'Owner' then raise exception 'Only the Owner can edit permissions' using errcode='42501';end if;
+ actor_role:=transfers_private.current_access_role();
+ if auth.uid() is null or actor_role not in ('Owner','Admin') or (actor_role='Admin' and not transfers_private.has_permission('view_permissions')) then raise exception 'Owner or Admin permission access required' using errcode='42501';end if;
  select revision into v from transfers_private.permission_config where singleton=true for update;
  if p_revision is distinct from v then raise exception 'Permissions changed since you opened this grid. Close and reopen it before saving.';end if;
  if p_roles is null or jsonb_typeof(p_roles)<>'object' or (select count(*) from jsonb_object_keys(p_roles))<>3 then raise exception 'Provide Admin, User, and Vendor permissions';end if;
+ if actor_role='Admin' and (p_roles->'Admin') is distinct from (select permissions from transfers_private.role_permissions where role='Admin') then raise exception 'Only the Owner can change Admin permissions' using errcode='42501';end if;
  foreach r in array array['Admin','User','Vendor'] loop
  if jsonb_typeof(p_roles->r) is distinct from 'object' or (select count(*) from jsonb_object_keys(p_roles->r))<>(select jsonb_array_length(catalog) from transfers_private.permission_config) then raise exception 'Invalid role permissions';end if;
  for f in select x from transfers_private.permission_config,jsonb_array_elements(catalog)x loop
@@ -56,10 +62,13 @@ begin
  end loop;
  end if;
  end loop;
+ if actor_role='Owner' or r<>'Admin' then
  update transfers_private.role_permissions set permissions=p_roles->r where role=r;
+ end if;
  end loop;
  update transfers_private.permission_config set revision=revision+1,updated_at=now(),updated_by=auth.uid() where singleton=true;
-end $$;
+end $function$
+
 create function public.save_transfer_role_permissions(p_roles jsonb,p_revision integer) returns void language sql security invoker set search_path='' as $$select transfers_private.save_role_permissions(p_roles,p_revision);$$;
 revoke all on function transfers_private.has_permission(text),transfers_private.has_any_permission(text[]),transfers_private.my_permissions(),transfers_private.read_role_permissions(),transfers_private.save_role_permissions(jsonb,integer),public.get_transfer_access(),public.has_transfer_permission(text),public.get_transfer_role_permissions(),public.save_transfer_role_permissions(jsonb,integer) from public,anon;
 grant execute on function transfers_private.has_permission(text),transfers_private.has_any_permission(text[]),transfers_private.my_permissions(),transfers_private.read_role_permissions(),transfers_private.save_role_permissions(jsonb,integer),public.get_transfer_access(),public.has_transfer_permission(text),public.get_transfer_role_permissions(),public.save_transfer_role_permissions(jsonb,integer) to authenticated;
