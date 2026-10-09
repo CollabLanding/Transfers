@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en" data-admin-page>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Summary | Transfers</title>
+  <script>
+    try{
+      const saved=localStorage.getItem("transfers-theme");
+      document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
+    }catch(_err){}
+  </script>
+  <link rel="stylesheet" href="styles.css?v=20261009-access-1">
+  <link rel="stylesheet" href="summary.css?v=20261008-compact-fields-2">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="access-control.js?v=20261009-access-1"></script>
+</head>
+<body>
+<header>
+  <div class="brand-cluster">
+    <img class="company-logo" src="/Transfers/site-logo.png?v=2" alt="Fanatics Collectibles">
+    <div class="app-brand">
+      <nav class="app-tabs" aria-label="Main navigation">
+        <a href="index.html">Transfers</a>
+        <a href="drivers.html" data-admin-only>Drivers</a>
+        <a href="locations.html" data-admin-only>Locations</a>
+        <a href="summary.html" data-admin-only>Summary</a>
+      </nav>
+      <small><a data-admin-only class="live-board-link" href="/live-dock-board/">Live Trailer Board</a></small>
+    </div>
+  </div>
+  <div class="header-right">
+    <label class="theme-switch" for="themeToggle">
+      <span class="theme-label light-label">Light</span>
+      <input id="themeToggle" type="checkbox" role="switch" aria-label="Toggle dark theme">
+      <span class="switch-track"><span class="switch-thumb"></span></span>
+      <span class="theme-label dark-label">Dark</span>
+    </label>
+    <div class="user-session">
+      <span id="me"></span>
+      <small id="email"></small>
+      <button id="signout" class="hidden" type="button">Sign Out</button>
+    </div>
+  </div>
+</header>
+
+
+<main class="user-access-main">
+ <section class="panel">
+  <div class="panelhead"><h1>User Access</h1><button id="refreshUsers" type="button">Refresh</button></div>
+  <p>Owner and Admin have full access. Regular users have the Transfers board and build-transfer panel. New accounts start as User.</p>
+  <p id="usersMessage" role="status"></p>
+  <div style="overflow:auto"><table class="user-access-table"><thead><tr><th>Email</th><th class="user-display-name">Name</th><th>Role</th><th></th></tr></thead><tbody id="userAccessRows"></tbody></table></div>
+ </section>
+</main>
+<script src="theme.js"></script>
+<script src="users.js?v=20261009-access-1"></script>
+</body></html>

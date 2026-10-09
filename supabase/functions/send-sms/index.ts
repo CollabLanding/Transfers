@@ -77,6 +77,11 @@ Deno.serve(async (req) => {
   const user = authData?.user;
   if (authError || !user) return json({ error: "Authentication required." }, 401);
 
+  const { data: accessRole, error: accessError } = await userClient.rpc("get_transfer_access_role");
+  if (accessError || !["Owner", "Admin"].includes(String(accessRole))) {
+    return json({ error: "Admin access required for SMS." }, 403);
+  }
+
   let payload: Record<string, unknown>;
   try {
     payload = await req.json();

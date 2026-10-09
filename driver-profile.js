@@ -1,3 +1,4 @@
+(async()=>{await window.TransfersAccess.ready;if(!window.TransfersAccess.isAdmin())return;
 (()=>{
   "use strict";
   const $=id=>document.getElementById(id),C=window.TRANSFERS_CONFIG||{};
@@ -116,4 +117,6 @@
   sb=window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey);
   sb.auth.onAuthStateChange((_event,s)=>setTimeout(()=>session(s),0));
   sb.auth.getSession().then(({data,error})=>error?message(error.message,"error"):session(data.session));
+})();
+
 })();

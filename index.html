@@ -10,17 +10,18 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20261009-notes-centered">
+  <link rel="stylesheet" href="styles.css?v=20261009-access-1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
+  <script src="access-control.js?v=20261009-access-1"></script>
 <link rel="stylesheet" href="slot-status.css?v=20261008-compact-fields-2">
 <link rel="stylesheet" href="status-history.css?v=20261006-status-history-position-2">
 </head>
 <body>
 <header>
-  <div class="brand-cluster"><img class="company-logo" src="/Transfers/site-logo.png?v=2" alt="Fanatics Collectibles"><div class="app-brand"><nav class="app-tabs" aria-label="Main navigation"><a class="active" href="index.html" aria-current="page">Transfers</a><a href="drivers.html">Drivers</a><a href="locations.html">Locations</a>
-        <a href="summary.html">Summary</a></nav><small><a class="live-board-link" href="/live-dock-board/">Live Trailer Board</a></small></div></div>
-  <div class="header-right"><div class="nav"><button id="duplicateDay" class="duplicate-day-btn" type="button">Duplicate Day</button><button id="prev">←</button><button id="today">Today</button><input id="boardDate" type="date"><button id="next">→</button></div><label class="theme-switch" for="themeToggle"><span class="theme-label light-label">Light</span><input id="themeToggle" type="checkbox" role="switch" aria-label="Toggle dark theme"><span class="switch-track"><span class="switch-thumb"></span></span><span class="theme-label dark-label">Dark</span></label><div class="user-session"><span id="me"></span><small id="email"></small><button id="signout" class="hidden">Sign Out</button></div></div>
+  <div class="brand-cluster"><img class="company-logo" src="/Transfers/site-logo.png?v=2" alt="Fanatics Collectibles"><div class="app-brand"><nav class="app-tabs" aria-label="Main navigation"><a class="active" href="index.html" aria-current="page">Transfers</a><a href="drivers.html" data-admin-only>Drivers</a><a href="locations.html" data-admin-only>Locations</a>
+        <a href="summary.html" data-admin-only>Summary</a></nav><small><a data-admin-only class="live-board-link" href="/live-dock-board/">Live Trailer Board</a></small></div></div>
+  <div class="header-right"><div class="nav"><button id="duplicateDay" class="duplicate-day-btn" type="button">Duplicate Day</button><button id="prev">←</button><button id="today">Today</button><input id="boardDate" type="date"><button id="next">→</button></div><label class="theme-switch" for="themeToggle"><span class="theme-label light-label">Light</span><input id="themeToggle" type="checkbox" role="switch" aria-label="Toggle dark theme"><span class="switch-track"><span class="switch-thumb"></span></span><span class="theme-label dark-label">Dark</span></label><div class="user-session"><span id="me"></span><small id="accessRoleLabel"></small><small id="email"></small><button id="signout" class="hidden">Sign Out</button></div></div>
 </header>
 <main>
   <aside>
@@ -139,7 +140,7 @@
       <div id="recentActivity" class="activity-list"><div class="activity-empty">Loading activity…</div></div>
     </section>
     <section class="panel active-users-panel" aria-label="Active users">
-      <div class="active-users-heading"><h2>Active Users</h2><span id="activeUsersCount" class="active-count">0</span></div>
+      <div class="active-users-heading"><h2><a href="users.html" class="access-users-link" data-admin-only>Active Users</a></h2><span id="activeUsersCount" class="active-count">0</span></div>
       <div id="active" class="active-users-list"><div class="active-empty">Connecting…</div></div>
     </section>
   </aside>
@@ -208,13 +209,13 @@
 <script src="chain-visual.js?v=20261007-single-links-1"></script>
 <script src="board-links.js?v=20261006-custom-status-1"></script>
 <script src="status-history.js?v=20261006-status-history-edit-1"></script>
-<script src="app.js?v=20261009-scroll-cleanup"></script>
+<script src="app.js?v=20261009-access-1"></script>
 <script src="order-status.js?v=20260921-planned-default"></script>
-<script src="recent-activity.js?v=20261007-move-number-live-2"></script>
+<script src="recent-activity.js?v=20261009-access-1"></script>
 <script src="duplicate-transfer.js?v=20260923-deadlines"></script>
 <script src="duplicate-day.js?v=20260923-deadlines"></script>
 <script src="theme.js"></script>
-<script src="chat.js?v=20261006-chat-activity-swap-1"></script>
-<script src="sms.js?v=20260921-infobip"></script>
+<script src="chat.js?v=20261009-access-1"></script>
+<script src="sms.js?v=20261009-access-1"></script>
 </body>
 </html>

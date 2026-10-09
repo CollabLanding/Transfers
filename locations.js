@@ -1,3 +1,4 @@
+(async()=>{await window.TransfersAccess.ready;if(!window.TransfersAccess.isAdmin())return;
 (()=>{
   const C=window.TRANSFERS_CONFIG||{};
   const live=!!(C.supabaseUrl&&C.supabaseAnonKey&&window.supabase);
@@ -334,4 +335,6 @@
     sb.auth.getSession().then(r=>session(r.data.session));
     sb.auth.onAuthStateChange((_event,s)=>session(s));
   }
+})();
+
 })();

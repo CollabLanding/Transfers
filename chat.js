@@ -108,6 +108,9 @@
   }
 
   async function start(session){
+    await window.TransfersAccess.ready;
+    await window.TransfersAccess.refresh(session);
+    if(!window.TransfersAccess.isAdmin())session=null;
     currentUser=session?.user||null;
     if(!currentUser){
       list.innerHTML='<div class="chat-empty">Sign in to use Team Chat.</div>';
@@ -118,7 +121,7 @@
     }
 
     form.classList.remove("hidden");
-    const isAdmin=String(currentUser.email||"").trim().toLowerCase()===ADMIN_EMAIL;
+    const isAdmin=window.TransfersAccess.isAdmin();
     clearButton?.classList.toggle("hidden",!isAdmin);
 
     displayName=emailName(currentUser.email);
@@ -225,7 +228,7 @@
   });
 
   clearButton?.addEventListener("click",async()=>{
-    if(!currentUser||String(currentUser.email||"").trim().toLowerCase()!==ADMIN_EMAIL)return;
+    if(!currentUser||!window.TransfersAccess.isAdmin())return;
     if(!confirm("Clear all Team Chat messages? This cannot be undone."))return;
 
     clearButton.disabled=true;
@@ -250,6 +253,8 @@
     }
   });
 
+  document.addEventListener("transfer-access-changed",()=>{if(!window.TransfersAccess.isAdmin()){currentRoleLost()} });
+  function currentRoleLost(){currentUser=null;if(channel){sb.removeChannel(channel);channel=null}list.innerHTML="";}
   sb.auth.getSession().then(({data})=>start(data?.session||null));
   sb.auth.onAuthStateChange((_event,session)=>start(session));
 })();

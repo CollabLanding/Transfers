@@ -1,3 +1,4 @@
+(async()=>{await window.TransfersAccess.ready;if(!window.TransfersAccess.isAdmin())return;
 (()=>{
   const C=window.TRANSFERS_CONFIG||{};
   const openBtn=document.getElementById("textDriver");
@@ -198,4 +199,5 @@
   });
 
   updateChars();
+})();
 })();
