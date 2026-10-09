@@ -3,7 +3,7 @@
  const config=window.TRANSFERS_CONFIG||{},sb=window.supabase.createClient(config.supabaseUrl,config.supabaseAnonKey);
  const dialog=document.createElement("dialog");dialog.className="user-profile-dialog";
  dialog.setAttribute("aria-labelledby","userProfileTitle");
- dialog.innerHTML='<div class="panelhead"><h2 id="userProfileTitle">My Profile</h2><button class="iconbtn profile-close" type="button" aria-label="Close profile">×</button></div><form id="userProfileForm"><label>Username<span id="profileUsername"></span></label><label>Email<span id="profileEmail"></span></label><div class="profile-color-row"><label>Bubble color<input id="profileBubbleColor" type="color" value="#1d5c8f"></label><span id="profileBubblePreview" class="editor-bubble profile-bubble-preview" aria-label="Your bubble preview"></span></div><p class="profile-help">Your bubble shows when you open a transfer to edit it.</p><p id="userProfileMessage" role="status" aria-live="polite"></p><div class="modalactions"><button type="button" class="profile-close">Cancel</button><button id="saveUserProfile" type="submit" class="primary">Save Profile</button></div></form>';
+ dialog.innerHTML='<div class="panelhead"><h2 id="userProfileTitle">My Profile</h2><button class="iconbtn profile-close" type="button" aria-label="Close profile">×</button></div><form id="userProfileForm"><label>Username<span id="profileUsername"></span></label><label>Email<span id="profileEmail"></span></label><div class="profile-color-row"><label>Bubble color<input id="profileBubbleColor" type="color" value="#1d5c8f"></label><span id="profileBubblePreview" class="editor-bubble profile-bubble-preview" aria-label="Your bubble preview"></span></div><p class="profile-help">Your bubble shows when you open a transfer to edit it.</p><p><a href="password.html">Change Password</a></p><p id="userProfileMessage" role="status" aria-live="polite"></p><div class="modalactions"><button type="button" class="profile-close">Cancel</button><button id="saveUserProfile" type="submit" class="primary">Save Profile</button></div></form>';
  document.body.appendChild(dialog);
  const $=id=>dialog.querySelector("#"+id),form=$("userProfileForm"),message=$("userProfileMessage"),save=$("saveUserProfile"),picker=$("profileBubbleColor"),preview=$("profileBubblePreview");
  let account=null,displayName="",working=false,version=0;
@@ -23,7 +23,7 @@
   }catch(error){if(token===version)message.textContent=error.message||"Could not load your profile."}
  }
  const close=()=>{if(working)return;version++;dialog.close()};
- buttons.forEach(button=>button.addEventListener("click",open));dialog.querySelectorAll(".profile-close").forEach(button=>button.addEventListener("click",close));
+ buttons.forEach(button=>button.addEventListener("click",event=>{event.preventDefault();open()}));dialog.querySelectorAll(".profile-close").forEach(button=>button.addEventListener("click",close));
  dialog.addEventListener("cancel",event=>{if(working)event.preventDefault();else version++});
  picker.addEventListener("input",updatePreview);
  form.addEventListener("submit",async event=>{
