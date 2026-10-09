@@ -1,15 +1,16 @@
 (()=>{
 const C=window.TRANSFERS_CONFIG||{},live=!!(C.supabaseUrl&&C.supabaseAnonKey),sb=live?window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey):null;
 let user=null,profile=null,items=[],drivers=[],locations=[],driverSchedule=[],presence=null,dataChannel=null,optionContext=null,ignoreClickUntil=0,draggedDriver=null,draggedTransferId=null,dragGrabOffsetPx=0,audioCtx=null,lastPlanningDing=0,transferInfoBaseline=null;
-let transferAutoScrollFrame=0,transferAutoScrollX=0,transferAutoScrollY=0;
+let transferAutoScrollFrame=0,transferAutoScrollX=0,transferAutoScrollY=0,transferAutoScrollUpdated=0;
 const $=id=>document.getElementById(id),E={form:$("form"),edit:$("editId"),date:$("date"),time:$("time"),duration:$("duration"),pickupByDate:$("pickupByDate"),pickupByTime:$("pickupByTime"),deliverByDate:$("deliverByDate"),deliverByTime:$("deliverByTime"),driver:$("driver"),origin:$("origin"),destination:$("destination"),pallet:$("pallet"),job:$("job"),status:$("status"),urgent:$("urgent"),save:$("save"),del:$("delete"),cancel:$("cancel"),textDriver:$("textDriver"),msg:$("msg"),slotStatusEditor:$("slotStatusEditor"),slotStatusTitle:$("slotStatusTitle"),slotStatusMeta:$("slotStatusMeta"),slotStatusNotes:$("slotStatusNotes"),slotStatusSave:$("slotStatusSave"),slotStatusCancel:$("slotStatusCancel"),slotStatusClose:$("slotStatusClose"),slotStatusMsg:$("slotStatusMsg"),boardDate:$("boardDate"),grid:$("grid"),title:$("title"),currentTime:$("scheduleCurrentTime"),mode:$("mode"),me:$("me"),email:$("email"),active:$("active"),login:$("login"),loginForm:$("loginForm"),loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg"),signout:$("signout"),formTitle:$("formTitle"),optionModal:$("optionModal"),optionForm:$("optionForm"),optionTitle:$("optionTitle"),optionLabel:$("optionLabel"),optionName:$("optionName"),optionMsg:$("optionMsg"),optionClose:$("optionClose"),optionCancel:$("optionCancel"),statusHistory:$("statusHistory"),statusHistoryScreen:$("statusHistoryScreen"),statusHistoryBack:$("statusHistoryBack")};
 const key="transfers-demo-v2",driverKey="transfers-demo-drivers-v1",locationKey="transfers-demo-locations-v1",PX15=20,GRID_START=210,GRID_END=1320,GRID_HEIGHT=((GRID_END-GRID_START)/15)*PX15;
 const today=()=>{let d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)},add=(iso,n)=>{let d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)},fmt=t=>{let [h,m]=String(t).slice(0,5).split(":").map(Number);return (h%12||12)+":"+String(m).padStart(2,"0")+" "+(h>=12?"PM":"AM")};
 const minToTime=m=>String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"),timeToMin=t=>{let [h,m]=String(t).slice(0,5).split(":").map(Number);return h*60+m};
 function startTransferAutoScroll(clientX,clientY){
-  transferAutoScrollX=clientX;transferAutoScrollY=clientY;
+  transferAutoScrollX=clientX;transferAutoScrollY=clientY;transferAutoScrollUpdated=Date.now();
   if(transferAutoScrollFrame)return;
   const tick=()=>{
+    if(Date.now()-transferAutoScrollUpdated>1000){stopTransferAutoScroll();return}
     const wrap=document.getElementById("gridWrap");
     if(!wrap){transferAutoScrollFrame=0;return}
     const rect=wrap.getBoundingClientRect(),edge=70,maxStep=24;
@@ -31,6 +32,11 @@ function stopTransferAutoScroll(){
 }
 window.startTransferAutoScroll=startTransferAutoScroll;
 window.stopTransferAutoScroll=stopTransferAutoScroll;
+// End edge scrolling even if the dragged element is removed during a drop.
+["drop","dragend","pointerup","pointercancel"].forEach(type=>document.addEventListener(type,stopTransferAutoScroll,true));
+window.addEventListener("blur",stopTransferAutoScroll);
+window.addEventListener("resize",stopTransferAutoScroll);
+document.addEventListener("visibilitychange",()=>{if(document.hidden)stopTransferAutoScroll()});
 
 function cardBaseTopPx(x){return ((timeToMin(x.scheduled_time)-GRID_START)/15)*PX15}
 function cardHeightPx(x){return Math.max(22,(Number(x.duration_minutes||60)/15)*PX15)}
@@ -296,7 +302,7 @@ function makeCard(x,visualTop=null,visualHeight=null,stacked=false){
  ["top","bottom"].forEach(edge=>{const h=document.createElement("span");h.className="resize-handle resize-"+edge;h.dataset.edge=edge;h.title=edge==="top"?"Drag to change start time and duration":"Drag to change duration";h.addEventListener("pointerdown",e=>beginTransferResize(e,x,b,edge));b.appendChild(h)});
  b.addEventListener("keydown",e=>{if(e.target===b&&(e.key==="Enter"||e.key===" ")){e.preventDefault();edit(x.id)}});
  b.addEventListener("dragstart",e=>{if(e.target.closest?.(".resize-handle,.load-chain")){e.preventDefault();return}ignoreClickUntil=Date.now()+500;draggedTransferId=x.id;const rect=b.getBoundingClientRect();dragGrabOffsetPx=Math.max(0,Math.min(rect.height,e.clientY-rect.top));b.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",x.id)});
- b.addEventListener("dragend",()=>{draggedTransferId=null;dragGrabOffsetPx=0;E.grid.querySelectorAll(".card.dragging").forEach(card=>card.classList.remove("dragging"));clearDropPreviews()});
+ b.addEventListener("dragend",()=>{stopTransferAutoScroll();draggedTransferId=null;dragGrabOffsetPx=0;E.grid.querySelectorAll(".card.dragging").forEach(card=>card.classList.remove("dragging"));clearDropPreviews()});
  b.onclick=()=>{if(Date.now()<ignoreClickUntil)return;edit(x.id)};
  return b
 }
@@ -337,6 +343,7 @@ function beginTransferResize(e,x,b,edge){
    paint()
  };
  const cleanup=()=>{
+   stopTransferAutoScroll();
    handle.removeEventListener("pointermove",move);
    handle.removeEventListener("pointerup",finish);
    handle.removeEventListener("pointercancel",cancel);
