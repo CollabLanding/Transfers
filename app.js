@@ -306,6 +306,14 @@ function makeCard(x,visualTop=null,visualHeight=null,stacked=false){
  b.onclick=()=>{if(Date.now()<ignoreClickUntil)return;edit(x.id)};
  return b
 }
+function syncResizeForm(id,start,duration,persisted=false){
+ if(E.edit.value!==String(id))return;
+ if(![...E.duration.options].some(option=>Number(option.value)===Number(duration))){
+  const option=document.createElement("option");option.value=String(duration);option.textContent=durationLabel(Number(duration));E.duration.appendChild(option);
+ }
+ E.duration.value=String(duration);E.time.value=minToTime(start);
+ if(persisted&&transferInfoBaseline){transferInfoBaseline.duration=E.duration.value;transferInfoBaseline.time=E.time.value}
+}
 function beginTransferResize(e,x,b,edge){
  if(e.button!==0)return;
  e.preventDefault();e.stopPropagation();
@@ -313,6 +321,7 @@ function beginTransferResize(e,x,b,edge){
  const handle=e.currentTarget,lane=b.parentElement;
  if(!lane?.classList.contains("lane"))return;
  const originalStart=timeToMin(x.scheduled_time),originalDuration=Number(x.duration_minutes),originalEnd=originalStart+originalDuration;
+ const formBefore=E.edit.value===String(x.id)?{time:E.time.value,duration:E.duration.value}:null;
  let nextStart=originalStart,nextDuration=originalDuration,finished=false;
  b.draggable=false;b.classList.add("resizing");
  handle.setPointerCapture?.(e.pointerId);
@@ -325,7 +334,8 @@ function beginTransferResize(e,x,b,edge){
  const paint=()=>{
    b.style.top=(((nextStart-GRID_START)/15)*PX15)+"px";
    b.style.height=Math.max(22,(nextDuration/15)*PX15)+"px";
-   b.dataset.resizeLabel=fmt(minToTime(nextStart))+" · "+durationLabel(nextDuration)
+   b.dataset.resizeLabel=fmt(minToTime(nextStart))+" · "+durationLabel(nextDuration);
+   syncResizeForm(x.id,nextStart,nextDuration)
  };
  const move=ev=>{
    ev.preventDefault();
@@ -356,7 +366,7 @@ function beginTransferResize(e,x,b,edge){
    resizeTransfer(x,nextStart,nextDuration)
  };
  const cancel=ev=>{
-   if(finished)return;finished=true;ev.preventDefault();cleanup();renderBoard()
+   if(finished)return;finished=true;ev.preventDefault();cleanup();if(formBefore)syncResizeForm(x.id,timeToMin(formBefore.time),Number(formBefore.duration));renderBoard()
  };
  handle.addEventListener("pointermove",move);
  handle.addEventListener("pointerup",finish);
@@ -370,10 +380,12 @@ async function resizeTransfer(x,newStartMinutes,newDuration){
    const r=await sb.from("transfers").update({scheduled_time:newTime,duration_minutes:newDuration,updated_at:new Date().toISOString()}).eq("id",x.id).select("*").single();
    if(r.error){
      x.scheduled_time=old.scheduled_time;x.duration_minutes=old.duration_minutes;renderBoard();
+     if(E.duration.value===String(newDuration)&&E.time.value===newTime)syncResizeForm(x.id,timeToMin(old.scheduled_time),Number(old.duration_minutes),true);
      msg("Could not resize transfer: "+r.error.message,"error");return
    }
    replaceItem(r.data);renderBoard()
  }else saveLocal();
+ if(E.duration.value===String(newDuration)&&E.time.value===newTime)syncResizeForm(x.id,newStartMinutes,newDuration,true);
  msg("Transfer resized to "+fmt(newTime)+" · "+durationLabel(newDuration)+".","ok")
 }
 function durationLabel(n){if(n<60)return n+" min";let h=Math.floor(n/60),m=n%60;return h+" hr"+(h!==1?"s":"")+(m?" "+m+" min":"")}
