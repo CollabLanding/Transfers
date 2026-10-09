@@ -10,10 +10,10 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20261009-access-1">
+  <link rel="stylesheet" href="styles.css?v=20261009-vendor-1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
-  <script src="access-control.js?v=20261009-access-1"></script>
+  <script src="access-control.js?v=20261009-vendor-1"></script>
 <link rel="stylesheet" href="slot-status.css?v=20261008-compact-fields-2">
 <link rel="stylesheet" href="status-history.css?v=20261006-status-history-position-2">
 </head>
@@ -25,9 +25,9 @@
 </header>
 <main>
   <aside>
-    <section class="panel">
+    <section class="panel build-transfer-panel">
       <div class="transfer-form-head">
-        <h2 id="formTitle">Build Transfer Load</h2>
+        <h2 id="formTitle">Build Transfer Load</h2><button id="vendorSignout" class="vendor-only" type="button">Sign Out</button>
       </div>
       <form id="form">
         <input id="editId" type="hidden">
@@ -87,7 +87,7 @@
           <button type="button" class="danger hidden" id="delete">Delete</button>
           <button type="button" class="hidden" id="cancel">Cancel Edit</button>
         </div>
-        <p id="msg"></p>
+        <p id="msg" role="status" aria-live="polite"></p>
       </form>
       <section id="slotStatusEditor" class="slot-status-editor hidden" aria-label="Edit status notes">
         <div class="slot-status-editor-head">
@@ -209,7 +209,7 @@
 <script src="chain-visual.js?v=20261007-single-links-1"></script>
 <script src="board-links.js?v=20261006-custom-status-1"></script>
 <script src="status-history.js?v=20261006-status-history-edit-1"></script>
-<script src="app.js?v=20261009-access-1"></script>
+<script src="app.js?v=20261009-vendor-1"></script>
 <script src="order-status.js?v=20260921-planned-default"></script>
 <script src="recent-activity.js?v=20261009-access-1"></script>
 <script src="duplicate-transfer.js?v=20260923-deadlines"></script>

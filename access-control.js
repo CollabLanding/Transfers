@@ -10,7 +10,7 @@
     if(session===undefined){const result=await sb.auth.getSession();session=result.data?.session}
     userId=session?.user?.id||null;
     let next=null;
-    if(userId){const result=await sb.rpc("get_transfer_access_role");next=result.error?"User":result.data}
+    if(userId){const result=await sb.rpc("get_transfer_access_role");next=result.error?"Vendor":result.data}
     if(version!==generation)return role;
     const previousRole=role;
     role=next;

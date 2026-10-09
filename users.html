@@ -10,11 +10,11 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20261009-access-1">
+  <link rel="stylesheet" href="styles.css?v=20261009-vendor-1">
   <link rel="stylesheet" href="summary.css?v=20261008-compact-fields-2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
-  <script src="access-control.js?v=20261009-access-1"></script>
+  <script src="access-control.js?v=20261009-vendor-1"></script>
 </head>
 <body>
 <header>
@@ -49,11 +49,11 @@
 <main class="user-access-main">
  <section class="panel">
   <div class="panelhead"><h1>User Access</h1><button id="refreshUsers" type="button">Refresh</button></div>
-  <p>Owner and Admin have full access. Regular users have the Transfers board and build-transfer panel. New accounts start as User.</p>
+  <p>Owner and Admin have full access. Regular users have the Transfers board and build-transfer panel. Vendors can only build new transfers. New accounts start as Vendor.</p>
   <p id="usersMessage" role="status"></p>
   <div style="overflow:auto"><table class="user-access-table"><thead><tr><th>Email</th><th class="user-display-name">Name</th><th>Role</th><th></th></tr></thead><tbody id="userAccessRows"></tbody></table></div>
  </section>
 </main>
 <script src="theme.js"></script>
-<script src="users.js?v=20261009-access-1"></script>
+<script src="users.js?v=20261009-vendor-1"></script>
 </body></html>

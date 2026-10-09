@@ -1701,3 +1701,20 @@ html[data-access-role="User"] main{grid-template-columns:380px minmax(0,1fr)}
 
 html[data-access-role="User"] #statusHistory,html[data-access-role="User"] .created-by-link{pointer-events:none}
 html[data-access-role="User"] #statusHistory{display:none!important}
+
+/* Vendors see only the new-load builder. */
+.vendor-only{display:none}
+html[data-access-role="Vendor"] .vendor-only{display:inline-block}
+html[data-access-role="Vendor"] body>header,
+html[data-access-role="Vendor"] main>.board,
+html[data-access-role="Vendor"] main>.right-sidebar,
+html[data-access-role="Vendor"] .chat-panel,
+html[data-access-role="Vendor"] #slotStatusEditor,
+html[data-access-role="Vendor"] .build-transfer-panel .transfer-actions>button:not(#save),
+html[data-access-role="Vendor"] .build-transfer-panel a{display:none!important}
+html[data-access-role="Vendor"] main{display:block;max-width:500px;margin:0 auto;padding:16px}
+html[data-access-role="Vendor"] main>aside{width:100%;display:block}
+html[data-access-role="Vendor"] main>aside>.panel:not(.build-transfer-panel){display:none!important}
+html[data-access-role="Vendor"] .build-transfer-panel{width:100%}
+html[data-access-role="Vendor"] #msg{min-height:20px;margin-top:12px;line-height:1.5}
+#vendorSignout{font-size:11px;padding:4px 8px;margin-left:auto}

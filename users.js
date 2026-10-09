@@ -15,7 +15,7 @@
   if(r.error){message.textContent=r.error.message;rows.innerHTML="";return}
   rows.innerHTML=(r.data||[]).map(u=>{
    const locked=u.role==="Owner"||u.id===window.TransfersAccess.userId;
-   return '<tr data-user-id="'+esc(u.id)+'"><td>'+esc(u.email)+'</td><td class="user-display-name">'+esc(u.display_name)+'</td><td>'+(locked?esc(u.role)+(u.role==="Owner"?' · Protected':' · Your account'):'<select aria-label="Role for '+esc(u.email)+'"><option value="User"'+(u.role==="User"?' selected':'')+'>User</option><option value="Admin"'+(u.role==="Admin"?' selected':'')+'>Admin</option></select>')+'</td><td>'+(locked?'':'<button type="button">Save</button>')+'</td></tr>';
+   return '<tr data-user-id="'+esc(u.id)+'"><td>'+esc(u.email)+'</td><td class="user-display-name">'+esc(u.display_name)+'</td><td>'+(locked?esc(u.role)+(u.role==="Owner"?' · Protected':' · Your account'):'<select aria-label="Role for '+esc(u.email)+'"><option value="Vendor"'+(u.role==="Vendor"?' selected':'')+'>Vendor</option><option value="User"'+(u.role==="User"?' selected':'')+'>User</option><option value="Admin"'+(u.role==="Admin"?' selected':'')+'>Admin</option></select>')+'</td><td>'+(locked?'':'<button type="button">Save</button>')+'</td></tr>';
   }).join("");
   rows.querySelectorAll("button").forEach(button=>button.onclick=async()=>{
    const row=button.closest("tr");button.disabled=true;
