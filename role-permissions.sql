@@ -40,7 +40,7 @@ language plpgsql security definer set search_path='' as $$
 declare r text;f jsonb;k text;d text;v integer;
 begin
  if auth.uid() is null or transfers_private.current_access_role()<>'Owner' then raise exception 'Only the Owner can edit permissions' using errcode='42501';end if;
- select revision into v from transfers_private.permission_config for update;
+ select revision into v from transfers_private.permission_config where singleton=true for update;
  if p_revision is distinct from v then raise exception 'Permissions changed since you opened this grid. Close and reopen it before saving.';end if;
  if p_roles is null or jsonb_typeof(p_roles)<>'object' or (select count(*) from jsonb_object_keys(p_roles))<>3 then raise exception 'Provide Admin, User, and Vendor permissions';end if;
  foreach r in array array['Admin','User','Vendor'] loop
@@ -58,7 +58,7 @@ begin
  end loop;
  update transfers_private.role_permissions set permissions=p_roles->r where role=r;
  end loop;
- update transfers_private.permission_config set revision=revision+1,updated_at=now(),updated_by=auth.uid();
+ update transfers_private.permission_config set revision=revision+1,updated_at=now(),updated_by=auth.uid() where singleton=true;
 end $$;
 create function public.save_transfer_role_permissions(p_roles jsonb,p_revision integer) returns void language sql security invoker set search_path='' as $$select transfers_private.save_role_permissions(p_roles,p_revision);$$;
 revoke all on function transfers_private.has_permission(text),transfers_private.has_any_permission(text[]),transfers_private.my_permissions(),transfers_private.read_role_permissions(),transfers_private.save_role_permissions(jsonb,integer),public.get_transfer_access(),public.has_transfer_permission(text),public.get_transfer_role_permissions(),public.save_transfer_role_permissions(jsonb,integer) from public,anon;
