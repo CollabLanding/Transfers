@@ -1760,4 +1760,4 @@ html[data-board-access="false"]:not([data-build-only="true"]) body:has(main>.boa
 .card .card-topline{margin-right:0}
 .card .card-topline .card-move{margin-left:auto!important;text-align:right}
 .card.has-editor-bubbles .card-route,.card.has-editor-bubbles .card-job{margin-right:24px}
-.card.has-editor-bubbles .card-creator{right:28px}
+.card.has-editor-bubbles .card-creator{right:7px;text-align:right}
