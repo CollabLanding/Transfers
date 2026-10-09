@@ -29,9 +29,9 @@
   const grid=document.getElementById("grid");if(!grid)return;
   grid.querySelectorAll(".transfer-editor-marker").forEach(node=>node.remove());
   grid.querySelectorAll(".card[data-id]").forEach(card=>{
-   const users=[...(grouped.get(String(card.dataset.id))?.values()||[])];if(!users.length)return;
+   const users=[...(grouped.get(String(card.dataset.id))?.values()||[])];card.classList.toggle("has-editor-bubbles",users.length>0);if(!users.length)return;
    const marker=document.createElement("div");marker.className="editor-bubbles transfer-editor-marker";marker.dataset.transferId=card.dataset.id;
-   marker.style.top=Math.max(0,parseFloat(card.style.top||"0")-22)+"px";fill(marker,users);card.parentElement.appendChild(marker);
+   fill(marker,users);card.appendChild(marker);
   });
  }
  window.TransferEditors={initials,color,foreground,render,setLocal:user=>{local=user;render()},sync:users=>{online=users||[];render()}};
