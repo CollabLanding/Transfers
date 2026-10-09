@@ -1,4 +1,4 @@
-(async()=>{await window.TransfersAccess.ready;if(!window.TransfersAccess.isAdmin())return;
+(async()=>{await window.TransfersAccess.ready;if(!window.TransfersAccess.can("locations"))return;
 (()=>{
   const C=window.TRANSFERS_CONFIG||{};
   const live=!!(C.supabaseUrl&&C.supabaseAnonKey&&window.supabase);

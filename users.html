@@ -10,11 +10,11 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20261009-permissions-grid">
-  <link rel="stylesheet" href="summary.css?v=20261008-compact-fields-2">
+  <link rel="stylesheet" href="styles.css?v=20261009-permissions">
+  <link rel="stylesheet" href="summary.css?v=20261009-permissions">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js"></script>
-  <script src="access-control.js?v=20261009-vendor-1"></script>
+  <script src="config.js?v=20261009-permissions"></script>
+  <script src="access-control.js?v=20261009-permissions"></script>
 </head>
 <body>
 <header>
@@ -23,11 +23,11 @@
     <div class="app-brand">
       <nav class="app-tabs" aria-label="Main navigation">
         <a href="index.html">Transfers</a>
-        <a href="drivers.html" data-admin-only>Drivers</a>
-        <a href="locations.html" data-admin-only>Locations</a>
-        <a href="summary.html" data-admin-only>Summary</a>
+        <a href="drivers.html">Drivers</a>
+        <a href="locations.html">Locations</a>
+        <a href="summary.html">Summary</a>
       </nav>
-      <small><a data-admin-only class="live-board-link" href="/live-dock-board/">Live Trailer Board</a></small>
+      <small><a class="live-board-link" href="/live-dock-board/">Live Trailer Board</a></small>
     </div>
   </div>
   <div class="header-right">
@@ -56,9 +56,10 @@
 </main>
 <dialog id="permissionsDialog" class="permissions-dialog" aria-labelledby="permissionsTitle">
  <div class="panelhead"><h2 id="permissionsTitle">Permissions</h2><button id="closePermissions" class="iconbtn" type="button" aria-label="Close permissions">×</button></div>
- <p id="permissionsHelp">Current access by role. Checked boxes indicate an available feature. This grid shows the permissions currently in effect.</p>
- <div class="permissions-table-wrap"><table class="permissions-table" aria-describedby="permissionsHelp"><thead><tr><th scope="col">Feature</th><th scope="col">Owner</th><th scope="col">Admin</th><th scope="col">User</th><th scope="col">Vendor</th></tr></thead><tbody id="permissionsRows"></tbody></table></div>
+ <p id="permissionsHelp">Checked boxes allow a feature. Only the Owner can change and save permissions. Required parent features are selected automatically.</p>
+ <div class="permissions-table-wrap"><table class="permissions-table" aria-describedby="permissionsHelp"><thead><tr><th scope="col">Feature</th><th scope="col">Admin</th><th scope="col">User</th><th scope="col">Vendor</th></tr></thead><tbody id="permissionsRows"></tbody></table></div>
+ <div class="permissions-footer"><p id="permissionsMessage" role="status"></p><button id="savePermissions" class="primary" type="button">Save Permissions</button></div>
 </dialog>
-<script src="theme.js"></script>
-<script src="users.js?v=20261009-permissions-grid"></script>
+<script src="theme.js?v=20261009-permissions"></script>
+<script src="users.js?v=20261009-permissions"></script>
 </body></html>

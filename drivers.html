@@ -10,23 +10,23 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20261009-access-1">
+  <link rel="stylesheet" href="styles.css?v=20261009-permissions">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <link rel="stylesheet" href="driver-profile.css?v=20261008-compact-fields-2">
-  <script src="config.js"></script>
-  <script src="access-control.js?v=20261009-access-1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js?v=20261009-permissions"></script>
+  <link rel="stylesheet" href="driver-profile.css?v=20261009-permissions">
+  <script src="config.js?v=20261009-permissions"></script>
+  <script src="access-control.js?v=20261009-permissions"></script>
 </head>
 <body>
 <header>
   <div class="brand-cluster"><img class="company-logo" src="/Transfers/site-logo.png?v=2" alt="Fanatics Collectibles"><div class="app-brand">
     <nav class="app-tabs" aria-label="Main navigation">
       <a href="index.html">Transfers</a>
-      <a class="active" href="drivers.html" aria-current="page" data-admin-only>Drivers</a>
-      <a href="locations.html" data-admin-only>Locations</a>
-        <a href="summary.html" data-admin-only>Summary</a>
+      <a class="active" href="drivers.html" aria-current="page">Drivers</a>
+      <a href="locations.html">Locations</a>
+        <a href="summary.html">Summary</a>
     </nav>
-    <small><a data-admin-only class="live-board-link" href="/live-dock-board/">Live Trailer Board</a></small>
+    <small><a class="live-board-link" href="/live-dock-board/">Live Trailer Board</a></small>
   </div></div>
   <div class="header-right">
     <div class="nav week-nav">
@@ -173,8 +173,8 @@
   </form>
 </div>
 
-<script src="driver-schedule.js?v=20261009-access-1"></script>
-<script src="driver-history.js?v=20261006-driver-history-1"></script>
-<script src="theme.js"></script>
+<script src="driver-schedule.js?v=20261009-permissions"></script>
+<script src="driver-history.js?v=20261009-permissions"></script>
+<script src="theme.js?v=20261009-permissions"></script>
 </body>
 </html>

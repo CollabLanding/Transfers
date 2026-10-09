@@ -43,7 +43,7 @@
     const pad=n=>String(n).padStart(2,"0");
     return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds());
   }
-  function openEditor(changeId,status,at){
+  function openEditor(changeId,status,at){if(!window.TransfersAccess.can("edit_status_history"))return;
     ensureEditor(); if(!E.editor||!changeId||!activeHistory||!activeTransfer)return;
     const index=activeHistory.changes.findIndex(change=>String(change.id)===String(changeId)); if(index<0)return;
     const previous=activeHistory.changes[index-1]?.at||new Date(activeTransfer.created_at);
@@ -54,7 +54,7 @@
     E.editor.querySelector(".status-history-editor-help").textContent="Choose a time between the surrounding status changes.";
     E.editor.classList.remove("hidden"); setTimeout(()=>E.editorTime.focus(),0);
   }
-  async function saveEditedTime(){
+  async function saveEditedTime(){if(!window.TransfersAccess.can("edit_status_history"))return;
     if(!editingChange||!E.editorTime)return;
     const parsed=new Date(E.editorTime.value);
     if(!Number.isFinite(parsed.getTime())){E.editorMsg.textContent="Enter a valid date and time.";return;}
@@ -277,7 +277,7 @@
     graph(buildIntervals(transfer,activityResult.data||[]),transfer);
   }
 
-  function open(){
+  function open(){if(!window.TransfersAccess.can("status_history"))return;
     if(!E.screen)return;
     restoreFocus=document.activeElement;
     document.body.classList.add("status-history-open");

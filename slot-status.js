@@ -27,7 +27,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
         const block = document.createElement('div');
         block.className = 'slot-status-block slot-status-' + statuses.indexOf(row.status) + (row.notes ? ' has-notes' : '');
         block.draggable = true; block.dataset.statusId = row.id;
-        block.addEventListener('dragstart', e => {
+        block.addEventListener('dragstart', e => {if(!window.TransfersAccess.can('manage_status')){e.preventDefault();return;}
           if (busy || dialog.open || !getUser() || e.target.closest('.load-chain')) { e.preventDefault(); return; }
           e.stopPropagation(); clear();
           moving = {row, date:getDate(), offset:Math.max(0,e.clientY-block.getBoundingClientRect().top)};
@@ -50,7 +50,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
           e.preventDefault(); e.stopPropagation();
           if (!busy) onSelectStatus?.(row);
         });
-        remove.onclick = async e => {
+        remove.onclick = async e => {if(!window.TransfersAccess.can('manage_status'))return;
           e.stopPropagation(); remove.disabled = true; block.remove(); remove.remove();
           try {
             if (sb) { const r = await sb.from(table).delete().eq('id', row.id); if (r.error) throw r.error; }
@@ -68,7 +68,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
     }
     getLinks?.().render();
   }
-  async function saveNotes(row, notes) {
+  async function saveNotes(row, notes) {if(!window.TransfersAccess.can('status_notes'))return;
     const value = String(notes ?? '');
     busy = true;
     try {
@@ -96,7 +96,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
     }catch(error){report('Could not update status: '+error.message,'error');paint();}
     finally{busy=false;}
   }
-  function beginResize(e,row,block,remove,edge) {
+  function beginResize(e,row,block,remove,edge) {if(!window.TransfersAccess.can('manage_status'))return;
     if(e.button!==0||busy||moving||!getUser())return;
     e.preventDefault();e.stopPropagation();clear();
     const handle=e.currentTarget,lane=block.parentElement,pointer=e.pointerId,originalDate=getDate();
@@ -180,7 +180,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
     selection.lane.append(node);
   }
   function minute(e, lane) { return Math.max(start, Math.min(end - 15, start + Math.floor((e.clientY - lane.getBoundingClientRect().top) / px) * 15)); }
-  grid.addEventListener('pointerdown', e => {
+  grid.addEventListener('pointerdown', e => {if(!window.TransfersAccess.can('create_status'))return;
     if (e.button !== 0 || e.isPrimary === false || dialog.open || busy || !getUser()) return;
     const lane = e.target.closest('.lane');
     if (!lane || e.target.closest('.card,.slot-status-block,button,input,select')) return;
@@ -208,7 +208,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !dialog.open) clear(); });
   for (const status of statuses) {
     const button = document.createElement('button'); button.type = 'button'; button.textContent = status;
-    button.onclick = async () => {
+    button.onclick = async () => {if(!window.TransfersAccess.can('create_status'))return;
       if (!selection || busy) return;
       let custom_title = null;
       if (status === 'Custom') {

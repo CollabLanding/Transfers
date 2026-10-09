@@ -1678,18 +1678,6 @@ textarea{padding-top:6px!important;padding-bottom:6px!important;resize:vertical}
 /* Center the notes line within its compact field. */
 .slot-status-editor #slotStatusNotes{padding:6px 7px!important}
 
-/* Roles default to hidden until the authenticated role has loaded. */
-[data-admin-only][hidden],html:not([data-access-role="Owner"]):not([data-access-role="Admin"]) [data-admin-only]{display:none!important}
-html:not([data-access-role]) main{visibility:hidden}
-html[data-admin-page]:not([data-access-role="Owner"]):not([data-access-role="Admin"]) main{display:none!important}
-html[data-access-role="User"] .chat-panel,
-html[data-access-role="User"] .right-sidebar,
-html[data-access-role="User"] #textDriver,
-html[data-access-role="User"] [data-action="text"],
-html[data-access-role="User"] [data-action="sms"]{display:none!important}
-html[data-access-role="User"] main{grid-template-columns:380px minmax(0,1fr)}
-@media(max-width:1050px){html[data-access-role="User"] main{grid-template-columns:350px minmax(0,1fr)}}
-@media(max-width:900px){html[data-access-role="User"] main{grid-template-columns:1fr}}
 .access-users-link{color:inherit;text-decoration:none}
 .access-users-link:hover{text-decoration:underline}
 .user-access-main{display:block;max-width:1100px;margin:auto}
@@ -1698,26 +1686,6 @@ html[data-access-role="User"] main{grid-template-columns:380px minmax(0,1fr)}
 .user-access-table select{width:110px}
 .user-access-table button{padding:6px 12px}
 @media(max-width:600px){.user-access-table{font-size:12px}.user-access-table th,.user-access-table td{padding:8px 4px}.user-access-table .user-display-name{display:none}}
-
-html[data-access-role="User"] #statusHistory,html[data-access-role="User"] .created-by-link{pointer-events:none}
-html[data-access-role="User"] #statusHistory{display:none!important}
-
-/* Vendors see only the new-load builder. */
-.vendor-only{display:none}
-html[data-access-role="Vendor"] .vendor-only{display:inline-block}
-html[data-access-role="Vendor"] body>header,
-html[data-access-role="Vendor"] main>.board,
-html[data-access-role="Vendor"] main>.right-sidebar,
-html[data-access-role="Vendor"] .chat-panel,
-html[data-access-role="Vendor"] #slotStatusEditor,
-html[data-access-role="Vendor"] .build-transfer-panel .transfer-actions>button:not(#save),
-html[data-access-role="Vendor"] .build-transfer-panel a{display:none!important}
-html[data-access-role="Vendor"] main{display:block;max-width:500px;margin:0 auto;padding:16px}
-html[data-access-role="Vendor"] main>aside{width:100%;display:block}
-html[data-access-role="Vendor"] main>aside>.panel:not(.build-transfer-panel){display:none!important}
-html[data-access-role="Vendor"] .build-transfer-panel{width:100%}
-html[data-access-role="Vendor"] #msg{min-height:20px;margin-top:12px;line-height:1.5}
-#vendorSignout{font-size:11px;padding:4px 8px;margin-left:auto}
 
 .user-access-tools{display:flex;align-items:center;gap:8px}
 .permissions-dialog{width:min(960px,calc(100vw - 32px));max-height:85dvh;padding:20px;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);box-shadow:0 20px 60px rgba(0,0,0,.35)}
@@ -1733,3 +1701,28 @@ html[data-access-role="Vendor"] #msg{min-height:20px;margin-top:12px;line-height
 .permissions-table .permission-group th{background:var(--bg);font-weight:700;color:var(--text)}
 .permissions-table .permission-check{width:17px;height:17px;min-height:17px;margin:0;padding:0;accent-color:var(--accent);opacity:1;vertical-align:middle}
 @media(max-width:600px){.permissions-dialog{padding:12px}.permissions-table th,.permissions-table td{padding:9px 6px}.permissions-table th:first-child{min-width:220px}.permissions-table thead th:not(:first-child),.permissions-table td{min-width:65px}}
+
+/* Shared permission flags govern every role. */
+[data-access-denied="true"]{display:none!important}
+html:not([data-access-role]) main{visibility:hidden}
+html[data-page-allowed="false"] main{display:none!important}
+html[data-board-access="false"] main>.board,html[data-sidebar-access="false"] main>.right-sidebar,
+html[data-build-access="false"] .build-transfer-panel{display:none!important}
+html[data-sidebar-access="false"] body:has(main>.board) main{grid-template-columns:380px minmax(0,1fr)}
+html[data-build-access="false"][data-chat-access="false"] body:has(main>.board) main{grid-template-columns:minmax(0,1fr) 186px}
+html[data-build-access="false"][data-chat-access="false"][data-sidebar-access="false"] body:has(main>.board) main{grid-template-columns:minmax(0,1fr)}
+html[data-build-only="true"] body>header{display:none!important}
+html[data-build-only="true"] main{display:block;max-width:500px;margin:0 auto;padding:16px}
+html[data-build-only="true"] main>aside{display:block;width:100%}
+.vendor-only{display:none}
+html[data-build-only="true"] .vendor-only{display:inline-block}
+#vendorSignout{font-size:11px;padding:4px 8px;margin-left:auto}
+.permissions-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
+.permissions-footer p{margin:0;font-size:12px}
+.permission-check:not(:disabled){cursor:pointer}
+@media(max-width:1050px){html[data-sidebar-access="false"] body:has(main>.board) main{grid-template-columns:350px minmax(0,1fr)}}
+@media(max-width:900px){html[data-access-role] body:has(main>.board) main{grid-template-columns:1fr}}
+
+html[data-summary-edit="false"] .record-print-value{display:inline!important}
+
+html[data-board-access="false"]:not([data-build-only="true"]) body:has(main>.board) main{grid-template-columns:minmax(260px,380px) minmax(0,1fr)}

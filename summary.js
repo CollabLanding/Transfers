@@ -1,4 +1,4 @@
-(async()=>{await window.TransfersAccess.ready;if(!window.TransfersAccess.isAdmin())return;
+(async()=>{await window.TransfersAccess.ready;if(!window.TransfersAccess.can("summary_reports"))return;
 (()=>{
   "use strict";
   const D=window.SummaryData,C=window.TRANSFERS_CONFIG||{},el=id=>document.getElementById(id);
@@ -38,7 +38,7 @@
       return '<tr data-record="'+key+'"><td><span class="record-print-value">'+dateText+'</span><input class="record-edit-control record-date" type="date" value="'+esc(r.date)+'" aria-label="Date for '+esc(r.job||r.type)+'"><small>'+(r.start==null?"Time unavailable":esc(D.clock(r.start)))+'</small>'+(r.inferredDate?'<small>Original date unavailable; using deletion date</small>':"")+'</td><td>'+esc(r.driver)+'</td><td>'+esc(r.type)+(r.deleted?'<small>Deleted'+(r.partial?' · partial history':"")+'</small>':"")+'</td><td>'+esc(r.job||"—")+(r.move!==""?'<small>Move #'+esc(r.move)+'</small>':"")+'</td><td>'+esc(r.route||r.notes||"—")+(r.deleted&&r.type==="Job"?'<div class="restore-details record-edit-control"><small>Restore load details</small><label>Time<input class="restore-time" type="time" min="04:00" max="20:00" step="900" value="'+(r.start==null?"":esc(D.clock(r.start)))+'"></label><label>Duration (min)<input class="restore-duration" type="number" min="15" max="720" step="15" value="'+(r.duration==null?"":esc(r.duration))+'"></label><label>Pallets<input class="restore-pallets" type="number" min="0" step="1" value="'+(r.pallets==null?"":esc(r.pallets))+'"></label></div>':"")+'</td><td><span class="record-print-value">'+esc(r.deleted?'Deleted':r.status)+'</span><select class="record-edit-control record-status" aria-label="Status for '+esc(r.job||r.type)+'">'+statusOptions+'</select>'+(r.type==="Time-slot status"?'<input class="record-edit-control record-custom'+(!r.deleted&&r.rawStatus==="Custom"?"":" hidden")+'" maxlength="80" value="'+esc(r.customTitle)+'" placeholder="Custom status title" aria-label="Custom status title">':"")+'</td><td>'+(r.type==="Job"&&r.pallets!=null?count(r.pallets):"—")+'</td><td>'+(r.duration==null?"—":count(r.duration)+' min')+'</td><td><button class="record-save record-edit-control" type="button">Save</button></td></tr>';
     }).join("");
   }
-  async function saveRecord(button){
+  async function saveRecord(button){if(!window.TransfersAccess.can("summary_edit"))return;
     const tr=button.closest("tr[data-record]"),record=rows.find(r=>r.type+":"+r.id===tr.dataset.record);
     if(!record||!userId)return;
     const newDate=tr.querySelector(".record-date").value,newStatus=tr.querySelector(".record-status").value,custom=tr.querySelector(".record-custom")?.value.trim()||null;
@@ -92,7 +92,7 @@
     el("statusTotals").innerHTML=group("Job statuses",t.jobStatuses,n=>count(n)+" jobs")+group("Time-slot statuses",t.slotStatuses,v=>hours(v.minutes)+" hrs · "+count(v.count)+" records");
     el("reportScope").textContent=(scope.from?date(scope.from):"All history")+" — "+date(scope.to)+" · "+(scope.driver||"All driver slots");
     el("reportUpdated").textContent="Run "+new Date().toLocaleString();
-    const statuses=[...new Set(rows.filter(r=>!r.deleted).map(r=>r.status))].sort();statuses.push("Deleted");el("recordStatus").innerHTML='<option value="">All statuses</option>'+statuses.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join("");
+    const statuses=[...new Set(rows.filter(r=>!r.deleted).map(r=>r.status))].sort();if(window.TransfersAccess.can("deleted_records"))statuses.push("Deleted");el("recordStatus").innerHTML='<option value="">All statuses</option>'+statuses.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join("");
     const locations=[...new Set(rows.filter(r=>r.type==="Job").flatMap(r=>[r.origin,r.destination]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
     el("recordLocation").innerHTML='<option value="">All locations</option>'+locations.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join("");
     el("recordLocation").value="";
@@ -153,7 +153,7 @@
   el("recordRows").addEventListener("change",e=>{if(e.target.matches(".record-status"))e.target.closest("tr").querySelector(".record-custom")?.classList.toggle("hidden",e.target.value!=="Custom");});
   el("recordSearch").addEventListener("input",details);
   el("previousPage").addEventListener("click",()=>{page--;renderPage();});el("nextPage").addEventListener("click",()=>{page++;renderPage();});
-  el("exportCsv").addEventListener("click",()=>{
+  el("exportCsv").addEventListener("click",()=>{if(!window.TransfersAccess.can("summary_export"))return;
     if(!scope||!visible.length)return;
     const url=URL.createObjectURL(new Blob([D.csv(visible)],{type:"text/csv;charset=utf-8"})),a=document.createElement("a");
     a.href=url;a.download="Transfers-Summary-"+(scope.from||"all")+"-to-"+scope.to+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -161,7 +161,7 @@
   let printing=false;
   window.addEventListener("beforeprint",()=>{if(scope){printing=true;el("recordRows").innerHTML=recordMarkup(visible);}});
   window.addEventListener("afterprint",()=>{if(printing){printing=false;renderPage();}});
-  el("printReport").addEventListener("click",()=>window.print());
+  el("printReport").addEventListener("click",()=>{if(window.TransfersAccess.can("summary_export"))window.print()});
   el("loginForm").addEventListener("submit",async e=>{
     e.preventDefault();if(!sb)return;
     const button=e.submitter;button.disabled=true;el("loginMsg").textContent="Signing in…";

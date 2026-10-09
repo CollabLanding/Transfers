@@ -1,3 +1,4 @@
+(async()=>{await window.TransfersAccess.ready;if(!window.TransfersAccess.can("driver_activity"))return;
 (()=>{
   const C=window.TRANSFERS_CONFIG||{};
   const list=document.getElementById("driverHistoryList");
@@ -108,4 +109,5 @@
 
   sb.auth.getSession().then(({data})=>start(data?.session||null));
   sb.auth.onAuthStateChange((_event,session)=>start(session));
+})();
 })();

@@ -1,4 +1,4 @@
-(async()=>{await window.TransfersAccess.ready;if(!window.TransfersAccess.isAdmin())return;
+(async()=>{await window.TransfersAccess.ready;if(!window.TransfersAccess.any(["driver_schedules","copy_schedules","driver_profiles","driver_phones","repeat_schedules","driver_reports","driver_activity"]))return;
 (()=>{
   const C=window.TRANSFERS_CONFIG||{};
   const live=!!(C.supabaseUrl&&C.supabaseAnonKey&&window.supabase);
@@ -306,7 +306,7 @@
     });
     return {rows,invalid};
   }
-  async function save(quiet=false){
+  async function save(quiet=false){if(!window.TransfersAccess.can("driver_schedules"))return;
     if(!live||!user)return false;
     const beforeRows=scheduleRows.map(r=>({...r}));
     const {rows,invalid}=collect();
@@ -349,7 +349,7 @@
     return result;
   }
 
-  async function copyPeriod(driver,period,sourceDate){
+  async function copyPeriod(driver,period,sourceDate){if(!window.TransfersAccess.can("copy_schedules"))return;
     if(!live||!user)return;
     if(dirty){
       const saved=await save(true);
@@ -420,7 +420,7 @@
     else E.reportCustomFields.classList.remove("hidden");
   }
 
-  function openReports(){
+  function openReports(){if(!window.TransfersAccess.can("driver_reports"))return;
     renderReportDrivers();
     const current=E.week.value||mondayOf(new Date());
     const currentDate=parseISO(current);
@@ -595,7 +595,7 @@
     doc.save("driver-hours_"+safeStart+"_to_"+safeEnd+".pdf");
   }
 
-  async function runReport(e){
+  async function runReport(e){if(!window.TransfersAccess.can("driver_reports")){e.preventDefault();return;}
     e.preventDefault();
     if(!live||!user)return;
     const selected=selectedReportDrivers();

@@ -1,4 +1,4 @@
-(async()=>{await window.TransfersAccess.ready;if(!window.TransfersAccess.isAdmin())return;
+(async()=>{await window.TransfersAccess.ready;if(!window.TransfersAccess.can("send_sms"))return;
 (()=>{
   const C=window.TRANSFERS_CONFIG||{};
   const openBtn=document.getElementById("textDriver");

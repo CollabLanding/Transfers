@@ -1,4 +1,4 @@
-(async()=>{await window.TransfersAccess.ready;if(!window.TransfersAccess.isAdmin())return;
+(async()=>{await window.TransfersAccess.ready;if(!window.TransfersAccess.can("driver_profiles"))return;
 (()=>{
   "use strict";
   const $=id=>document.getElementById(id),C=window.TRANSFERS_CONFIG||{};
@@ -21,7 +21,7 @@
     if(s.startsWith("+")&&/^[1-9][0-9]{7,14}$/.test(digits))return "+"+digits;
     throw Error("Use a 10-digit US phone number or an international number starting with +.");
   }
-  function lock(value){working=value;$("saveDriver").disabled=value;$("applySchedule").disabled=value;$("loadTemplateWeek").disabled=value||!original;document.querySelectorAll("#driverProfileForm input,#driverProfileForm textarea,#weeklyTemplate button").forEach(e=>e.disabled=value);}
+  function lock(value){working=value;$("saveDriver").disabled=value;$("applySchedule").disabled=value;$("loadTemplateWeek").disabled=value||!original;document.querySelectorAll("#driverProfileForm input,#driverProfileForm textarea,#weeklyTemplate button").forEach(e=>e.disabled=value);window.TransfersAccess.apply();}
   function scheduleLink(){const m=$("applyMonth").value||monthNow();$("viewSchedule").href="drivers.html?week="+encodeURIComponent(m+"-01");}
   function savedState(row){
     $("profileTitle").textContent="Driver Information · "+row.name;
@@ -85,7 +85,7 @@
       setWeek(w);message("Week loaded into the template. Save Driver to keep it.");
     }catch(e){message(e.message,"error");}finally{if(token===version)lock(false);}
   });
-  $("applySchedule").addEventListener("click",async()=>{
+  $("applySchedule").addEventListener("click",async()=>{if(!window.TransfersAccess.can("repeat_schedules"))return;
     if(!original||working)return;
     if(!$("applyMonth").value){message("Choose a month first.","error");return;}
     if(dirty()&&!(await save()))return;

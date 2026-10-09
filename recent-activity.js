@@ -198,7 +198,7 @@
   async function start(session){
     await window.TransfersAccess.ready;
     await window.TransfersAccess.refresh(session);
-    if(!window.TransfersAccess.isAdmin())session=null;
+    if(!window.TransfersAccess.can("recent_activity"))session=null;
     const nextId=session?.user?.id||null;
     if(!nextId){
       sessionUserId=null;
@@ -236,7 +236,7 @@
   window.addEventListener("focus",()=>{if(sessionUserId)load()});
   window.addEventListener("online",()=>{if(sessionUserId){load();subscribe()}});
 
-  document.addEventListener("transfer-access-changed",()=>{if(!window.TransfersAccess.isAdmin()){currentRoleLost()} });
+  document.addEventListener("transfer-access-changed",()=>{if(!window.TransfersAccess.can("recent_activity")){currentRoleLost()} });
   function currentRoleLost(){sessionUserId=null;rows=[];if(channel){sb.removeChannel(channel);channel=null}if(fallbackTimer){clearInterval(fallbackTimer);fallbackTimer=null}list.innerHTML="";}
   sb.auth.getSession().then(({data})=>start(data?.session||null));
   sb.auth.onAuthStateChange((_event,session)=>start(session));

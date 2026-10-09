@@ -8,7 +8,7 @@ window.createBoardLinks=function({sb,grid,getDate,getUser,getJobs,getStatuses,ap
  function landing(key,raw){const all=nodes(),anchor=all.find(n=>n.key===key),members=group(key);if(!anchor)return raw;return Math.max(start-Math.min(...members.map(n=>n.start-anchor.start)),Math.min(end-Math.max(...members.map(n=>n.end-anchor.start)),raw))}
  function localEdges(){try{return JSON.parse(localStorage.getItem(storageKey)||'null')}catch{return null}}
  async function refresh(){const token=++loadToken;try{if(sb){const r=await sb.from('board_box_links').select('id,source_key,target_key');if(r.error)throw r.error;if(token!==loadToken)return;edges=r.data||[]}else{edges=localEdges()||getJobs().filter(r=>r.linked_next_id).map(r=>({source_key:'job:'+r.id,target_key:'job:'+r.linked_next_id}));localStorage.setItem(storageKey,JSON.stringify(edges))}ready=true;render()}catch(e){report('Could not load box links: '+e.message,'error')}}
- async function link(source,target){
+ async function link(source,target){if(!window.TransfersAccess.can('link_boxes'))return;
   if(busy||!ready)return;busy=true;
   try{if(sb){const r=await sb.rpc('set_board_box_link',{p_source:source,p_target:target});if(r.error)throw r.error}
    else{edges=target?[...edges,{source_key:source,target_key:target}]:edges.filter(e=>e.source_key!==source&&e.target_key!==source);localStorage.setItem(storageKey,JSON.stringify(edges))}
@@ -16,7 +16,7 @@ window.createBoardLinks=function({sb,grid,getDate,getUser,getJobs,getStatuses,ap
   }catch(e){report('Could not change link: '+e.message,'error')}finally{busy=false}
  }
  function canLink(source,target){if(!ready||source===target||keysFor(source).has(target))return false;const all=nodes(),s=all.find(n=>n.key===source),t=all.find(n=>n.key===target);return !!(s&&t&&s.driver===t.driver&&s.date===t.date)}
- async function move(key,driver,minute){
+ async function move(key,driver,minute){if(!window.TransfersAccess.can(key.startsWith('job:')?'move_load':'manage_status'))return;
   if(busy)return false;if(!ready){report('Links are still loading. Try again in a moment.','error');return false}
   const all=nodes(),anchor=all.find(n=>n.key===key),members=group(key),ids=keysFor(key);if(!anchor)return false;
   if(members.length!==ids.size){report('A linked box is on another day. Refresh or unlink this box before moving.','error');return false}
