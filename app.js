@@ -351,7 +351,7 @@ function beginTransferResize(e,x,b,edge){
    b.style.top=(((nextStart-GRID_START)/15)*PX15)+"px";
    b.style.height=Math.max(22,(nextDuration/15)*PX15)+"px";
    b.dataset.resizeLabel=fmt(minToTime(nextStart))+" · "+durationLabel(nextDuration);
-   syncResizeForm(x.id,nextStart,nextDuration);window.TransferEditors?.render()
+   syncResizeForm(x.id,nextStart,nextDuration);window.TransferEditors?.render();boxLinks.previewResize('job:'+x.id,nextStart+nextDuration)
  };
  const move=ev=>{
    ev.preventDefault();
@@ -362,14 +362,15 @@ function beginTransferResize(e,x,b,edge){
      nextStart=Math.max(minStart,Math.min(originalEnd-15,point));
      nextDuration=originalEnd-nextStart
    }else{
-     const maxEnd=Math.min(GRID_END,originalStart+720);
-     const nextEnd=Math.max(originalStart+15,Math.min(maxEnd,point));
+     const bounds=boxLinks.resizeBounds('job:'+x.id),maxEnd=Math.min(GRID_END,originalStart+720,bounds.maxEnd);
+     const nextEnd=Math.max(originalStart+15,bounds.minEnd,Math.min(maxEnd,point));
      nextStart=originalStart;nextDuration=nextEnd-originalStart
    }
    paint()
  };
  const cleanup=()=>{
    stopTransferAutoScroll();
+   boxLinks.clearResizePreview();
    handle.removeEventListener("pointermove",move);
    handle.removeEventListener("pointerup",finish);
    handle.removeEventListener("pointercancel",cancel);
@@ -390,21 +391,11 @@ function beginTransferResize(e,x,b,edge){
 }
 async function resizeTransfer(x,newStartMinutes,newDuration){
  if(!window.TransfersAccess.can("resize_load"))return;
- const old={scheduled_time:x.scheduled_time,duration_minutes:x.duration_minutes};
- const newTime=minToTime(newStartMinutes);
- x.scheduled_time=newTime;x.duration_minutes=newDuration;x.updated_at=new Date().toISOString();renderBoard();
- if(live){
-   const r=await sb.from("transfers").update({scheduled_time:newTime,duration_minutes:newDuration,updated_at:new Date().toISOString()}).eq("id",x.id).select("*").single();
-   if(r.error){
-     x.scheduled_time=old.scheduled_time;x.duration_minutes=old.duration_minutes;renderBoard();
-     if(E.duration.value===String(newDuration)&&E.time.value===newTime)syncResizeForm(x.id,timeToMin(old.scheduled_time),Number(old.duration_minutes),true);
-     msg("Could not resize transfer: "+r.error.message,"error");return
-   }
-   replaceItem(r.data);renderBoard()
- }else saveLocal();
- if(E.duration.value===String(newDuration)&&E.time.value===newTime)syncResizeForm(x.id,newStartMinutes,newDuration,true);
- msg("Transfer resized to "+fmt(newTime)+" · "+durationLabel(newDuration)+".","ok")
+ const resized=await boxLinks.resize('job:'+x.id,newStartMinutes,newStartMinutes+newDuration);
+ if(!resized){syncResizeForm(x.id,timeToMin(x.scheduled_time),Number(x.duration_minutes),true);renderBoard();return}
+ syncResizeForm(x.id,newStartMinutes,newDuration,true);return;
 }
+
 function durationLabel(n){if(n<60)return n+" min";let h=Math.floor(n/60),m=n%60;return h+" hr"+(h!==1?"s":"")+(m?" "+m+" min":"")}
 async function dropCard(e){e.preventDefault();const lane=e.currentTarget,id=e.dataTransfer.getData("text/plain")||draggedTransferId,x=items.find(i=>i.id===id);if(!x){clearDropPreviews();return}const minutes=landingMinutes(e,lane,x),newTime=minToTime(minutes),newDriver=lane.dataset.driver;draggedTransferId=null;dragGrabOffsetPx=0;clearDropPreviews();await moveTransfer(x,newDriver,newTime)}
 async function moveTransfer(x,newDriver,newTime){await boxLinks.move('job:'+x.id,newDriver,timeToMin(newTime))}
@@ -605,7 +596,7 @@ function closeOption(){if(optionContext?.select&&optionContext.select.value.star
 async function addOption(ev){ev.preventDefault();if(!optionContext)return;const value=E.optionName.value.trim(),kind=optionContext.kind,list=kind==="driver"?drivers:locations;if(!value){optionMsg("Enter a name.","error");return}const existing=list.find(x=>x.toLowerCase()===value.toLowerCase());if(existing){renderOptions();optionContext.select.value=existing;closeOption();return}if(live){const table=kind==="driver"?"transfer_drivers":"transfer_locations",payload={name:value,created_by:user.id,created_by_name:name()};if(kind==="driver")payload.sort_order=drivers.length;const r=await sb.from(table).insert(payload).select("name").single();if(r.error){optionMsg("Could not add option: "+r.error.message,"error");return}}if(kind==="driver")drivers=orderedUniq([...drivers,value]);else locations=uniq([...locations,value]);if(!live)saveLocal();const target=optionContext.select;renderOptions();target.value=value;closeOption();renderBoard()}
 async function session(s){await window.TransfersAccess.ready;await window.TransfersAccess.refresh(s);if(!s?.user){boxLinks.reset();slotStatuses.reset();user=null;editorPresenceReady=false;if(presence){sb.removeChannel(presence);presence=null;}window.TransferEditors?.setLocal(null);window.TransferEditors?.sync([]);E.login.classList.remove("hidden");return}user=s.user;E.login.classList.add("hidden");E.signout.classList.remove("hidden");let r=await sb.from("profiles").select("display_name,bubble_color").eq("id",user.id).maybeSingle();profile=r.data||{display_name:user.email?.split("@")[0]||"User"};E.me.textContent=name();E.email.textContent=user.email||"";await loadData();if(!window.TransfersAccess.can("view_board")){reset();return}await slotStatuses.refresh();await boxLinks.refresh();await subscribe()}
 const slotStatuses=window.createSlotStatuses({sb,grid:E.grid,getDate:()=>E.boardDate.value,getUser:()=>user,report:msg,start:GRID_START,end:GRID_END,px:PX15,getLinks:()=>boxLinks,onSelectStatus:selectStatusEditor});
-const boxLinks=window.createBoardLinks({sb,grid:E.grid,getDate:()=>E.boardDate.value,getUser:()=>user,getJobs:()=>items,getStatuses:()=>slotStatuses.rows(),report:msg,start:GRID_START,end:GRID_END,px:PX15,applyMove:result=>{(result.jobs||[]).forEach(replaceItem);slotStatuses.applyRows(result.statuses||[]);if(!live)saveLocal();renderBoard()}});
+const boxLinks=window.createBoardLinks({sb,grid:E.grid,getDate:()=>E.boardDate.value,getUser:()=>user,getJobs:()=>items,getStatuses:()=>slotStatuses.rows(),report:msg,start:GRID_START,end:GRID_END,px:PX15,applyMove:result=>{(result.jobs||[]).forEach(row=>{const previous=items.find(x=>x.id===row.id);if(previous&&(previous.scheduled_time!==row.scheduled_time||Number(previous.duration_minutes)!==Number(row.duration_minutes)))syncResizeForm(row.id,timeToMin(row.scheduled_time),Number(row.duration_minutes),true);replaceItem(row)});slotStatuses.applyRows(result.statuses||[]);if(!live)saveLocal();renderBoard()}});
 function transferInfoValues(){
   return {
     date:E.date?.value||"",
@@ -673,3 +664,4 @@ E.loginForm.onsubmit=async e=>{e.preventDefault();E.loginMsg.textContent="Signin
   }
   fitPanel();
 })();
+

@@ -44,6 +44,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
         const remove = document.createElement('button');
         remove.type = 'button'; remove.className = 'slot-status-delete'; remove.textContent = '×';
         remove.setAttribute('aria-label', 'Delete ' + block.title);
+        remove.dataset.statusId=row.id;
         remove.style.top = ((row.start_minutes - start) / 15 * px + 1) + 'px';
         block.addEventListener('click', e => {
           if (e.target.closest('.slot-resize-handle,.slot-status-delete,.load-chain')) return;
@@ -106,16 +107,18 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
       if(ev.pointerId!==pointer)return;ev.preventDefault();ev.stopPropagation();window.startTransferAutoScroll?.(ev.clientX,ev.clientY);
       const raw=start+Math.round((ev.clientY-lane.getBoundingClientRect().top)/px)*15;
       if(edge==='top')begin=Math.max(start,Math.min(finish-30,raw));
-      else finish=Math.min(end,Math.max(begin+30,raw));
+      else {const bounds=getLinks?.().resizeBounds('status:'+row.id)||{minEnd:start,maxEnd:end};finish=Math.min(end,bounds.maxEnd,Math.max(begin+30,bounds.minEnd,raw));}
       block.style.top=((begin-start)/15*px)+'px';block.style.height=((finish-begin)/15*px)+'px';remove.style.top=((begin-start)/15*px+1)+'px';
       block.querySelector('.slot-status-label').textContent=displayStatus(row)+' · '+time(begin)+' – '+time(finish);
-      block.classList.toggle('is-blocked',overlap({...row,start_minutes:begin,end_minutes:finish},row.id));
+      block.classList.toggle('is-blocked',!getLinks&&overlap({...row,start_minutes:begin,end_minutes:finish},row.id));
+      getLinks?.().previewResize('status:'+row.id,finish);
     };
     const cleanup=()=>{
       handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',up);handle.removeEventListener('pointercancel',cancel);handle.removeEventListener('lostpointercapture',cancel);
       document.removeEventListener('keydown',escape);window.removeEventListener('blur',cancel);
       if(handle.hasPointerCapture(pointer))handle.releasePointerCapture(pointer);
       window.stopTransferAutoScroll?.();
+      getLinks?.().clearResizePreview();
       resizeCancel=null;busy=false;block.draggable=true;block.classList.remove('slot-status-resizing','is-blocked');
     };
     const cancel=(repaint=true)=>{cleanup();if(repaint!==false)paint();};
@@ -124,6 +127,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
       if(ev.pointerId!==pointer)return;ev.preventDefault();ev.stopPropagation();move(ev);cleanup();
       if(originalDate!==getDate()||(begin===row.start_minutes&&finish===row.end_minutes)){paint();return;}
       const payload={start_minutes:begin,end_minutes:finish};
+      if(getLinks){getLinks().resize('status:'+row.id,begin,finish).then(()=>paint());return;}
       if(overlap({...row,...payload},row.id)){paint();report('That time overlaps another status. Choose an open range.','error');return;}
       savePlacement(row,payload,'Status resized.');
     };
@@ -259,3 +263,4 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
     reset() { endMove(); generation++; rows = []; date = null; close(); paint(); }
   };
 };
+

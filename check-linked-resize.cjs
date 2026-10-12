@@ -1,0 +1,22 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+let jobs=[{id:'up',driver:'D',scheduled_date:'2026-10-12',scheduled_time:'05:00',duration_minutes:30},{id:'a',driver:'D',scheduled_date:'2026-10-12',scheduled_time:'06:00',duration_minutes:60},{id:'b',driver:'D',scheduled_date:'2026-10-12',scheduled_time:'07:30',duration_minutes:60},{id:'c',driver:'D',scheduled_date:'2026-10-12',scheduled_time:'10:00',duration_minutes:60}];
+let statuses=[{id:'s',driver:'D',scheduled_date:'2026-10-12',start_minutes:540,end_minutes:570,status:'Standby'}];
+const edges=[{source_key:'job:up',target_key:'job:a'},{source_key:'job:a',target_key:'job:b'},{source_key:'status:s',target_key:'job:b'},{source_key:'status:s',target_key:'job:c'}];
+let saved=JSON.stringify(edges),messages=[];
+const boxes=[...jobs.map(j=>({dataset:{boxKey:'job:'+j.id},style:{top:String((Number(j.scheduled_time.slice(0,2))*60+Number(j.scheduled_time.slice(3))-210)/15*20)+'px'},isConnected:true})),{dataset:{boxKey:'status:s'},style:{top:'440px'},isConnected:true},{dataset:{statusId:'s'},style:{top:'441px'},isConnected:true}];
+const grid={querySelectorAll:s=>s==='[data-box-key],.slot-status-delete'?boxes:[]};
+const window={TransfersAccess:{can:()=>true},TransferChainVisual:{renderLinks(){}}};
+vm.runInNewContext(fs.readFileSync(__dirname+'/board-links.js','utf8'),{window,localStorage:{getItem:()=>saved,setItem:(k,v)=>saved=v},document:{},Date});
+const links=window.createBoardLinks({sb:null,grid,getDate:()=> '2026-10-12',getUser:()=>({id:'user'}),getJobs:()=>jobs,getStatuses:()=>statuses,start:210,end:1320,px:20,report:(...x)=>messages.push(x),applyMove:r=>{for(const j of r.jobs)jobs=jobs.map(x=>x.id===j.id?j:x);for(const s of r.statuses)statuses=statuses.map(x=>x.id===s.id?s:x)}});
+(async()=>{
+ await links.refresh();const before=boxes.map(x=>x.style.top);
+ links.previewResize('job:a',450);assert.equal(boxes[1].style.top,before[1]);assert.equal(boxes[0].style.top,before[0]);assert.equal(parseFloat(boxes[2].style.top),parseFloat(before[2])+40);assert.equal(parseFloat(boxes[4].style.top),480);assert.equal(parseFloat(boxes[5].style.top),481);
+ links.clearResizePreview();assert.deepEqual(boxes.map(x=>x.style.top),before);
+ assert(await links.resize('job:a',360,450));assert.equal(jobs.find(x=>x.id==='b').scheduled_time,'08:00');assert.equal(jobs.find(x=>x.id==='c').scheduled_time,'10:30');assert.equal(statuses[0].start_minutes,570);assert.equal(jobs.find(x=>x.id==='up').scheduled_time,'05:00');
+ assert(await links.resize('job:a',375,450));assert.equal(jobs.find(x=>x.id==='b').scheduled_time,'08:00');
+ assert(await links.resize('status:s',570,630));assert.equal(jobs.find(x=>x.id==='c').scheduled_time,'11:00');assert.equal(jobs.find(x=>x.id==='b').scheduled_time,'08:00');
+ assert(await links.resize('status:s',570,600));assert.equal(jobs.find(x=>x.id==='c').scheduled_time,'10:30');
+ assert.equal(await links.resize('job:a',375,1320),false);
+ for(const file of ['app.js','board-links.js','slot-status.js'])new vm.Script(fs.readFileSync(__dirname+'/'+file,'utf8'));
+ console.log('PASS: live preview/reset, lower job/status chain, reverse link orientation, unchanged boxes above, top resize, grow/shrink, board bounds and script syntax.');
+})().catch(e=>{console.error(e);process.exitCode=1});

@@ -5,6 +5,41 @@ window.createBoardLinks=function({sb,grid,getDate,getUser,getJobs,getStatuses,ap
  function nodes(){return [...getJobs().map(r=>({key:'job:'+r.id,kind:'job',id:r.id,driver:r.driver,date:r.scheduled_date,start:mins(r.scheduled_time),end:mins(r.scheduled_time)+r.duration_minutes,row:r})),...getStatuses().map(r=>({key:'status:'+r.id,kind:'status',id:r.id,driver:r.driver,date:r.scheduled_date,start:r.start_minutes,end:r.end_minutes,row:r}))]}
  function keysFor(key){const ids=new Set([key]);let changed=true;while(changed){changed=false;for(const e of edges){if(ids.has(e.source_key)||ids.has(e.target_key)){for(const k of [e.source_key,e.target_key])if(!ids.has(k)){ids.add(k);changed=true}}}}return ids}
  function group(key){const ids=keysFor(key);return nodes().filter(n=>ids.has(n.key))}
+ function resizeFollowers(key){
+  const all=nodes(),anchor=all.find(n=>n.key===key);if(!anchor)return [];
+  const ids=new Set([key]);let changed=true;
+  while(changed){changed=false;for(const e of edges)for(const [a,b] of [[e.source_key,e.target_key],[e.target_key,e.source_key]]){
+   const n=all.find(n=>n.key===b);
+   if(ids.has(a)&&!ids.has(b)&&n&&n.start>anchor.start&&n.driver===anchor.driver&&n.date===anchor.date){ids.add(b);changed=true}
+  }}
+  return all.filter(n=>n.key!==key&&ids.has(n.key));
+ }
+ function resizeBounds(key){const anchor=nodes().find(n=>n.key===key);if(!anchor)return {minEnd:start,maxEnd:end};const followers=resizeFollowers(key);return {minEnd:Math.max(start,...followers.map(n=>anchor.end+start-n.start)),maxEnd:Math.min(end,...followers.map(n=>anchor.end+end-n.end))}}
+ let resizePreview=[];
+ function clearResizePreview(){for(const {el,top}of resizePreview)if(el.isConnected)el.style.top=top;resizePreview=[];window.TransferChainVisual.renderLinks(grid,edges)}
+ function previewResize(key,finish){
+  clearResizePreview();const anchor=nodes().find(n=>n.key===key);if(!anchor)return;
+  const delta=finish-anchor.end;
+  for(const n of resizeFollowers(key))for(const el of grid.querySelectorAll('[data-box-key],.slot-status-delete')){
+   const match=el.dataset.boxKey===n.key||(n.kind==='status'&&el.dataset.statusId===n.id);
+   if(match){resizePreview.push({el,top:el.style.top});el.style.top=(parseFloat(el.style.top)+delta/15*px)+'px'}
+  }
+  window.TransferChainVisual.renderLinks(grid,edges);
+ }
+ async function resize(key,begin,finish){
+  if(busy)return false;if(!ready){report('Links are still loading. Try again in a moment.','error');return false}
+  const all=nodes(),anchor=all.find(n=>n.key===key);if(!anchor)return false;
+  const followers=resizeFollowers(key),delta=finish-anchor.end;
+  const changed=[{...anchor,start:begin,end:finish},...followers.map(n=>({...n,start:n.start+delta,end:n.end+delta}))];
+  if(changed.some(n=>n.start<start||n.end>end)){report('All linked boxes must fit within the board hours.','error');return false}
+  const ids=new Set(changed.map(n=>n.key)),statuses=all.filter(n=>n.kind==='status'&&!ids.has(n.key)).concat(changed.filter(n=>n.kind==='status'));
+  if(statuses.some((n,i)=>statuses.some((o,j)=>i<j&&n.driver===o.driver&&n.date===o.date&&n.start<o.end&&n.end>o.start&& (ids.has(n.key)||ids.has(o.key))))){report('A linked status would overlap another status.','error');return false}
+  busy=true;
+  try{let result;if(sb){const r=await sb.rpc('resize_board_link_group',{p_anchor:key,p_start:begin,p_end:finish,p_expected_start:anchor.start,p_expected_end:anchor.end});if(r.error)throw r.error;result=r.data}
+   else{const jobs=[],statuses=[];for(const n of changed){const row={...n.row};if(n.kind==='job'){row.scheduled_time=String(Math.floor(n.start/60)).padStart(2,'0')+':'+String(n.start%60).padStart(2,'0');row.duration_minutes=n.end-n.start;row.updated_at=new Date().toISOString();jobs.push(row)}else{row.start_minutes=n.start;row.end_minutes=n.end;statuses.push(row)}}result={jobs,statuses}}
+   clearResizePreview();applyMove(result);report(followers.length&&delta?'Box resized; linked boxes below followed.':'Box resized.','ok');return true;
+  }catch(e){report('Could not resize linked boxes: '+e.message,'error');return false}finally{busy=false}
+ }
  function landing(key,raw){const all=nodes(),anchor=all.find(n=>n.key===key),members=group(key);if(!anchor)return raw;return Math.max(start-Math.min(...members.map(n=>n.start-anchor.start)),Math.min(end-Math.max(...members.map(n=>n.end-anchor.start)),raw))}
  function localEdges(){try{return JSON.parse(localStorage.getItem(storageKey)||'null')}catch{return null}}
  async function refresh(){const token=++loadToken;try{if(sb){const r=await sb.from('board_box_links').select('id,source_key,target_key');if(r.error)throw r.error;if(token!==loadToken)return;edges=r.data||[]}else{edges=localEdges()||getJobs().filter(r=>r.linked_next_id).map(r=>({source_key:'job:'+r.id,target_key:'job:'+r.linked_next_id}));localStorage.setItem(storageKey,JSON.stringify(edges))}ready=true;render()}catch(e){report('Could not load box links: '+e.message,'error')}}
@@ -51,5 +86,6 @@ window.createBoardLinks=function({sb,grid,getDate,getUser,getJobs,getStatuses,ap
   });box.append(handle);
  }
  function render(){cancelDrag?.();for(const box of grid.querySelectorAll('.card,.slot-status-block')){const key=box.classList.contains('card')?'job:'+box.dataset.id:'status:'+box.dataset.statusId;attach(box,key);const h=box.querySelector('.load-chain'),linked=edges.some(e=>e.source_key===key||e.target_key===key);h.classList.toggle('is-linked',linked);h.setAttribute('aria-pressed',String(linked));h.title=linked?'Click to unlink this box; drag to link a box above or below':'Drag to link a box above or below';h.setAttribute('aria-label',h.title)}window.TransferChainVisual.renderLinks(grid,edges)}
- return {refresh,render,group,landing,move,preview,clearPreview,forget(key){edges=edges.filter(e=>e.source_key!==key&&e.target_key!==key);if(!sb)localStorage.setItem(storageKey,JSON.stringify(edges));else refresh();render()},reset(){cancelDrag?.();loadToken++;edges=[];ready=!sb;clearPreview();render()}};
+ return {refresh,render,group,landing,move,resize,resizeBounds,previewResize,clearResizePreview,preview,clearPreview,forget(key){edges=edges.filter(e=>e.source_key!==key&&e.target_key!==key);if(!sb)localStorage.setItem(storageKey,JSON.stringify(edges));else refresh();render()},reset(){cancelDrag?.();loadToken++;edges=[];ready=!sb;clearPreview();clearResizePreview();render()}};
 };
+
