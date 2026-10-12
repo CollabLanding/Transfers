@@ -186,38 +186,13 @@ function scheduleOverlay(lane,top,height,kind,label=""){
   lane.appendChild(block);
 }
 function applyDriverScheduleOverlay(lane,driver,date){
-  if(String(driver).trim().toLowerCase()==="planning")return;
-  const row=driverSchedule.find(r=>String(r.driver_name)===String(driver)&&String(r.schedule_date)===String(date));
-  if(!row||!row.start_time||!row.end_time){
-    lane.classList.add("driver-off-lane");
-    scheduleOverlay(lane,0,GRID_HEIGHT,"driver-off-overlay","OFF");
-    return;
-  }
-
-  const start=timeToMin(String(row.start_time||"00:00").slice(0,5));
-  const end=timeToMin(String(row.end_time||"00:00").slice(0,5));
-  const px=m=>((m-GRID_START)/15)*PX15;
-
-  // Shift starts outside/after the visible board: unavailable for the full visible day.
-  if(start>=GRID_END){
-    scheduleOverlay(lane,0,GRID_HEIGHT,"driver-unavailable-overlay","NOT SCHEDULED");
-    return;
-  }
-
-  if(start>GRID_START){
-    scheduleOverlay(lane,0,Math.min(GRID_HEIGHT,px(start)),"driver-unavailable-overlay");
-  }
-
-  // Normal same-day shift: black out everything after clock-out.
-  if(end>start){
-    if(end<=GRID_START){
-      scheduleOverlay(lane,0,GRID_HEIGHT,"driver-unavailable-overlay","NOT SCHEDULED");
-    }else if(end<GRID_END){
-      const top=Math.max(0,px(end));
-      scheduleOverlay(lane,top,GRID_HEIGHT-top,"driver-unavailable-overlay");
-    }
-  }
-  // Overnight shifts (end <= start) remain available from start through the end of this board day.
+ if(String(driver).trim().toLowerCase()==="planning")return;
+ const ranges=window.TransferScheduleCoverage.intervals(driverSchedule,driver,date).map(([a,b])=>[Math.max(GRID_START,a),Math.min(GRID_END,b)]).filter(([a,b])=>b>a);
+ const px=m=>(m-GRID_START)/15*PX15;
+ if(!ranges.length){lane.classList.add("driver-off-lane");scheduleOverlay(lane,0,GRID_HEIGHT,"driver-off-overlay","OFF");return}
+ let cursor=GRID_START;
+ for(const [a,b]of ranges){if(a>cursor)scheduleOverlay(lane,px(cursor),px(a)-px(cursor),"driver-unavailable-overlay");cursor=Math.max(cursor,b)}
+ if(cursor<GRID_END)scheduleOverlay(lane,px(cursor),GRID_HEIGHT-px(cursor),"driver-unavailable-overlay");
 }
 function updateScheduleClock(){
   if(!E.currentTime)return;
@@ -413,11 +388,11 @@ async function loadBoardSchedule(){if(!window.TransfersAccess.can("view_board"))
   if(!live){driverSchedule=[];renderBoard();return}
   const r=await sb.from("driver_schedules")
     .select("driver_name,schedule_date,start_time,end_time")
-    .eq("schedule_date",E.boardDate.value);
+    .gte("schedule_date",add(E.boardDate.value,-1)).lte("schedule_date",E.boardDate.value);
   driverSchedule=r.error?[]:(r.data||[]);
   renderBoard();
 }
-async function loadData(){if(!window.TransfersAccess.can("view_board")){const r=await sb.rpc("get_transfer_board_options");items=[];driverSchedule=[];drivers=orderedUniq(["Planning",...(r.data?.drivers||[]).map(x=>x.name)]);locations=uniq((r.data?.locations||[]).map(x=>x.name));renderOptions();if(r.error)msg("Could not load form options: "+r.error.message,"error");return}if(!live){loadLocal();driverSchedule=[];renderOptions();renderBoard();return}const [tr,dr,lr,sc]=await Promise.all([sb.from("transfers").select("*").order("scheduled_date").order("scheduled_time"),loadDriversWithFallback(),loadLocationsWithFallback(),sb.from("driver_schedules").select("driver_name,schedule_date,start_time,end_time").eq("schedule_date",E.boardDate.value)]);if(tr.error){msg("Transfers could not load: "+tr.error.message,"error");items=[]}else items=(tr.data||[]).map(normalize);drivers=orderedUniq(["Planning",...(dr.error?[]:(dr.data||[]).map(x=>x.name)),...items.map(x=>x.driver)]);locations=uniq([...(lr.error?["Sunnyvale 100","Sunnyvale 200"]:(lr.data||[]).map(x=>x.name)),...items.flatMap(x=>[x.origin,x.destination]),"Sunnyvale 100","Sunnyvale 200"]);driverSchedule=sc.error?[]:(sc.data||[]);if(dr.error||lr.error){const details=[dr.error?"Drivers: "+dr.error.message:"",lr.error?"Locations: "+lr.error.message:""].filter(Boolean).join(" · ");msg("Could not load driver/location lists. "+details,"error")}renderOptions();renderBoard()}
+async function loadData(){if(!window.TransfersAccess.can("view_board")){const r=await sb.rpc("get_transfer_board_options");items=[];driverSchedule=[];drivers=orderedUniq(["Planning",...(r.data?.drivers||[]).map(x=>x.name)]);locations=uniq((r.data?.locations||[]).map(x=>x.name));renderOptions();if(r.error)msg("Could not load form options: "+r.error.message,"error");return}if(!live){loadLocal();driverSchedule=[];renderOptions();renderBoard();return}const [tr,dr,lr,sc]=await Promise.all([sb.from("transfers").select("*").order("scheduled_date").order("scheduled_time"),loadDriversWithFallback(),loadLocationsWithFallback(),sb.from("driver_schedules").select("driver_name,schedule_date,start_time,end_time").gte("schedule_date",add(E.boardDate.value,-1)).lte("schedule_date",E.boardDate.value)]);if(tr.error){msg("Transfers could not load: "+tr.error.message,"error");items=[]}else items=(tr.data||[]).map(normalize);drivers=orderedUniq(["Planning",...(dr.error?[]:(dr.data||[]).map(x=>x.name)),...items.map(x=>x.driver)]);locations=uniq([...(lr.error?["Sunnyvale 100","Sunnyvale 200"]:(lr.data||[]).map(x=>x.name)),...items.flatMap(x=>[x.origin,x.destination]),"Sunnyvale 100","Sunnyvale 200"]);driverSchedule=sc.error?[]:(sc.data||[]);if(dr.error||lr.error){const details=[dr.error?"Drivers: "+dr.error.message:"",lr.error?"Locations: "+lr.error.message:""].filter(Boolean).join(" · ");msg("Could not load driver/location lists. "+details,"error")}renderOptions();renderBoard()}
 async function subscribe(){if(!window.TransfersAccess.can("view_board"))return;if(!live)return;editorPresenceReady=false;if(dataChannel)await sb.removeChannel(dataChannel);if(presence)await sb.removeChannel(presence);dataChannel=sb.channel("transfers-data").on("postgres_changes",{event:"INSERT",schema:"public",table:"transfers"},handleNewTransfer).on("postgres_changes",{event:"*",schema:"public",table:"transfers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_locations"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"driver_schedules"},loadBoardSchedule).on("postgres_changes",{event:"*",schema:"public",table:"transfer_slot_statuses"},()=>slotStatuses.refresh()).on("postgres_changes",{event:"*",schema:"public",table:"board_box_links"},()=>boxLinks.refresh()).on("postgres_changes",{event:"UPDATE",schema:"public",table:"profiles",filter:"id=eq."+user.id},event=>{profile={...profile,...event.new};publishEditorPresence()}).subscribe();presence=sb.channel("transfers-active",{config:{presence:{key:user.id}}}).on("presence",{event:"sync"},()=>{const unique=new Map();Object.values(presence.presenceState()).forEach(v=>v.forEach(x=>{const id=x.user_id||x.email;if(id&&!unique.has(id))unique.set(id,x)}));renderUsers([...unique.values()]);window.TransferEditors?.sync(Object.values(presence.presenceState()).flat())}).subscribe(s=>{editorPresenceReady=s==="SUBSCRIBED";if(editorPresenceReady)publishEditorPresence();else window.TransferEditors?.sync([])})}
 function closeStatusEditor(showTransferForm=true){
   if(E.slotStatusEditor)E.slotStatusEditor.classList.add("hidden");

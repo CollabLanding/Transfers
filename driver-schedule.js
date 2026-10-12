@@ -57,38 +57,26 @@
     return Number.isInteger(rounded)?String(rounded):rounded.toFixed(2).replace(/0$/,"");
   }
 
-  function transferSpillsOutsideShift(transfer,start,end){
-    const jobStart=minutes(transfer?.scheduled_time);
-    const duration=Number(transfer?.duration_minutes||0);
-    if(jobStart==null||!duration)return false;
-    const jobEnd=jobStart+duration;
-    let shiftStart=minutes(start),shiftEnd=minutes(end);
-    if(shiftStart==null||shiftEnd==null)return true;
-    if(shiftEnd<=shiftStart)shiftEnd+=1440;
-    return jobStart<shiftStart||jobEnd>shiftEnd;
-  }
   function updateOverrunWarnings(){
+    const map=new Map(scheduleRows.map(r=>[r.driver_name+"|"+r.schedule_date,r]));
+    E.body.querySelectorAll("tr[data-driver]").forEach(tr=>tr.querySelectorAll(".schedule-day-cell").forEach(cell=>{
+      map.set(tr.dataset.driver+"|"+cell.dataset.date,{driver_name:tr.dataset.driver,schedule_date:cell.dataset.date,start_time:cell.querySelector(".shift-start")?.value||"",end_time:cell.querySelector(".shift-end")?.value||""});
+    }));
+    const rows=[...map.values()],coverage=window.TransferScheduleCoverage;
     E.body.querySelectorAll("tr[data-driver]").forEach(tr=>{
       const driver=tr.dataset.driver;
       tr.querySelectorAll(".schedule-day-cell").forEach(cell=>{
-        cell.querySelector(".schedule-overrun-warning")?.remove();
-        cell.classList.remove("has-schedule-overrun");
-        cell.removeAttribute("title");
-        const date=cell.dataset.date;
-        const start=cell.querySelector(".shift-start")?.value||"";
-        const end=cell.querySelector(".shift-end")?.value||"";
-        const spill=weekTransfers.some(t=>
-          String(t.driver||"")===driver&&
-          String(t.scheduled_date||"")===date&&
-          transferSpillsOutsideShift(t,start,end)
-        );
+        cell.querySelector(".schedule-overrun-warning")?.remove();cell.querySelector(".shift-overnight-note")?.remove();
+        cell.classList.remove("has-schedule-overrun");cell.removeAttribute("title");
+        const date=cell.dataset.date,own=map.get(driver+"|"+date),previous=map.get(driver+"|"+addDays(date,-1)),notes=[];
+        if(own?.start_time&&own?.end_time&&minutes(own.end_time)<minutes(own.start_time))notes.push("Ends next day at "+time12(own.end_time));
+        if(previous?.start_time&&previous?.end_time&&minutes(previous.end_time)<minutes(previous.start_time)&&minutes(previous.end_time)>0)notes.push("From previous day: midnight–"+time12(previous.end_time));
+        if(notes.length){const note=document.createElement("div");note.className="shift-overnight-note";note.style.fontSize="11px";note.style.marginTop="4px";note.textContent=notes.join(" · ");cell.appendChild(note)}
+        const ranges=coverage.intervals(rows,driver,date);
+        const spill=weekTransfers.some(t=>String(t.driver||"")===driver&&String(t.scheduled_date||"")===date&&!coverage.covers(ranges,minutes(t.scheduled_time),minutes(t.scheduled_time)+Number(t.duration_minutes||0)));
         if(!spill)return;
-        cell.classList.add("has-schedule-overrun");
-        cell.title="One or more transfers extend outside this driver's scheduled hours.";
-        const warning=document.createElement("span");
-        warning.className="schedule-overrun-warning";
-        warning.setAttribute("aria-hidden","true");
-        cell.appendChild(warning);
+        cell.classList.add("has-schedule-overrun");cell.title="One or more transfers extend outside this driver's scheduled hours.";
+        const warning=document.createElement("span");warning.className="schedule-overrun-warning";warning.setAttribute("aria-hidden","true");cell.appendChild(warning);
       });
     });
   }
@@ -238,7 +226,7 @@
     const start=E.week.value,end=addDays(start,6);
     const [dr,sc,tr]=await Promise.all([
       loadDriverList(),
-      sb.from("driver_schedules").select("*").gte("schedule_date",start).lte("schedule_date",end),
+      sb.from("driver_schedules").select("*").gte("schedule_date",addDays(start,-1)).lte("schedule_date",addDays(end,1)),
       sb.from("transfers").select("driver,scheduled_date,scheduled_time,duration_minutes").gte("scheduled_date",start).lte("scheduled_date",end)
     ]);
     if(dr.error){
@@ -562,7 +550,7 @@
             doc.setFont("helvetica","normal");
           }
           doc.text(time12(r.start_time)||"OFF",margin+220,y);
-          doc.text(time12(r.end_time),margin+300,y);
+          doc.text(time12(r.end_time)+(minutes(r.end_time)<minutes(r.start_time)?" (+1 day)":""),margin+300,y);
           doc.text(fmtHours(hrs),margin+380,y);
           doc.setDrawColor(232,236,240);
           doc.line(margin,y+5,pageW-margin,y+5);
