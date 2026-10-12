@@ -11,7 +11,7 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20261012-urgent-up2">
+  <link rel="stylesheet" href="styles.css?v=20261012-urgent-direct-offset">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js?v=20261009-permissions"></script>
   <script src="access-control.js?v=20261012-title-urgent"></script>
@@ -70,7 +70,7 @@
           <button type="button" class="hidden" id="statusHistory">Status History</button>
           <button type="button" class="danger hidden" id="delete">Delete</button>
           <button type="button" class="hidden" id="cancel">Cancel Edit</button>
-          <label class="urgent-toggle" title="Mark this transfer as urgent">
+          <label class="urgent-toggle" style="transform:translateY(-2px)" title="Mark this transfer as urgent">
             <span class="urgent-toggle-label">Urgent</span>
             <input id="urgent" type="checkbox" form="form" aria-label="Mark transfer urgent">
             <span class="urgent-toggle-track" aria-hidden="true"><span class="urgent-toggle-thumb"></span></span>
