@@ -47,14 +47,14 @@ main{grid-template-columns:380px minmax(0,1fr) 155px;align-items:start}
 .card.status-planned .card-status{color:#475569}
 .card.status-waiting{background:#f97316;border-color:#ea580c;border-left-color:#c2410c;color:#431407}
 .card.status-waiting .card-status{color:#431407}
-.card.status-on-site{background:#f2e85c;border-color:#d4bd20;border-left-color:#a88d12}
-.card.status-on-site .card-status{color:#594a0c}
+.card.status-in-transit{background:#f2e85c;border-color:#d4bd20;border-left-color:#a88d12}
+.card.status-in-transit .card-status{color:#594a0c}
 .card.status-loading{background:#f59e0b;border-color:#d97706;border-left-color:#b45309}
 .card.status-loading .card-status{color:#451a03}
 .card.status-loaded{background:#eab308;border-color:#ca8a04;border-left-color:#a16207}
 .card.status-loaded .card-status{color:#713f12}
-.card.status-in-transit{background:#d9e34f;border-color:#b8c62f;border-left-color:#94a51f}
-.card.status-in-transit .card-status{color:#4a5010}
+.card.status-on-site{background:#d9e34f;border-color:#b8c62f;border-left-color:#94a51f}
+.card.status-on-site .card-status{color:#4a5010}
 .card.status-delivered{background:#16b85a;border-color:#119447;border-left-color:#087b38}
 .card.status-delivered .card-status{color:#14532d}
 
@@ -133,14 +133,14 @@ html[data-theme="dark"] .card.status-planned{background:#29333d;border-color:#6f
 html[data-theme="dark"] .card.status-planned .card-status{color:#c1ccd5}
 html[data-theme="dark"] .card.status-waiting{background:#7c2d12;border-color:#c2410c;border-left-color:#ea580c;color:#fff7ed}
 html[data-theme="dark"] .card.status-waiting .card-status{color:#ffedd5}
-html[data-theme="dark"] .card.status-on-site{background:#625b16;border-color:#b5a623;border-left-color:#e1ce36}
-html[data-theme="dark"] .card.status-on-site .card-status{color:#fff3a3}
+html[data-theme="dark"] .card.status-in-transit{background:#625b16;border-color:#b5a623;border-left-color:#e1ce36}
+html[data-theme="dark"] .card.status-in-transit .card-status{color:#fff3a3}
 html[data-theme="dark"] .card.status-loading{background:#92400e;border-color:#d97706;border-left-color:#f59e0b}
 html[data-theme="dark"] .card.status-loading .card-status{color:#fef3c7}
 html[data-theme="dark"] .card.status-loaded{background:#5b4a10;border-color:#ca8a04;border-left-color:#eab308}
 html[data-theme="dark"] .card.status-loaded .card-status{color:#fef08a}
-html[data-theme="dark"] .card.status-in-transit{background:#555c18;border-color:#a4b52a;border-left-color:#c2d23a}
-html[data-theme="dark"] .card.status-in-transit .card-status{color:#e7ee94}
+html[data-theme="dark"] .card.status-on-site{background:#555c18;border-color:#a4b52a;border-left-color:#c2d23a}
+html[data-theme="dark"] .card.status-on-site .card-status{color:#e7ee94}
 html[data-theme="dark"] .card.status-delivered{background:#08783b;border-color:#10a452;border-left-color:#20cf69}
 html[data-theme="dark"] .card.status-delivered .card-status{color:#bbf7d0}
 html[data-theme="dark"] .card .draghint{color:#aebdca}

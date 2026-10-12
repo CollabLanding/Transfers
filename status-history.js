@@ -21,8 +21,8 @@
     "Waiting":"#f97316",
     "Loading":"#f59e0b",
     "Loaded":"#eab308",
-    "In Transit":"#d9e34f",
-    "On Site":"#f2e85c",
+    "In Transit":"#f2e85c",
+    "On Site":"#d9e34f",
     "Delivered":"#119447"
   };
 
