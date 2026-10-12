@@ -25,8 +25,8 @@
   function scheduleLink(){const m=$("applyMonth").value||monthNow();$("viewSchedule").href="drivers.html?week="+encodeURIComponent(m+"-01");}
   function savedState(row){
     $("profileTitle").textContent="Driver Information · "+row.name;
-    $("driverSlotName").value=row.name;$("driverSlotName").readOnly=true;
-    $("slotNameHelp").textContent="The slot name stays fixed to preserve schedule and job history. Edit the driver's full name below.";
+    $("driverSlotName").value=row.name;$("driverSlotName").readOnly=!window.TransfersAccess.isAdmin();
+    $("slotNameHelp").textContent=window.TransfersAccess.isAdmin()?"Admin and Owner accounts can rename this slot. Loads, schedules, and records keep their connection.":"Only Admin and Owner accounts can rename this slot.";
     $("driverFullName").value=row.full_name||"";$("driverPhone").value=row.phone_number||"";
     $("driverEmail").value=row.email||"";$("driverNotes").value=row.notes||"";$("autoRepeat").checked=!!row.auto_repeat;
     setWeek(row.weekly_schedule);
@@ -58,8 +58,8 @@
       const {data,error}=await sb.rpc("save_driver_profile",{p_original:original,p_name:$("driverSlotName").value.trim(),p_full_name:$("driverFullName").value.trim(),p_phone:number,p_email:$("driverEmail").value.trim(),p_notes:$("driverNotes").value.trim(),p_week:week(),p_repeat:$("autoRepeat").checked});
       if(token!==version)return false;if(error)throw error;
       original=data.name;history.replaceState(null,"","driver-profile.html?driver="+encodeURIComponent(original));
-      $("driverSlotName").readOnly=true;$("driverPhone").value=number||"";$("profileTitle").textContent="Driver Information · "+original;
-      $("slotNameHelp").textContent="The slot name stays fixed to preserve schedule and job history. Edit the driver's full name below.";
+      $("driverSlotName").value=original;$("driverSlotName").readOnly=!window.TransfersAccess.isAdmin();$("driverPhone").value=number||"";$("profileTitle").textContent="Driver Information · "+original;
+      $("slotNameHelp").textContent=window.TransfersAccess.isAdmin()?"Admin and Owner accounts can rename this slot. Loads, schedules, and records keep their connection.":"Only Admin and Owner accounts can rename this slot.";
       $("applySchedulePanel").classList.remove("hidden");baseline=snapshot();mark();
       $("repeatStatus").textContent=data.generated_month?"Schedule prepared through "+new Date(data.generated_month+"T12:00:00").toLocaleDateString(undefined,{month:"long",year:"numeric"})+".":"Automatic monthly repeat is off.";
       message("Driver saved."+(data.generated_days?" "+data.generated_days+" dates prepared for next month.":""),"ok");return true;
