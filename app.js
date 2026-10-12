@@ -174,7 +174,7 @@ function orderedUniq(values){const out=[],seen=new Set();for(const raw of values
 function saveLocal(){localStorage.setItem(key,JSON.stringify(items));localStorage.setItem(driverKey,JSON.stringify(drivers));localStorage.setItem(locationKey,JSON.stringify(locations))}
 function loadLocal(){try{items=(JSON.parse(localStorage.getItem(key)||"[]")||[]).map(normalize)}catch{items=[]}try{drivers=JSON.parse(localStorage.getItem(driverKey)||"[]")||[]}catch{drivers=[]}try{locations=JSON.parse(localStorage.getItem(locationKey)||'["Sunnyvale 100","Sunnyvale 200"]')||[]}catch{locations=["Sunnyvale 100","Sunnyvale 200"]}drivers=orderedUniq(["Planning",...drivers,...items.map(x=>x.driver)]);locations=uniq([...locations,...items.flatMap(x=>[x.origin,x.destination]),"Sunnyvale 100","Sunnyvale 200"])}
 function fillSelect(select,values,placeholder,addText,sentinel,preserve){let current=preserve??select.value;select.innerHTML='<option value="" disabled>'+esc(placeholder)+'</option>'+values.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("")+(window.TransfersAccess.can(sentinel==="__add_driver__"?"driver_profiles":"locations")?'<option value="'+sentinel+'">＋ '+esc(addText)+'</option>':'');if(values.includes(current))select.value=current;else select.value=""}
-function renderOptions(){let dv=E.driver.value||"Planning",ov=E.origin.value,tv=E.destination.value;fillSelect(E.driver,drivers,"Select driver","Add a Driver…","__add_driver__",dv);fillSelect(E.origin,locations,"Select origin","Add a Location…","__add_location__",ov);fillSelect(E.destination,locations,"Select destination","Add a Location…","__add_location__",tv)}
+function renderOptions(){let dv=E.driver.value||"Planning",ov=E.origin.value,tv=E.destination.value;fillSelect(E.driver,drivers,"Select driver","Add a Driver…","__add_driver__",window.TransfersAccess.role==="Vendor"?"Planning":dv);E.driver.disabled=window.TransfersAccess.role==="Vendor";fillSelect(E.origin,locations,"Select origin","Add a Location…","__add_location__",ov);fillSelect(E.destination,locations,"Select destination","Add a Location…","__add_location__",tv)}
 function renderUsers(list){E.active.innerHTML="";(list||[]).forEach(u=>{let d=document.createElement("div");d.className="activeRow";d.textContent=u.display_name||u.email||"User";E.active.appendChild(d)})}
 function scheduleOverlay(lane,top,height,kind,label=""){
   if(height<=0)return;
@@ -495,7 +495,7 @@ async function submit(ev){
     deliver_by_date:E.deliverByDate.value||null,
     deliver_by_time:E.deliverByTime.value||null,
 
-    driver:E.driver.value,
+    driver:window.TransfersAccess.role==="Vendor"?"Planning":E.driver.value,
     origin:E.origin.value,
     destination:E.destination.value,
     pallet_count:Number(E.pallet.value),
