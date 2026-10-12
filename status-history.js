@@ -22,8 +22,8 @@
     "Loading":"#f59e0b",
     "Loaded":"#eab308",
     "In Transit":"#d9e34f",
-    "On Site":"#bef264",
-    "Delivered":"#16a34a"
+    "On Site":"#f2e85c",
+    "Delivered":"#119447"
   };
 
   let restoreFocus=null,editingChange=null,activeTransfer=null,activeHistory=null;
