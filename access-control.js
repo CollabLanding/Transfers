@@ -10,7 +10,7 @@
  const controlPermissions={
   "#duplicateDay":"duplicate_day","#textDriver":"send_sms","#statusHistory,#statusHistoryScreen":"status_history",
   ".created-by-link":"recent_activity","#delete":"delete_load","#duplicate":"duplicate_load",
-  ".deadline-controls":"load_deadlines",".resize-handle":"resize_load",".load-chain":"link_boxes",".slot-status-delete,.slot-resize-handle":"manage_status",
+  ".urgent-toggle":"load_deadlines",".resize-handle":"resize_load",".load-chain":"link_boxes",".slot-status-delete,.slot-resize-handle":"manage_status",
   "#slotStatusEditor":"status_notes",".copy-day,.copy-week,.copy-month":"copy_schedules",".clear-shift,#saveSchedule":"driver_schedules",
   "#addDriver":"driver_profiles","#runReports":"driver_reports",".driver-history-panel":"driver_activity",
   "#driverPhone":"driver_phones",".template-import,.profile-week-wrap,.repeat-option,#repeatStatus,#applySchedulePanel":"repeat_schedules",

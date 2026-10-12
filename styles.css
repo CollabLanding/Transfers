@@ -1765,3 +1765,8 @@ html[data-board-access="false"]:not([data-build-only="true"]) body:has(main>.boa
 /* Vendor load requests stay in Planning until dispatch assigns a driver. */
 html[data-access-role="Vendor"] #driver:disabled{background:#e5e7eb;color:#6b7280;border-color:#cbd5e1;opacity:1;cursor:not-allowed}
 html[data-theme="dark"][data-access-role="Vendor"] #driver:disabled{background:#29313b;color:#9ca3af;border-color:#475569}
+
+/* Urgent sits at the right edge of the transfer title row. */
+.transfer-form-head{gap:8px;align-items:center;flex-wrap:wrap}
+.transfer-form-head h2{min-width:0}
+.transfer-form-head .urgent-toggle{margin-left:auto;flex:0 0 auto;align-self:center}
