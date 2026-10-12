@@ -11,7 +11,7 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20261012-bottom-urgent">
+  <link rel="stylesheet" href="styles.css?v=20261012-urgent-below-notes">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js?v=20261009-permissions"></script>
   <script src="access-control.js?v=20261012-title-urgent"></script>
@@ -63,6 +63,11 @@
           <label>Pallet Count<input id="pallet" type="number" min="0" max="999" required></label>
           <label>Job Number / Notes<input id="job" required></label>
         </div>
+        <div class="transfer-urgent-footer"><label class="urgent-toggle" title="Mark this transfer as urgent">
+            <span class="urgent-toggle-label">Urgent</span>
+            <input id="urgent" type="checkbox" form="form" aria-label="Mark transfer urgent">
+            <span class="urgent-toggle-track" aria-hidden="true"><span class="urgent-toggle-thumb"></span></span>
+          </label></div>
         <div class="transfer-actions">
           <button class="primary" type="submit" id="save">Add Transfer</button>
           <button type="button" class="hidden" id="duplicate">Duplicate</button>
@@ -72,11 +77,6 @@
           <button type="button" class="hidden" id="cancel">Cancel Edit</button>
         </div>
         <p id="msg" role="status" aria-live="polite"></p>
-        <div class="transfer-urgent-footer"><label class="urgent-toggle" title="Mark this transfer as urgent">
-            <span class="urgent-toggle-label">Urgent</span>
-            <input id="urgent" type="checkbox" form="form" aria-label="Mark transfer urgent">
-            <span class="urgent-toggle-track" aria-hidden="true"><span class="urgent-toggle-thumb"></span></span>
-          </label></div>
       </form>
       <section id="slotStatusEditor" class="slot-status-editor hidden" aria-label="Edit status notes">
         <div class="slot-status-editor-head">

@@ -1770,5 +1770,5 @@ html[data-theme="dark"][data-access-role="Vendor"] #driver:disabled{background:#
 .transfer-form-head{gap:8px;align-items:center;flex-wrap:wrap}
 .transfer-form-head h2{min-width:0}
 .transfer-urgent-footer{display:flex;justify-content:flex-end;margin-top:6px}
-.transfer-urgent-footer .urgent-toggle{flex:0 0 auto;flex-direction:row;margin:0}
+.transfer-urgent-footer .urgent-toggle{flex:0 0 auto;flex-direction:column;align-items:center;gap:4px;margin:0}
 .transfer-form-head .panel-editor-bubbles{margin-left:auto}
