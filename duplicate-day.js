@@ -124,6 +124,7 @@
           driver:row.driver,
           origin:row.origin,
           destination:row.destination,
+          dock_number:row.dock_number??null,
           pallet_count:Number(row.pallet_count||0),
           job_number:row.job_number,
           order_status:"Planned",

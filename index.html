@@ -11,7 +11,7 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20261012-urgent-direct-offset">
+  <link rel="stylesheet" href="styles.css?v=20261013-dock-field">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js?v=20261009-permissions"></script>
   <script src="access-control.js?v=20261012-title-urgent"></script>
@@ -55,9 +55,10 @@
             </select>
           </label>
         </div>
-        <div class="row">
-          <label>Load Origination<select id="origin" required></select></label>
-          <label>Load Destination<select id="destination" required></select></label>
+        <div class="row route-row">
+          <label class="route-origin-field">Load Origination<select id="origin" required></select></label>
+          <label class="route-destination-field">Load Destination<select id="destination" required></select></label>
+          <label class="route-dock-field">Dock<select id="dock"><option value="">—</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option><option value="32">32</option><option value="33">33</option><option value="34">34</option><option value="35">35</option><option value="36">36</option><option value="37">37</option><option value="38">38</option><option value="39">39</option><option value="40">40</option><option value="41">41</option><option value="42">42</option><option value="43">43</option><option value="44">44</option><option value="45">45</option><option value="46">46</option><option value="47">47</option><option value="48">48</option><option value="49">49</option><option value="50">50</option><option value="51">51</option><option value="52">52</option><option value="53">53</option></select></label>
         </div>
         <div class="row job-row">
           <label>Pallet Count<input id="pallet" type="number" min="0" max="999" required></label>
@@ -200,11 +201,11 @@
 <script src="status-history.js?v=20261012-swapped-status-colors"></script>
 <script src="editor-bubbles.js?v=20261009-vertical-bubbles"></script>
 <script src="driver-availability.js?v=20261012-overnight"></script>
-<script src="app.js?v=20261012-title-urgent"></script>
+<script src="app.js?v=20261013-dock-field"></script>
 <script src="order-status.js?v=20261009-permissions"></script>
 <script src="recent-activity.js?v=20261009-permissions"></script>
-<script src="duplicate-transfer.js?v=20261009-permissions"></script>
-<script src="duplicate-day.js?v=20261009-permissions"></script>
+<script src="duplicate-transfer.js?v=20261013-dock-field"></script>
+<script src="duplicate-day.js?v=20261013-dock-field"></script>
 <script src="theme.js?v=20261009-permissions"></script>
 <script src="chat.js?v=20261009-permissions"></script>
 <script src="sms.js?v=20261009-permissions"></script>

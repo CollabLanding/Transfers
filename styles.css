@@ -1776,3 +1776,10 @@ html[data-theme="dark"][data-access-role="Vendor"] #driver:disabled{background:#
 /* Actions and Urgent share the row immediately below Notes. */
 .transfer-actions{position:relative;min-height:42px;align-items:flex-start}
 .transfer-actions .urgent-toggle{position:absolute;right:0;top:0;display:flex;flex-direction:column;align-items:center;gap:4px;margin:0}
+
+/* Location fields fit their options; Dock shares the same row. */
+.row.route-row{display:flex;gap:10px;align-items:start}
+.route-row .route-origin-field{flex:0 1 var(--origin-fit,130px);min-width:0}
+.route-row .route-destination-field{flex:0 1 var(--destination-fit,130px);min-width:0}
+.route-row .route-dock-field{flex:0 0 50px;min-width:0}
+.route-row select{min-width:0}

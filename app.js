@@ -4,7 +4,7 @@ let editorPresenceReady=false;
 const editorTabId=crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random();
 let user=null,profile=null,items=[],drivers=[],locations=[],driverSchedule=[],presence=null,dataChannel=null,optionContext=null,ignoreClickUntil=0,draggedDriver=null,draggedTransferId=null,dragGrabOffsetPx=0,audioCtx=null,lastPlanningDing=0,transferInfoBaseline=null;
 let transferAutoScrollFrame=0,transferAutoScrollX=0,transferAutoScrollY=0,transferAutoScrollUpdated=0;
-const $=id=>document.getElementById(id),E={form:$("form"),edit:$("editId"),date:$("date"),time:$("time"),duration:$("duration"),driver:$("driver"),origin:$("origin"),destination:$("destination"),pallet:$("pallet"),job:$("job"),status:$("status"),urgent:$("urgent"),save:$("save"),del:$("delete"),cancel:$("cancel"),textDriver:$("textDriver"),msg:$("msg"),slotStatusEditor:$("slotStatusEditor"),slotStatusTitle:$("slotStatusTitle"),slotStatusMeta:$("slotStatusMeta"),slotStatusNotes:$("slotStatusNotes"),slotStatusSave:$("slotStatusSave"),slotStatusCancel:$("slotStatusCancel"),slotStatusClose:$("slotStatusClose"),slotStatusMsg:$("slotStatusMsg"),boardDate:$("boardDate"),grid:$("grid"),title:$("title"),currentTime:$("scheduleCurrentTime"),mode:$("mode"),me:$("me"),email:$("email"),active:$("active"),login:$("login"),loginForm:$("loginForm"),loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg"),signout:$("signout"),formTitle:$("formTitle"),optionModal:$("optionModal"),optionForm:$("optionForm"),optionTitle:$("optionTitle"),optionLabel:$("optionLabel"),optionName:$("optionName"),optionMsg:$("optionMsg"),optionClose:$("optionClose"),optionCancel:$("optionCancel"),statusHistory:$("statusHistory"),statusHistoryScreen:$("statusHistoryScreen"),statusHistoryBack:$("statusHistoryBack")};
+const $=id=>document.getElementById(id),E={form:$("form"),edit:$("editId"),date:$("date"),time:$("time"),duration:$("duration"),driver:$("driver"),origin:$("origin"),destination:$("destination"),dock:$("dock"),pallet:$("pallet"),job:$("job"),status:$("status"),urgent:$("urgent"),save:$("save"),del:$("delete"),cancel:$("cancel"),textDriver:$("textDriver"),msg:$("msg"),slotStatusEditor:$("slotStatusEditor"),slotStatusTitle:$("slotStatusTitle"),slotStatusMeta:$("slotStatusMeta"),slotStatusNotes:$("slotStatusNotes"),slotStatusSave:$("slotStatusSave"),slotStatusCancel:$("slotStatusCancel"),slotStatusClose:$("slotStatusClose"),slotStatusMsg:$("slotStatusMsg"),boardDate:$("boardDate"),grid:$("grid"),title:$("title"),currentTime:$("scheduleCurrentTime"),mode:$("mode"),me:$("me"),email:$("email"),active:$("active"),login:$("login"),loginForm:$("loginForm"),loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg"),signout:$("signout"),formTitle:$("formTitle"),optionModal:$("optionModal"),optionForm:$("optionForm"),optionTitle:$("optionTitle"),optionLabel:$("optionLabel"),optionName:$("optionName"),optionMsg:$("optionMsg"),optionClose:$("optionClose"),optionCancel:$("optionCancel"),statusHistory:$("statusHistory"),statusHistoryScreen:$("statusHistoryScreen"),statusHistoryBack:$("statusHistoryBack")};
 const key="transfers-demo-v2",driverKey="transfers-demo-drivers-v1",locationKey="transfers-demo-locations-v1",PX15=20,GRID_START=210,GRID_END=1320,GRID_HEIGHT=((GRID_END-GRID_START)/15)*PX15;
 const today=()=>{let d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)},add=(iso,n)=>{let d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)},fmt=t=>{let [h,m]=String(t).slice(0,5).split(":").map(Number);return (h%12||12)+":"+String(m).padStart(2,"0")+" "+(h>=12?"PM":"AM")};
 const minToTime=m=>String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"),timeToMin=t=>{let [h,m]=String(t).slice(0,5).split(":").map(Number);return h*60+m};
@@ -168,13 +168,25 @@ function planningDing(){
 function handleNewTransfer(payload){
   if(String(payload?.new?.driver||"").trim().toLowerCase()==="planning")planningDing();
 }
-function normalize(x){return{linked_next_id:x.linked_next_id?String(x.linked_next_id):null,pickup_by_date:x.pickup_by_date||"",pickup_by_time:String(x.pickup_by_time||"").slice(0,5),deliver_by_date:x.deliver_by_date||"",deliver_by_time:String(x.deliver_by_time||"").slice(0,5),id:String(x.id),scheduled_date:x.scheduled_date,scheduled_time:String(x.scheduled_time||"00:00").slice(0,5),duration_minutes:Number(x.duration_minutes||60),driver:x.driver||"Unassigned",origin:x.origin==="Building 100"?"Sunnyvale 100":x.origin==="Building 200"?"Sunnyvale 200":(x.origin||""),destination:x.destination==="Building 100"?"Sunnyvale 100":x.destination==="Building 200"?"Sunnyvale 200":(x.destination||""),pallet_count:Number(x.pallet_count||0),job_number:x.job_number||"",order_status:x.order_status||"Planned",urgent:Boolean(x.urgent),move_number:x.move_number==null?null:Number(x.move_number),created_by:x.created_by,created_by_name:x.created_by_name||"Unknown",created_at:x.created_at||"",updated_at:x.updated_at||x.created_at||""}}
+function normalize(x){return{linked_next_id:x.linked_next_id?String(x.linked_next_id):null,pickup_by_date:x.pickup_by_date||"",pickup_by_time:String(x.pickup_by_time||"").slice(0,5),deliver_by_date:x.deliver_by_date||"",deliver_by_time:String(x.deliver_by_time||"").slice(0,5),dock_number:x.dock_number==null?null:Number(x.dock_number),id:String(x.id),scheduled_date:x.scheduled_date,scheduled_time:String(x.scheduled_time||"00:00").slice(0,5),duration_minutes:Number(x.duration_minutes||60),driver:x.driver||"Unassigned",origin:x.origin==="Building 100"?"Sunnyvale 100":x.origin==="Building 200"?"Sunnyvale 200":(x.origin||""),destination:x.destination==="Building 100"?"Sunnyvale 100":x.destination==="Building 200"?"Sunnyvale 200":(x.destination||""),pallet_count:Number(x.pallet_count||0),job_number:x.job_number||"",order_status:x.order_status||"Planned",urgent:Boolean(x.urgent),move_number:x.move_number==null?null:Number(x.move_number),created_by:x.created_by,created_by_name:x.created_by_name||"Unknown",created_at:x.created_at||"",updated_at:x.updated_at||x.created_at||""}}
 function uniq(values){return [...new Set(values.filter(Boolean).map(v=>String(v).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b))}
 function orderedUniq(values){const out=[],seen=new Set();for(const raw of values){const v=String(raw||"").trim();if(v&&!seen.has(v)){seen.add(v);out.push(v)}}return out}
 function saveLocal(){localStorage.setItem(key,JSON.stringify(items));localStorage.setItem(driverKey,JSON.stringify(drivers));localStorage.setItem(locationKey,JSON.stringify(locations))}
 function loadLocal(){try{items=(JSON.parse(localStorage.getItem(key)||"[]")||[]).map(normalize)}catch{items=[]}try{drivers=JSON.parse(localStorage.getItem(driverKey)||"[]")||[]}catch{drivers=[]}try{locations=JSON.parse(localStorage.getItem(locationKey)||'["Sunnyvale 100","Sunnyvale 200"]')||[]}catch{locations=["Sunnyvale 100","Sunnyvale 200"]}drivers=orderedUniq(["Planning",...drivers,...items.map(x=>x.driver)]);locations=uniq([...locations,...items.flatMap(x=>[x.origin,x.destination]),"Sunnyvale 100","Sunnyvale 200"])}
 function fillSelect(select,values,placeholder,addText,sentinel,preserve){let current=preserve??select.value;select.innerHTML='<option value="" disabled>'+esc(placeholder)+'</option>'+values.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("")+(window.TransfersAccess.can(sentinel==="__add_driver__"?"driver_profiles":"locations")?'<option value="'+sentinel+'">＋ '+esc(addText)+'</option>':'');if(values.includes(current))select.value=current;else select.value=""}
-function renderOptions(){let dv=E.driver.value||"Planning",ov=E.origin.value,tv=E.destination.value;fillSelect(E.driver,drivers,"Select driver","Add a Driver…","__add_driver__",window.TransfersAccess.role==="Vendor"?"Planning":dv);E.driver.disabled=window.TransfersAccess.role==="Vendor";fillSelect(E.origin,locations,"Select origin","Add a Location…","__add_location__",ov);fillSelect(E.destination,locations,"Select destination","Add a Location…","__add_location__",tv)}
+function fitRouteFields(){
+ const row=E.origin.closest(".route-row");if(!row)return;
+ const context=document.createElement("canvas").getContext("2d");if(!context)return;
+ for(const [select,key]of [[E.origin,"origin"],[E.destination,"destination"]]){
+  const style=getComputedStyle(select);context.font=style.font||style.fontSize+" "+style.fontFamily;
+  const optionWidth=Math.max(...[...select.options].map(o=>context.measureText(o.textContent).width));
+  const label=select.parentElement,caption=label.firstChild.textContent.trim(),labelStyle=getComputedStyle(label);
+  context.font=labelStyle.font||labelStyle.fontSize+" "+labelStyle.fontFamily;
+  const width=Math.ceil(Math.max(context.measureText(caption).width,optionWidth+parseFloat(style.paddingLeft)+parseFloat(style.paddingRight)+22));
+  row.style.setProperty("--"+key+"-fit",width+"px");
+ }
+}
+function renderOptions(){let dv=E.driver.value||"Planning",ov=E.origin.value,tv=E.destination.value;fillSelect(E.driver,drivers,"Select driver","Add a Driver…","__add_driver__",window.TransfersAccess.role==="Vendor"?"Planning":dv);E.driver.disabled=window.TransfersAccess.role==="Vendor";fillSelect(E.origin,locations,"Select origin","Add a Location…","__add_location__",ov);fillSelect(E.destination,locations,"Select destination","Add a Location…","__add_location__",tv);fitRouteFields()}
 function renderUsers(list){E.active.innerHTML="";(list||[]).forEach(u=>{let d=document.createElement("div");d.className="activeRow";d.textContent=u.display_name||u.email||"User";E.active.appendChild(d)})}
 function scheduleOverlay(lane,top,height,kind,label=""){
   if(height<=0)return;
@@ -434,7 +446,7 @@ function selectStatusEditor(row){
   openStatusEditor(row);
 }
 function reset(){transferInfoBaseline=null;closeStatusEditor();E.form.reset();E.edit.value="";E.date.value=E.boardDate.value;E.time.value="08:00";E.duration.value="60";if(E.status)E.status.value="Planned";if(E.urgent)E.urgent.checked=false;E.formTitle.textContent="Build Transfer Load";E.save.textContent="Add Transfer";E.del.classList.add("hidden");E.cancel.classList.add("hidden");E.textDriver?.classList.add("hidden");E.statusHistory?.classList.add("hidden");E.statusHistoryScreen?.classList.add("hidden");renderOptions();msg("");window.TransfersAccess.apply();publishEditorPresence()}
-function edit(id){if(!window.TransfersAccess.can("edit_load"))return;closeStatusEditor();let x=items.find(i=>i.id===String(id));if(!x)return;E.edit.value=x.id;E.date.value=x.scheduled_date;E.time.value=x.scheduled_time;if(![...E.duration.options].some(o=>Number(o.value)===Number(x.duration_minutes))){const o=document.createElement("option");o.value=String(x.duration_minutes);o.textContent=durationLabel(x.duration_minutes);E.duration.appendChild(o)}E.duration.value=String(x.duration_minutes);renderOptions();E.driver.value=x.driver;E.origin.value=x.origin;E.destination.value=x.destination;E.pallet.value=x.pallet_count;E.job.value=x.job_number;E.status.value=x.order_status||"Planned";if(E.urgent)E.urgent.checked=Boolean(x.urgent);E.formTitle.textContent="Transfer Info";E.save.textContent="Update";E.del.classList.remove("hidden");E.cancel.classList.remove("hidden");E.textDriver?.classList.remove("hidden");E.statusHistory?.classList.remove("hidden");transferInfoBaseline=transferInfoValues();createdByMessage(x);window.TransfersAccess.apply();publishEditorPresence()}
+function edit(id){if(!window.TransfersAccess.can("edit_load"))return;closeStatusEditor();let x=items.find(i=>i.id===String(id));if(!x)return;E.edit.value=x.id;E.date.value=x.scheduled_date;E.time.value=x.scheduled_time;if(![...E.duration.options].some(o=>Number(o.value)===Number(x.duration_minutes))){const o=document.createElement("option");o.value=String(x.duration_minutes);o.textContent=durationLabel(x.duration_minutes);E.duration.appendChild(o)}E.duration.value=String(x.duration_minutes);renderOptions();E.driver.value=x.driver;E.origin.value=x.origin;E.destination.value=x.destination;E.dock.value=x.dock_number==null?"":String(x.dock_number);E.pallet.value=x.pallet_count;E.job.value=x.job_number;E.status.value=x.order_status||"Planned";if(E.urgent)E.urgent.checked=Boolean(x.urgent);E.formTitle.textContent="Transfer Info";E.save.textContent="Update";E.del.classList.remove("hidden");E.cancel.classList.remove("hidden");E.textDriver?.classList.remove("hidden");E.statusHistory?.classList.remove("hidden");transferInfoBaseline=transferInfoValues();createdByMessage(x);window.TransfersAccess.apply();publishEditorPresence()}
 async function openTransferEditor(id){
   let x=items.find(i=>String(i.id)===String(id));
   if(!x&&live){
@@ -469,6 +481,7 @@ async function submit(ev){
     driver:window.TransfersAccess.role==="Vendor"?"Planning":E.driver.value,
     origin:E.origin.value,
     destination:E.destination.value,
+    dock_number:E.dock.value?Number(E.dock.value):null,
     pallet_count:Number(E.pallet.value),
     job_number:E.job.value.trim(),
     order_status:E.status?.value||"Planned",
@@ -514,6 +527,7 @@ async function submit(ev){
         driver:p.driver,
         origin:p.origin,
         destination:p.destination,
+        dock_number:p.dock_number,
         pallet_count:p.pallet_count,
         job_number:p.job_number,
         order_status:p.order_status,
@@ -572,6 +586,7 @@ function transferInfoValues(){
     driver:E.driver?.value||"",
     origin:E.origin?.value||"",
     destination:E.destination?.value||"",
+    dock:E.dock?.value||"",
     pallet:E.pallet?.value||"",
     job:E.job?.value||"",
     status:E.status?.value||"",
