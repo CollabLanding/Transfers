@@ -290,14 +290,14 @@ function deadlineText(date,time){
 function makeCard(x,visualTop=null,visualHeight=null,stacked=false){
  const deadlines=[["PU",deadlineText(x.pickup_by_date,x.pickup_by_time)],["DL",deadlineText(x.deliver_by_date,x.deliver_by_time)]].filter(([,value])=>value);
  let b=document.createElement("div");b.setAttribute("role","button");b.tabIndex=0;
- b.className="card "+statusClass(x.order_status)+(x.urgent?" urgent":"")+(stacked?" visually-stacked":"");b.draggable=true;b.dataset.id=x.id;if(deadlines.length)b.classList.add("has-deadlines");
+ b.className="card "+statusClass(x.order_status)+(x.urgent?" urgent":"")+(stacked?" visually-stacked":"");b.draggable=true;b.dataset.id=x.id;if(x.dock_number!=null)b.classList.add("has-dock");if(deadlines.length)b.classList.add("has-deadlines");
  b.style.top=(Number.isFinite(visualTop)?visualTop:cardBaseTopPx(x))+"px";
  b.style.height=(Number.isFinite(visualHeight)?visualHeight:cardHeightPx(x))+"px";
  b.innerHTML=(x.urgent?'<span class="urgent-tape" aria-hidden="true"></span>':'')+
-   '<span class="card-topline"><span class="card-status">'+esc(x.order_status||"Planned")+'</span><span class="card-move">Move #'+esc(x.move_number??"—")+'</span></span>'+
+   '<span class="card-topline"><span class="card-status">'+esc(x.order_status||"Planned")+'</span>'+(x.dock_number!=null?'<span class="card-dock">Dock '+esc(x.dock_number)+'</span>':'')+'<span class="card-move">Move #'+esc(x.move_number??"—")+'</span></span>'+
    '<small class="card-route">'+esc(x.origin)+' → '+esc(x.destination)+'</small>'+
    '<b class="card-job">'+esc(x.job_number)+'</b>'+
-   '<span class="card-pallet"><span class="card-pallet-count">'+esc(x.pallet_count)+'</span>'+(x.dock_number!=null?'<span class="card-dock">Dock '+esc(x.dock_number)+'</span>':'')+'</span>'+
+   '<span class="card-pallet"><span class="card-pallet-count">'+esc(x.pallet_count)+'</span></span>'+
    '<small class="card-creator">'+esc(x.created_by_name)+'</small>'+
    (deadlines.length?'<span class="card-deadlines">'+deadlines.map(([label,value])=>'<span>'+label+': '+esc(value)+'</span>').join('')+'</span>':'');
  b.title=[x.origin+' → '+x.destination,x.job_number,...deadlines.map(([label,value])=>label+': '+value)].join('\n');
