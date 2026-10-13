@@ -1,4 +1,4 @@
-alter table public.transfers add column dock_number smallint check(dock_number between 1 and 53);
+alter table public.transfers add column dock_number smallint check(dock_number between 1 and 54);
 CREATE OR REPLACE FUNCTION transfers_private.build_vendor_transfer(p_data jsonb)
  RETURNS jsonb
  LANGUAGE plpgsql
