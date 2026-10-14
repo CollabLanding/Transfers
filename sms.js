@@ -57,7 +57,11 @@
     if(kind==="delay"){
       return "Transfers Dispatch: "+move+" delay/update. "+route+". Current scheduled time is "+schedule+"."+job+" Please contact dispatch if you need updated timing.";
     }
-    return "Transfers Dispatch: "+move+" assignment. "+route+", "+schedule+". "+transfer.pallet_count+" pallets."+job+" Please reply to dispatch with any questions.";
+    return [
+      [transfer.move_number??"", transfer.origin+" to "+transfer.destination].filter(v=>v!=="").join(", "),
+      [transfer.pallet_count,transfer.dock_number].filter(v=>v!=null&&v!=="").join(", "),
+      transfer.job_number||""
+    ].join("\n").trim();
   }
   function updateChars(){
     chars.textContent=message.value.length+" / 1600";
@@ -108,7 +112,7 @@
     modal.classList.remove("hidden");
 
     const {data,error}=await sb.from("transfers")
-      .select("id,move_number,scheduled_date,scheduled_time,duration_minutes,driver,origin,destination,pallet_count,job_number,order_status")
+      .select("id,move_number,scheduled_date,scheduled_time,duration_minutes,driver,origin,destination,pallet_count,dock_number,job_number,order_status")
       .eq("id",id)
       .single();
     if(error){
