@@ -77,9 +77,9 @@ Deno.serve(async (req) => {
   const user = authData?.user;
   if (authError || !user) return json({ error: "Authentication required." }, 401);
 
-  const { data: accessRole, error: accessError } = await userClient.rpc("get_transfer_access_role");
-  if (accessError || !["Owner", "Admin"].includes(String(accessRole))) {
-    return json({ error: "Admin access required for SMS." }, 403);
+  const { data: allowed, error: accessError } = await userClient.rpc("has_transfer_permission", { p_feature: "send_sms" });
+  if (accessError || allowed !== true) {
+    return json({ error: "SMS permission required." }, 403);
   }
 
   let payload: Record<string, unknown>;
@@ -123,11 +123,12 @@ Deno.serve(async (req) => {
   const infobipSender = Deno.env.get("INFOBIP_SENDER") || "ServiceSMS";
 
 
-  // Explicit selection keeps existing SMS active until Dialpad setup is complete.
+  // Explicit selection allows account setup without changing the current provider.
   const selectedProvider = (Deno.env.get("SMS_PROVIDER") || "").trim().toLowerCase();
   if (selectedProvider && !["dialpad", "infobip", "twilio"].includes(selectedProvider)) {
     return json({ error: "SMS_PROVIDER must be dialpad, infobip, or twilio." }, 503);
   }
+  if (selectedProvider === "infobip" && !infobipApiKey) return json({ error: "Add INFOBIP_API_KEY to Edge Function secrets.", provider: "Infobip" }, 503);
   if (selectedProvider === "dialpad") {
     provider = "Dialpad";
     const apiKey = (Deno.env.get("DIALPAD_API_KEY") || "").trim();
@@ -216,7 +217,7 @@ Deno.serve(async (req) => {
 
     if (!twilioSid || !twilioToken || (!twilioFrom && !messagingServiceSid)) {
       return json({
-        error: "Infobip is not configured. Add INFOBIP_API_KEY to Supabase Edge Function secrets. INFOBIP_BASE_URL is optional and INFOBIP_SENDER defaults to ServiceSMS.",
+        error: selectedProvider === "twilio" ? "Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and either TWILIO_FROM_NUMBER or TWILIO_MESSAGING_SERVICE_SID to Edge Function secrets." : "Configure an SMS provider in Edge Function secrets. For Twilio, add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER or TWILIO_MESSAGING_SERVICE_SID.",
       }, 503);
     }
 
@@ -239,6 +240,7 @@ Deno.serve(async (req) => {
             "Content-Type": "application/x-www-form-urlencoded",
           },
           body: form.toString(),
+          signal: AbortSignal.timeout(20000),
         },
       );
       try {
@@ -247,7 +249,7 @@ Deno.serve(async (req) => {
         // Leave data empty if the provider returns non-JSON.
       }
     } catch {
-      return json({ error: "Could not reach Twilio." }, 502);
+      return json({ error: "No confirmation received from Twilio. Check Twilio message history before retrying to avoid a duplicate text." }, 502);
     }
 
     if (!response.ok) {
