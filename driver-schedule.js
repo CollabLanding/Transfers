@@ -655,6 +655,7 @@
   E.reportClose.onclick=closeReports;
   E.reportCancel.onclick=closeReports;
   E.reportPeriod.onchange=toggleReportPeriod;
+  document.getElementById("reportCustomRange").onclick=()=>{E.reportPeriod.value="custom";toggleReportPeriod();E.reportStartDate.focus()};
   E.reportSelectAll.onclick=()=>E.reportDriverList.querySelectorAll('input[type="checkbox"]').forEach(x=>x.checked=true);
   E.reportClearAll.onclick=()=>E.reportDriverList.querySelectorAll('input[type="checkbox"]').forEach(x=>x.checked=false);
   E.reportModal.addEventListener("click",e=>{if(e.target===E.reportModal)closeReports()});
