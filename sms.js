@@ -58,8 +58,8 @@
       return "Transfers Dispatch: "+move+" delay/update. "+route+". Current scheduled time is "+schedule+"."+job+" Please contact dispatch if you need updated timing.";
     }
     return [
-      [transfer.move_number??"", transfer.origin+" to "+transfer.destination].filter(v=>v!=="").join(", "),
-      [transfer.pallet_count,transfer.dock_number].filter(v=>v!=null&&v!=="").join(", "),
+      [move, transfer.origin+" to "+transfer.destination].join(", "),
+      [transfer.pallet_count!=null&&transfer.pallet_count!==""?transfer.pallet_count+" Pallets":"",transfer.dock_number!=null&&transfer.dock_number!==""?"Dock "+transfer.dock_number:""].filter(Boolean).join(", "),
       transfer.job_number||""
     ].join("\n").trim();
   }
