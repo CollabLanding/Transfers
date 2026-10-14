@@ -639,7 +639,7 @@
     E.signout.classList.remove("hidden");
     const r=await sb.from("profiles").select("display_name").eq("id",user.id).maybeSingle();
     profile=r.data||{display_name:user.email?.split("@")[0]||"User"};
-    E.me.textContent=userName();
+    E.me.textContent=String(userName()).split("@")[0];
     E.email.textContent=user.email||"";
     await loadWeek();
     await subscribe();
