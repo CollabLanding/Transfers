@@ -47,7 +47,7 @@
   }
   function templateText(kind){
     if(!transfer)return "";
-    const move="Move #"+(transfer.move_number??"—");
+    const move=(transfer.urgent?"HOT ":"")+"Move #"+(transfer.move_number??"—");
     const route=transfer.origin+" → "+transfer.destination;
     const schedule=fmtDate(transfer.scheduled_date)+" at "+fmtTime(transfer.scheduled_time);
     const job=transfer.job_number?" Job/Notes: "+transfer.job_number+".":"";
@@ -112,7 +112,7 @@
     modal.classList.remove("hidden");
 
     const {data,error}=await sb.from("transfers")
-      .select("id,move_number,scheduled_date,scheduled_time,duration_minutes,driver,origin,destination,pallet_count,dock_number,job_number,order_status")
+      .select("id,move_number,scheduled_date,scheduled_time,duration_minutes,driver,origin,destination,pallet_count,dock_number,job_number,order_status,urgent")
       .eq("id",id)
       .single();
     if(error){
