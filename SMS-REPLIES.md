@@ -1,4 +1,8 @@
-# Driver status replies — prepared Dialpad receiver
+# Driver status replies — Twilio and Dialpad
+
+Twilio replies are prepared through a separate signed webhook. Follow [TWILIO-SETUP.md](TWILIO-SETUP.md) for account secrets, activation, and webhook configuration. Twilio uses `TWILIO_INBOUND_ENABLED` and does not change the Dialpad receiver settings.
+
+## Existing Dialpad receiver
 
 The `receive-driver-sms` Edge Function is deployed but remains inactive until
 `INBOUND_SMS_ENABLED=true` and the webhook secrets below are configured.
