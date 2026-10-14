@@ -28,6 +28,7 @@
 
   const sb=window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey);
   let currentUser=null,displayName="User",messages=[],channel=null,audioCtx=null;
+  const typing=window.ChatTyping.create({client:sb,input,form,anchor:note,getUser:()=>currentUser,canChat:()=>window.TransfersAccess.can("chat"),name:()=>displayName,channelName:"transfers-chat-typing"});
 
   function unlockAudio(){
     try{
@@ -113,6 +114,7 @@
     if(!window.TransfersAccess.can("chat"))session=null;
     currentUser=session?.user||null;
     if(!currentUser){
+      await typing.stop();
       list.innerHTML='<div class="chat-empty">Sign in to use Team Chat.</div>';
       form.classList.add("hidden");
       clearButton?.classList.add("hidden");
@@ -128,6 +130,7 @@
     const profile=await sb.from("profiles").select("display_name").eq("id",currentUser.id).maybeSingle();
     if(!profile.error&&profile.data?.display_name)displayName=profile.data.display_name;
 
+    await typing.start(currentUser);
     const ok=await load();
     if(!ok)return;
 
@@ -157,6 +160,7 @@
     const next=input.value.slice(0,start)+emoji+input.value.slice(end);
     if(next.length>500)return;
     input.value=next;
+    typing.activity();
     const caret=start+emoji.length;
     input.focus();
     input.setSelectionRange(caret,caret);
@@ -254,7 +258,7 @@
   });
 
   document.addEventListener("transfer-access-changed",()=>{if(!window.TransfersAccess.can("chat")){currentRoleLost()} });
-  function currentRoleLost(){currentUser=null;if(channel){sb.removeChannel(channel);channel=null}list.innerHTML="";}
+  function currentRoleLost(){typing.stop();currentUser=null;if(channel){sb.removeChannel(channel);channel=null}list.innerHTML="";}
   sb.auth.getSession().then(({data})=>start(data?.session||null));
   sb.auth.onAuthStateChange((_event,session)=>start(session));
 })();
