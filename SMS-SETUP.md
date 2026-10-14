@@ -1,6 +1,6 @@
 # Driver SMS Setup
 
-The Transfers page sends driver SMS through a Supabase Edge Function. **Infobip is now the primary provider.** Twilio remains available as a fallback if Infobip is not configured.
+The Transfers page sends driver SMS through a Supabase Edge Function. Provider selection is controlled by the SMS_PROVIDER Edge Function secret. Twilio outbound and driver status replies are prepared; follow [TWILIO-SETUP.md](TWILIO-SETUP.md) to configure an account and activate them. The current provider remains unchanged until its secret settings are changed.
 
 ## Infobip trial setup
 
@@ -54,6 +54,6 @@ On success, Transfers will show `Text queued via Infobip`, save the driver's pho
 
 Run `migration-v9.sql` in the Transfers Supabase SQL Editor if it has not already been run. It adds driver phone storage and SMS history.
 
-## Twilio fallback
+## Twilio setup
 
-If `INFOBIP_API_KEY` is absent, the function can still use the existing Twilio secrets. Once an Infobip key is present, Infobip takes priority.
+See [TWILIO-SETUP.md](TWILIO-SETUP.md). Set `SMS_PROVIDER=twilio` when the account is ready to select Twilio even when Infobip credentials are present.
