@@ -406,7 +406,9 @@ async function loadBoardSchedule(){if(!window.TransfersAccess.can("view_board"))
 }
 async function loadData(){if(!window.TransfersAccess.can("view_board")){const r=await sb.rpc("get_transfer_board_options");items=[];driverSchedule=[];drivers=orderedUniq(["Planning",...(r.data?.drivers||[]).map(x=>x.name)]);locations=uniq((r.data?.locations||[]).map(x=>x.name));renderOptions();if(r.error)msg("Could not load form options: "+r.error.message,"error");return}if(!live){loadLocal();driverSchedule=[];renderOptions();renderBoard();return}const [tr,dr,lr,sc]=await Promise.all([sb.from("transfers").select("*").order("scheduled_date").order("scheduled_time"),loadDriversWithFallback(),loadLocationsWithFallback(),sb.from("driver_schedules").select("driver_name,schedule_date,start_time,end_time").gte("schedule_date",add(E.boardDate.value,-1)).lte("schedule_date",E.boardDate.value)]);if(tr.error){msg("Transfers could not load: "+tr.error.message,"error");items=[]}else items=(tr.data||[]).map(normalize);drivers=orderedUniq(["Planning",...(dr.error?[]:(dr.data||[]).map(x=>x.name)),...items.map(x=>x.driver)]);locations=uniq([...(lr.error?["Sunnyvale 100","Sunnyvale 200"]:(lr.data||[]).map(x=>x.name)),...items.flatMap(x=>[x.origin,x.destination]),"Sunnyvale 100","Sunnyvale 200"]);driverSchedule=sc.error?[]:(sc.data||[]);if(dr.error||lr.error){const details=[dr.error?"Drivers: "+dr.error.message:"",lr.error?"Locations: "+lr.error.message:""].filter(Boolean).join(" · ");msg("Could not load driver/location lists. "+details,"error")}renderOptions();renderBoard()}
 async function subscribe(){if(!window.TransfersAccess.can("view_board"))return;if(!live)return;editorPresenceReady=false;if(dataChannel)await sb.removeChannel(dataChannel);if(presence)await sb.removeChannel(presence);dataChannel=sb.channel("transfers-data").on("postgres_changes",{event:"INSERT",schema:"public",table:"transfers"},handleNewTransfer).on("postgres_changes",{event:"*",schema:"public",table:"transfers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_locations"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"driver_schedules"},loadBoardSchedule).on("postgres_changes",{event:"*",schema:"public",table:"transfer_slot_statuses"},()=>slotStatuses.refresh()).on("postgres_changes",{event:"*",schema:"public",table:"board_box_links"},()=>boxLinks.refresh()).on("postgres_changes",{event:"UPDATE",schema:"public",table:"profiles",filter:"id=eq."+user.id},event=>{profile={...profile,...event.new};publishEditorPresence()}).subscribe();presence=sb.channel("transfers-active",{config:{presence:{key:user.id}}}).on("presence",{event:"sync"},()=>{const unique=new Map();Object.values(presence.presenceState()).forEach(v=>v.forEach(x=>{const id=x.user_id||x.email;if(id&&!unique.has(id))unique.set(id,x)}));renderUsers([...unique.values()]);window.TransferEditors?.sync(Object.values(presence.presenceState()).flat())}).subscribe(s=>{editorPresenceReady=s==="SUBSCRIBED";if(editorPresenceReady)publishEditorPresence();else window.TransferEditors?.sync([])})}
+let statusNotesBaseline=null;
 function closeStatusEditor(showTransferForm=true){
+  statusNotesBaseline=null;
   if(E.slotStatusEditor)E.slotStatusEditor.classList.add("hidden");
   if(showTransferForm){E.form.classList.remove("hidden");document.querySelector(".urgent-toggle")?.classList.remove("hidden");}
   if(E.slotStatusNotes)E.slotStatusNotes.value="";
@@ -422,6 +424,7 @@ function openStatusEditor(row){if(!window.TransfersAccess.can("status_notes"))re
   E.slotStatusTitle.textContent=row.status||"Status";
   E.slotStatusMeta.textContent=(row.driver||"")+" · "+fmt(minToTime(row.start_minutes))+" – "+fmt(minToTime(row.end_minutes));
   E.slotStatusNotes.value=row.notes||"";
+  statusNotesBaseline=E.slotStatusNotes.value;
   E.slotStatusMsg.textContent="";
   E.slotStatusNotes.focus();publishEditorPresence();
 }
@@ -432,7 +435,7 @@ async function saveStatusNotes(){
   E.slotStatusSave.disabled=true;E.slotStatusMsg.textContent="Saving…";E.slotStatusMsg.style.color="";
   try {
     await slotStatuses.saveNotes(row,E.slotStatusNotes.value);
-    row.notes=E.slotStatusNotes.value;E.slotStatusMsg.textContent="Saved.";E.slotStatusMsg.style.color="#2f6f49";
+    row.notes=E.slotStatusNotes.value;statusNotesBaseline=E.slotStatusNotes.value;E.slotStatusMsg.textContent="Saved.";E.slotStatusMsg.style.color="#2f6f49";
     return true;
   } catch(e) {
     const detail=[e?.message,e?.details,e?.hint,e?.code].filter(Boolean).join(" · ")||String(e)||"Unknown database error";
@@ -601,7 +604,21 @@ function transferInfoChanged(){
 function confirmDiscardTransferInfo(){
   return !transferInfoChanged()||confirm("You have unsaved changes to this Transfer Info. Discard the changes?");
 }
-document.addEventListener("click",e=>{if(!E.edit.value)return;const pointTarget=document.elementFromPoint?.(e.clientX,e.clientY);const lane=e.target.closest(".lane")||pointTarget?.closest(".lane");if(!lane)return;const occupied=e.target.closest(".card,.slot-status-block,.load-chain,.slot-resize-handle,.slot-status-delete,.drop-preview")||pointTarget?.closest(".card,.slot-status-block,.load-chain,.slot-resize-handle,.slot-status-delete,.drop-preview");if(occupied)return;if(confirmDiscardTransferInfo())reset()},true);
+function confirmDiscardStatusNotes(){
+  return statusNotesBaseline===null||E.slotStatusNotes.value===statusNotesBaseline||confirm(window.SiteLanguage?.current==="es"?"Tienes notas sin guardar. ¿Descartar los cambios?":"You have unsaved status notes. Discard the changes?");
+}
+document.addEventListener("click",e=>{
+  const statusOpen=E.slotStatusEditor&&!E.slotStatusEditor.classList.contains("hidden");
+  if(!E.edit.value&&!statusOpen)return;
+  const pointTarget=document.elementFromPoint?.(e.clientX,e.clientY);
+  const lane=e.target.closest(".lane")||pointTarget?.closest(".lane");
+  if(!lane)return;
+  const occupied=e.target.closest(".card,.slot-status-block,.load-chain,.slot-resize-handle,.slot-status-delete,.drop-preview")||pointTarget?.closest(".card,.slot-status-block,.load-chain,.slot-resize-handle,.slot-status-delete,.drop-preview");
+  if(occupied)return;
+  if(statusOpen){if(E.slotStatusSave?.disabled)return;if(!confirmDiscardStatusNotes())return}
+  else if(!confirmDiscardTransferInfo())return;
+  reset();
+},true);
 E.slotStatusNotes?.addEventListener("keydown",async e=>{if(e.key!=="Enter"||e.shiftKey)return;e.preventDefault();if(E.slotStatusSave?.disabled)return;const saved=await saveStatusNotes();if(saved)closeStatusEditor()});
 document.getElementById("vendorSignout")?.addEventListener("click",()=>sb.auth.signOut());
 E.form.onsubmit=submit;E.del.onclick=remove;E.statusHistory?.addEventListener("click",()=>window.openStatusHistory?.());E.statusHistoryBack?.addEventListener("click",()=>window.closeStatusHistory?.());E.slotStatusSave.onclick=saveStatusNotes;E.slotStatusCancel.onclick=()=>{closeStatusEditor();publishEditorPresence()};E.slotStatusClose.onclick=()=>{closeStatusEditor();publishEditorPresence()};E.cancel.onclick=reset;E.driver.onchange=()=>managedChange("driver",E.driver);E.origin.onchange=()=>managedChange("location",E.origin);E.destination.onchange=()=>managedChange("location",E.destination);E.optionForm.onsubmit=addOption;E.optionClose.onclick=closeOption;E.optionCancel.onclick=closeOption;E.optionModal.addEventListener("click",e=>{if(e.target===E.optionModal)closeOption()});
