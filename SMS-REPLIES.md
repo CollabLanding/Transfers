@@ -110,3 +110,17 @@ Official references:
 - https://developers.dialpad.com/docs/sms-events
 - https://developers.dialpad.com/reference/webhookscreate
 - https://developers.dialpad.com/reference/webhook_sms_event_subscriptioncreate
+
+
+### Arrival messages
+
+Apply `sms-arrival-replies.sql` after the original Dialpad/Twilio reply setup. Both providers accept `Arrived at [location]`:
+
+- An exact match to the transfer origin sets **Waiting**.
+- An exact match to the destination sets **On Site**.
+- Matching ignores capitalization and repeated whitespace; terminal periods/exclamation marks are allowed.
+- Example: `Move #123 Arrived at Sunnyvale 100` or `Arrived at Sunnyvale 100 #123`.
+- Without a Move #, the existing single-current-load rule applies. Unknown locations, identical origin/destination names, and ambiguous loads do not change the job.
+- Status changes retain driver `(SMS)` attribution and message time in Recent Activity.
+
+Rollback-only regression tests: `sms-arrival-reply-tests.sql`.
