@@ -210,5 +210,36 @@
 <script src="chat.js?v=20261014-typing"></script>
 <script src="sms.js?v=20261014-hot"></script>
 <script src="user-profile.js?v=20261014-language"></script>
+
+<script>
+/* Center status-note text vertically, including wrapped notes and resized fields. */
+(()=>{
+ const field=document.getElementById("slotStatusNotes");if(!field)return;
+ let frame=0;
+ function align(){
+  frame=0;if(!field.getClientRects().length)return;
+  const style=getComputedStyle(field),probe=field.cloneNode(false);
+  probe.removeAttribute("id");probe.removeAttribute("name");probe.value=field.value||field.placeholder||" ";
+  for(const [key,value] of Object.entries({position:"fixed",visibility:"hidden",pointerEvents:"none",width:field.getBoundingClientRect().width+"px",height:"0px",minHeight:"0px",maxHeight:"none",paddingTop:"0px",paddingBottom:"0px",overflow:"hidden",boxSizing:"border-box",font:style.font,lineHeight:style.lineHeight,letterSpacing:style.letterSpacing,paddingLeft:style.paddingLeft,paddingRight:style.paddingRight,border:style.border,resize:"none"})){
+   probe.style.setProperty(key.replace(/[A-Z]/g,m=>"-"+m.toLowerCase()),value,"important");
+  }
+  document.body.appendChild(probe);
+  const contentHeight=probe.scrollHeight;probe.remove();
+  const available=field.clientHeight;
+  const padding=Math.max(0,(available-contentHeight)/2);
+  field.style.setProperty("padding-top",padding+"px","important");
+  field.style.setProperty("padding-bottom",padding+"px","important");
+ }
+ function schedule(){if(!frame)frame=requestAnimationFrame(align)}
+ field.addEventListener("input",schedule);
+ new ResizeObserver(schedule).observe(field);
+ const panel=field.closest(".slot-status-editor");
+ if(panel)new MutationObserver(schedule).observe(panel,{attributes:true,attributeFilter:["class","hidden"]});
+ field.addEventListener("focus",schedule);window.addEventListener("resize",schedule);
+ document.addEventListener("site-language-changed",schedule);
+ schedule();
+})();
+</script>
+
 </body>
 </html>
