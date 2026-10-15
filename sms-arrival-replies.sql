@@ -10,7 +10,7 @@ declare
  phone text:=sms_private.normalize_phone(p_from); dest text:=sms_private.normalize_phone(p_to);
  driver_name text; matches int; ids uuid[]; selected public.transfers%rowtype;
  normalized text; requested text; explicit_move text; extracted text[];
- arrival_location text; origin_match boolean; destination_match boolean;
+ completion_location boolean:=false; arrival_location text; origin_match boolean; destination_match boolean;
  outcome text; previous_activity bigint; result jsonb;
 begin
  if p_message_id is null or length(p_message_id) not between 1 and 150 or phone is null or dest is null or p_text is null or length(p_text)>1600 or p_message_at is null then raise exception 'Invalid SMS event'; end if;
@@ -38,7 +38,11 @@ begin
  normalized:=regexp_replace(normalized,'[.!]+$','');
  requested:=case normalized when 'waiting' then 'Waiting' when 'loading' then 'Loading' when 'loaded' then 'Loaded' when 'in transit' then 'In Transit' when 'in-transit' then 'In Transit' when 'intransit' then 'In Transit' when 'on site' then 'On Site' when 'on-site' then 'On Site' when 'onsite' then 'On Site' when 'delivered' then 'Delivered' else null end;
  extracted:=regexp_match(normalized,'^arrived at[[:space:]]+(.+)$');
- if extracted is not null then arrival_location:=trim(extracted[1]);requested:='Arrival';end if;
+ if extracted is not null then arrival_location:=trim(extracted[1]);requested:='Arrival';
+ else
+  extracted:=regexp_match(normalized,'^done at[[:space:]]+(.+)$');
+  if extracted is not null then arrival_location:=trim(extracted[1]);completion_location:=true;requested:='Completion';end if;
+ end if;
  if outcome is null and requested is null then outcome:='unrecognized_status';end if;
  if outcome is null and (p_message_at<now()-interval '24 hours' or p_message_at>now()+interval '5 minutes') then outcome:='stale_message';end if;
 
@@ -59,7 +63,7 @@ begin
    if arrival_location is not null then
     origin_match:=arrival_location=trim(regexp_replace(lower(coalesce(selected.origin,'')),'[[:space:]]+',' ','g'));
     destination_match:=arrival_location=trim(regexp_replace(lower(coalesce(selected.destination,'')),'[[:space:]]+',' ','g'));
-    requested:=case when origin_match and not destination_match then 'Waiting' when destination_match and not origin_match then 'On Site' else null end;
+    requested:=case when completion_location then case when destination_match then 'Delivered' else null end when origin_match and not destination_match then 'Waiting' when destination_match and not origin_match then 'On Site' else null end;
    end if;
    -- Recheck after the lock: dispatch may have edited or reassigned the load.
    if not found or selected.driver is distinct from driver_name or selected.scheduled_date is distinct from (p_message_at at time zone 'America/Chicago')::date
@@ -101,7 +105,7 @@ declare
  phone text:=sms_private.normalize_phone(p_from); dest text:=sms_private.normalize_phone(p_to);
  driver_name text; matches int; ids uuid[]; selected public.transfers%rowtype;
  normalized text; requested text; explicit_move text; extracted text[];
- arrival_location text; origin_match boolean; destination_match boolean;
+ completion_location boolean:=false; arrival_location text; origin_match boolean; destination_match boolean;
  outcome text; previous_activity bigint; result jsonb;
 begin
  if p_message_id is null or length(p_message_id) not between 1 and 150 or phone is null or dest is null or p_text is null or length(p_text)>1600 or p_message_at is null then raise exception 'Invalid SMS event'; end if;
@@ -129,7 +133,11 @@ begin
  normalized:=regexp_replace(normalized,'[.!]+$','');
  requested:=case normalized when 'waiting' then 'Waiting' when 'loading' then 'Loading' when 'loaded' then 'Loaded' when 'in transit' then 'In Transit' when 'in-transit' then 'In Transit' when 'intransit' then 'In Transit' when 'on site' then 'On Site' when 'on-site' then 'On Site' when 'onsite' then 'On Site' when 'delivered' then 'Delivered' else null end;
  extracted:=regexp_match(normalized,'^arrived at[[:space:]]+(.+)$');
- if extracted is not null then arrival_location:=trim(extracted[1]);requested:='Arrival';end if;
+ if extracted is not null then arrival_location:=trim(extracted[1]);requested:='Arrival';
+ else
+  extracted:=regexp_match(normalized,'^done at[[:space:]]+(.+)$');
+  if extracted is not null then arrival_location:=trim(extracted[1]);completion_location:=true;requested:='Completion';end if;
+ end if;
  if outcome is null and requested is null then outcome:='unrecognized_status';end if;
  if outcome is null and (p_message_at<now()-interval '24 hours' or p_message_at>now()+interval '5 minutes') then outcome:='stale_message';end if;
 
@@ -150,7 +158,7 @@ begin
    if arrival_location is not null then
     origin_match:=arrival_location=trim(regexp_replace(lower(coalesce(selected.origin,'')),'[[:space:]]+',' ','g'));
     destination_match:=arrival_location=trim(regexp_replace(lower(coalesce(selected.destination,'')),'[[:space:]]+',' ','g'));
-    requested:=case when origin_match and not destination_match then 'Waiting' when destination_match and not origin_match then 'On Site' else null end;
+    requested:=case when completion_location then case when destination_match then 'Delivered' else null end when origin_match and not destination_match then 'Waiting' when destination_match and not origin_match then 'On Site' else null end;
    end if;
    -- Recheck after the lock: dispatch may have edited or reassigned the load.
    if not found or selected.driver is distinct from driver_name or selected.scheduled_date is distinct from (p_message_at at time zone 'America/Chicago')::date
