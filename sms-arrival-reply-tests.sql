@@ -12,21 +12,19 @@ begin
  insert into public.transfers(scheduled_date,scheduled_time,driver,origin,destination,pallet_count,job_number,duration_minutes,order_status,updated_at,created_by,created_by_name)
  values(today,t,d,'SMS test origin','SMS test destination',0,'SMS verification',60,'Loading',at-interval '1 minute',(select id from public.profiles limit 1),'SMS verification') returning id into a;
 
- r:=public.process_twilio_driver_sms_reply('arrival-origin',phone,'+15550101000','  ARRIVED AT   SMS test origin! ',at);
- if r->>'outcome'<>'updated' or r->>'status'<>'Waiting' then raise exception 'Origin failed: %',r;end if;
- if not exists(select 1 from public.transfer_activity where transfer_id=a and actor_name=d||' (SMS)' and details='Loading → Waiting' and created_at=at) then raise exception 'Arrival audit missing';end if;
+ r:=public.process_twilio_driver_sms_reply('done-wrong',phone,'+15550101000','Done at wrong place',at);
+ if r->>'outcome'<>'unknown_location' then raise exception 'Unknown site accepted: %',r;end if;
+ r:=public.process_twilio_driver_sms_reply('done-origin',phone,'+15550101000','Done at SMS test origin',at);
+ if r->>'outcome'<>'unknown_location' or (select order_status from public.transfers where id=a)<>'Loading' then raise exception 'Origin completion changed job: %',r;end if;
+ r:=public.process_twilio_driver_sms_reply('done-arrival',phone,'+15550101000','Arrived at SMS test destination',at);
+ if r->>'status'<>'On Site' then raise exception 'Arrival regression: %',r;end if;
+ update public.transfers set updated_at=at-interval '1 minute' where id=a;
+ r:=public.process_twilio_driver_sms_reply('done-dest',phone,'+15550101000','  DONE AT   SMS test destination! #'||(select move_number from public.transfers where id=a),at);
+ if r->>'outcome'<>'updated' or (select order_status from public.transfers where id=a)<>'Delivered' then raise exception 'Destination completion failed: %',r;end if;
+ if not exists(select 1 from public.transfer_activity where transfer_id=a and actor_name=d||' (SMS)' and details='On Site → Delivered' and created_at=at) then raise exception 'Completion audit missing';end if;
  select count(*) into n from public.transfer_activity where transfer_id=a;
- r:=public.process_twilio_driver_sms_reply('arrival-origin',phone,'+15550101000','Arrived at SMS test origin',at);
- if not (r->>'duplicate')::boolean or (select count(*) from public.transfer_activity where transfer_id=a)<>n then raise exception 'Duplicate arrival logged twice';end if;
- update public.transfers set updated_at=at-interval '1 minute' where id=a;
- r:=public.process_twilio_driver_sms_reply('arrival-dest',phone,'+15550101000','Move #'||(select move_number from public.transfers where id=a)||' Arrived at SMS test destination',at);
- if r->>'status'<>'On Site' or (select order_status from public.transfers where id=a)<>'On Site' then raise exception 'Destination failed: %',r;end if;
- update public.transfers set updated_at=at-interval '1 minute' where id=a;
- r:=public.process_twilio_driver_sms_reply('arrival-unknown',phone,'+15550101000','Arrived at wrong location',at);
- if r->>'outcome'<>'unknown_location' or (select order_status from public.transfers where id=a)<>'On Site' then raise exception 'Unknown location changed job: %',r;end if;
- update public.transfers set origin=destination,updated_at=at-interval '1 minute' where id=a;
- r:=public.process_twilio_driver_sms_reply('arrival-same',phone,'+15550101000','Arrived at SMS test destination',at);
- if r->>'outcome'<>'ambiguous_location' then raise exception 'Ambiguous location guessed: %',r;end if;
+ r:=public.process_twilio_driver_sms_reply('done-dest',phone,'+15550101000','Done at SMS test destination',at);
+ if not (r->>'duplicate')::boolean or (select count(*) from public.transfer_activity where transfer_id=a)<>n then raise exception 'Duplicate completion';end if;
 end;$test$;
-select 'PASS: arrivals, case/spacing/punctuation, Move #, audit/time, duplicate, unknown/ambiguous locations' result;
+select 'PASS: done at destination, origin/unknown refusal, case/spacing, Move #, arrival regression, driver audit/time, duplicate retries' result;
 rollback;
