@@ -124,3 +124,7 @@ Apply `sms-arrival-replies.sql` after the original Dialpad/Twilio reply setup. B
 - Status changes retain driver `(SMS)` attribution and message time in Recent Activity.
 
 Rollback-only regression tests: `sms-arrival-reply-tests.sql`.
+
+### Destination completion
+
+`Done at [destination]` sets **Delivered** when the named site matches the job destination. Example: `Move #123 Done at Plano`. Origin-only and unknown site matches do not change the job. The same case/spacing, active-load, phone, Move #, duplicate, and SMS activity attribution rules apply.
