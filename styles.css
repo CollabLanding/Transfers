@@ -1816,3 +1816,7 @@ main > .board .board-date-picker .schedule-date{text-align:right;padding-right:0
 @container transfers-board (max-width:380px){
  main > .board .board-date-controls{justify-items:end}
 }
+
+/* Compact date heading above the navigation row. */
+main > .board .board-date-picker .schedule-date{font-size:clamp(13px,2.3cqi,18px);line-height:1.15}
+main > .board .board-date-controls{gap:3px}
