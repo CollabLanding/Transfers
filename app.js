@@ -639,9 +639,11 @@ async function session(s){await window.TransfersAccess.ready;await window.Transf
 
 document.addEventListener("edit-load-latest",event=>{
  if(event.detail.table==="transfers"){
+  event.detail.handled=true;
   for(const row of event.detail.rows)replaceItem(row);
   const id=E.edit.value;renderBoard();if(id)edit(id);
  }else if(event.detail.table==="transfer_slot_statuses"){
+  event.detail.handled=true;
   slotStatuses.applyRows(event.detail.rows);
   const row=event.detail.rows.find(r=>String(r.id)===String(E.slotStatusTitle.dataset.statusId));
   if(row)openStatusEditor(row);
