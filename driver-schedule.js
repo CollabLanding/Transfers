@@ -17,6 +17,21 @@
   };
   let user=null,profile=null,drivers=[],scheduleRows=[],weekTransfers=[],channel=null,dirty=false,lastWeekValue="";
 
+  let loadVersion=0,editVersion=0,refreshPending=false,refreshTimer=null;
+  function scheduleFocused(){return E.body.contains(document.activeElement)}
+  function requestScheduleRefresh(){
+    refreshPending=true;
+    clearTimeout(refreshTimer);
+    refreshTimer=setTimeout(()=>{
+      if(!refreshPending||dirty||scheduleFocused())return;
+      loadWeek({background:true});
+    },100);
+  }
+  E.body.addEventListener("focusout",()=>{if(refreshPending)requestScheduleRefresh()});
+  E.body.addEventListener("input",event=>{
+    if(event.target.matches('input[type="time"]'))setDirty(true);
+  });
+
   function localISO(d){
     const x=new Date(d);
     x.setMinutes(x.getMinutes()-x.getTimezoneOffset());
@@ -118,6 +133,7 @@
     if(entries.length)window.recordDriverActivity?.(entries);
   }
   function setDirty(value=true){
+    if(value)editVersion++;
     dirty=value;
     E.save.textContent=dirty?"Save Schedule *":"Save Schedule";
   }
@@ -218,10 +234,12 @@
     }
     return r;
   }
-  async function loadWeek(){
+  async function loadWeek({background=false}={}){
     if(!live||!user)return;
-    setDirty(false);
-    show("Loading schedule…");
+    if(background&&(dirty||scheduleFocused())){refreshPending=true;return}
+    const request=++loadVersion,revision=editVersion,account=user.id;
+    if(!background)setDirty(false);
+    if(!background)show("Loading schedule…");
     updateHeaders();
     const start=E.week.value,end=addDays(start,6);
     const [dr,sc,tr]=await Promise.all([
@@ -229,6 +247,13 @@
       sb.from("driver_schedules").select("*").gte("schedule_date",addDays(start,-1)).lte("schedule_date",addDays(end,1)),
       sb.from("transfers").select("driver,scheduled_date,scheduled_time,duration_minutes").gte("scheduled_date",start).lte("scheduled_date",end)
     ]);
+    if(request!==loadVersion||start!==E.week.value||user?.id!==account)return;
+    if(editVersion!==revision||dirty||scheduleFocused()){
+      refreshPending=true;
+      if(!dirty)show("");
+      return;
+    }
+    refreshPending=false;
     if(dr.error){
       show("Could not load drivers: "+dr.error.message,"error");
       drivers=[];
@@ -296,6 +321,7 @@
   }
   async function save(quiet=false){if(!window.TransfersAccess.can("driver_schedules"))return;
     if(!live||!user)return false;
+    const savedRevision=editVersion;
     const beforeRows=scheduleRows.map(r=>({...r}));
     const {rows,invalid}=collect();
     if(invalid){
@@ -310,10 +336,12 @@
         const ins=await sb.from("driver_schedules").upsert(rows,{onConflict:"driver_name,schedule_date"});
         if(ins.error){show("Could not save schedule: "+ins.error.message,"error");return false}
       }
-      setDirty(false);
+      // A user may keep typing while the save is in flight.
+      scheduleRows=rows;
+      if(editVersion===savedRevision)setDirty(false);
       recordScheduleChanges(beforeRows,rows);
-      await loadWeek();
-      if(!quiet)show("Driver schedule saved.","ok");
+      requestScheduleRefresh();
+      if(!quiet)show(dirty?"Schedule saved. Newer edits still need saving.":"Driver schedule saved.","ok");
       return true;
     }finally{
       E.save.disabled=false;
@@ -623,21 +651,24 @@
     if(!live)return;
     if(channel)await sb.removeChannel(channel);
     channel=sb.channel("driver-schedule-data")
-      .on("postgres_changes",{event:"*",schema:"public",table:"driver_schedules"},()=>{if(!dirty)loadWeek()})
-      .on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},()=>{if(!dirty)loadWeek()})
+      .on("postgres_changes",{event:"*",schema:"public",table:"driver_schedules"},()=>requestScheduleRefresh())
+      .on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},()=>requestScheduleRefresh())
       .on("postgres_changes",{event:"*",schema:"public",table:"transfers"},()=>refreshTransferWarnings())
       .subscribe();
   }
   async function session(s){
     if(!s?.user){
-      user=null;
+      user=null;loadVersion++;refreshPending=false;clearTimeout(refreshTimer);
       E.login.classList.remove("hidden");
       return;
     }
+    const sameUser=user?.id===s.user.id;
     user=s.user;
+    if(sameUser)return;
     E.login.classList.add("hidden");
     E.signout.classList.remove("hidden");
     const r=await sb.from("profiles").select("display_name").eq("id",user.id).maybeSingle();
+    if(user?.id!==s.user.id)return;
     profile=r.data||{display_name:user.email?.split("@")[0]||"User"};
     E.me.textContent=String(userName()).split("@")[0];
     E.email.textContent=user.email||"";
@@ -678,6 +709,7 @@
     return;
   }
   sb.auth.getSession().then(r=>session(r.data.session));
-  sb.auth.onAuthStateChange((_event,s)=>session(s));
+  sb.auth.onAuthStateChange((_event,s)=>{setTimeout(()=>session(s),0)});
 })();
 })();
+
