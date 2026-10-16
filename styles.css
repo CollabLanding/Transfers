@@ -1805,3 +1805,14 @@ main > .board .board-date-picker .schedule-date{position:static!important;inset:
 .board-date-actions{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
 .board-date-actions button{padding:4px 8px;min-height:26px;font-size:11px;line-height:1.2}
 @container transfers-board (max-width:380px){main > .board .board-date-controls{justify-self:stretch}}
+
+/* Right-align the date and keep all navigation on the row below it. */
+main > .board .board-date-controls{justify-items:end}
+.board-date-row{justify-content:flex-end;width:100%}
+.board-date-picker{flex:0 1 auto;max-width:100%}
+main > .board .board-date-picker .schedule-date{text-align:right;padding-right:0}
+.board-date-actions{justify-content:flex-end}
+.board-date-actions .duplicate-day-btn{order:0}
+@container transfers-board (max-width:380px){
+ main > .board .board-date-controls{justify-items:end}
+}
