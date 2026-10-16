@@ -105,7 +105,7 @@
     const token=++generation;busy(true);message("Loading past jobs and time-slot statuses…");
     el("reportResults").classList.add("hidden");scope=null;
     const query=(table,columns,timeColumn)=>()=>{
-      let q=sb.from(table).select(columns).lte("scheduled_date",to);
+      let q=sb.from(table).select(columns+(table==="transfers"||table==="transfer_slot_statuses"?",edit_revision":"")).lte("scheduled_date",to);
       if(from)q=q.gte("scheduled_date",from);if(driver)q=q.eq("driver",driver);
       if(table==="summary_deleted_records")q=q.is("restored_at",null);
       return q.order("scheduled_date").order(timeColumn).order("id");
