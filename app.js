@@ -698,7 +698,17 @@ E.title.addEventListener("click",()=>{
  E.boardDate.classList.add("date-fallback");E.boardDate.focus();
 });
 E.boardDate.addEventListener("change",()=>E.boardDate.classList.remove("date-fallback"));
-$("prev").onclick=()=>{E.boardDate.value=add(E.boardDate.value,-1);E.date.value=E.boardDate.value;loadBoardSchedule()};$("next").onclick=()=>{E.boardDate.value=add(E.boardDate.value,1);E.date.value=E.boardDate.value;loadBoardSchedule()};$("today").onclick=()=>{E.boardDate.value=today();E.date.value=E.boardDate.value;loadBoardSchedule()};E.boardDate.onchange=()=>{E.date.value=E.boardDate.value;loadBoardSchedule()};E.signout.onclick=()=>sb?.auth.signOut();
+function navigateBoardDay(date){
+ E.boardDate.value=date;
+ // Navigation cancels the current edit before initializing the new day's form.
+ reset();
+ loadBoardSchedule();
+}
+$("prev").onclick=()=>navigateBoardDay(add(E.boardDate.value,-1));
+$("next").onclick=()=>navigateBoardDay(add(E.boardDate.value,1));
+$("today").onclick=()=>navigateBoardDay(today());
+E.boardDate.onchange=()=>navigateBoardDay(E.boardDate.value);
+E.signout.onclick=()=>sb?.auth.signOut();
 document.addEventListener("pointerdown",unlockAudio,{once:true});
 document.addEventListener("keydown",unlockAudio,{once:true});
 updateScheduleClock();
