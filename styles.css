@@ -1791,3 +1791,17 @@ html[data-theme="dark"][data-access-role="Vendor"] #driver:disabled{background:#
 
 /* One steel color for idle, dragging, connected chains and both themes. */
 :is(.card,.slot-status-block) .load-chain,.chain-drag-art,.chain-saved-art{color:#8b969f!important}
+
+
+/* One date display and picker in the Transfers panel. */
+main > .board .board-date-controls{grid-area:date;justify-self:end;width:100%;min-width:0;display:grid;gap:5px}
+.board-date-row{display:flex;align-items:center;gap:5px;min-width:0}
+.board-date-row>button{flex:0 0 auto;padding:5px 7px;min-height:30px}
+.board-date-picker{position:relative;flex:1;min-width:0}
+main > .board .board-date-picker .schedule-date{position:static!important;inset:auto!important;transform:none!important;display:block;width:100%;max-width:100%;margin:0;padding:2px 4px;border:0;background:transparent;color:var(--text);font-weight:700;text-align:center;font-size:clamp(15px,2.8cqi,22px);line-height:1.2;overflow-wrap:normal;word-break:normal}
+.board-date-picker .schedule-date:hover{text-decoration:underline;text-underline-offset:3px}
+.board-date-picker #boardDate{position:absolute;width:1px!important;height:1px!important;min-height:1px!important;padding:0!important;opacity:0;pointer-events:none;clip-path:inset(50%)}
+.board-date-picker #boardDate.date-fallback{position:static;width:100%!important;height:30px!important;min-height:30px!important;opacity:1;pointer-events:auto;clip-path:none}
+.board-date-actions{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
+.board-date-actions button{padding:4px 8px;min-height:26px;font-size:11px;line-height:1.2}
+@container transfers-board (max-width:380px){main > .board .board-date-controls{justify-self:stretch}}
