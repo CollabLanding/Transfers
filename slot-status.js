@@ -20,7 +20,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
   function displayStatus(row) { return row?.status === 'Custom' ? (String(row.custom_title || '').trim() || 'Custom') : row?.status || ''; }
   function displayStatus(row) { return row?.status === 'Custom' ? (String(row.custom_title || '').trim() || 'Custom') : row?.status || ''; }
   function paint() {
-    if (resizeCancel) resizeCancel(false);
+    if (resizeCancel) return; // Keep the captured resize handle attached during background updates.
     grid.querySelectorAll('.slot-status-block,.slot-status-delete').forEach(n => n.remove());
     for (const lane of grid.querySelectorAll('.lane')) {
       for (const row of rows.filter(r => r.driver === lane.dataset.driver && r.scheduled_date === getDate())) {
@@ -28,7 +28,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
         block.className = 'slot-status-block slot-status-' + statuses.indexOf(row.status) + (row.notes ? ' has-notes' : '');
         block.draggable = true; block.dataset.statusId = row.id;
         block.addEventListener('dragstart', e => {if(!window.TransfersAccess.can('manage_status')){e.preventDefault();return;}
-          if (busy || dialog.open || !getUser() || e.target.closest('.load-chain')) { e.preventDefault(); return; }
+          if (busy || dialog.open || !getUser() || e.target.closest('.load-chain,.slot-resize-handle')) { e.preventDefault(); return; }
           e.stopPropagation(); clear();
           moving = {row, date:getDate(), offset:Math.max(0,e.clientY-block.getBoundingClientRect().top)};
           e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('application/x-slot-status',row.id);
@@ -61,7 +61,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
           paint();
         };
         for (const edge of ['top','bottom']) {
-          const handle=document.createElement('span');handle.className='slot-resize-handle slot-resize-'+edge;handle.title=edge==='top'?'Drag to change status start':'Drag to change status end';
+          const handle=document.createElement('span');handle.className='slot-resize-handle slot-resize-'+edge;handle.title=edge==='top'?'Drag to change status start':'Drag to change status end';handle.setAttribute('aria-label',handle.title);handle.draggable=false;
           handle.addEventListener('pointerdown',e=>beginResize(e,row,block,remove,edge));block.append(handle);
         }
         lane.append(block, remove);
@@ -249,7 +249,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
   return {
     render() {
       if (selection && (!selection.lane.isConnected || selection.date !== getDate())) { if (!busy) close(); }
-      if (date !== getDate()) { rows = []; refresh(); }
+      if (date !== getDate()) { resizeCancel?.(false); rows = []; refresh(); }
       paint();
     },
     rows:()=>rows,
@@ -268,7 +268,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
     },
     refresh,
     saveNotes,
-    reset() { endMove(); generation++; rows = []; date = null; close(); paint(); }
+    reset() { resizeCancel?.(false); endMove(); generation++; rows = []; date = null; close(); paint(); }
   };
 };
 
