@@ -18,8 +18,11 @@
 .slot-status-move-preview.is-blocked{border-color:#c51f30;background:#f8daddd9;color:#8e1221}
 
 .slot-status-3{background:#dfe6eced;border-color:#7d8f9c;color:#354b5a}
-.slot-resize-handle{position:absolute;left:0;right:28px;height:7px;cursor:ns-resize;touch-action:none;z-index:1}
-.slot-resize-top{top:0}
+.slot-resize-handle{position:absolute;left:0;right:0;height:12px;cursor:ns-resize;touch-action:none;pointer-events:auto;z-index:6;background:currentColor;border-radius:3px;opacity:.45}
+.slot-resize-handle:hover,.slot-status-resizing .slot-resize-handle{opacity:.75}
+.slot-status-label,.slot-status-note{pointer-events:none}
+.slot-status-block{padding-top:14px;padding-bottom:14px}
+.slot-resize-top{top:0;right:28px}
 .slot-resize-bottom{bottom:0;right:0}
 .slot-resize-handle::after{display:none}
 .slot-status-resizing{z-index:22}
