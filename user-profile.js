@@ -3,8 +3,14 @@
  const config=window.TRANSFERS_CONFIG||{},sb=window.supabase.createClient(config.supabaseUrl,config.supabaseAnonKey);
  const dialog=document.createElement("dialog");dialog.className="user-profile-dialog";
  dialog.setAttribute("aria-labelledby","userProfileTitle");
- dialog.innerHTML='<div class="panelhead"><h2 id="userProfileTitle">My Profile</h2><button class="iconbtn profile-close" type="button" aria-label="Close profile">×</button></div><form id="userProfileForm"><label>Username<span id="profileUsername"></span></label><label>Email<span id="profileEmail"></span></label><div class="profile-color-row"><label>Bubble color<input id="profileBubbleColor" type="color" value="#1d5c8f"></label><span id="profileBubblePreview" class="editor-bubble profile-bubble-preview" aria-label="Your bubble preview"></span></div><p class="profile-help">Your bubble shows when you open a transfer to edit it.</p><h3 class="profile-language-heading">Language</h3><div id="profileLanguage"></div><p><a href="password.html">Change Password</a></p><p id="userProfileMessage" role="status" aria-live="polite"></p><div class="modalactions"><button type="button" class="profile-close">Cancel</button><button id="saveUserProfile" type="submit" class="primary">Save Profile</button></div></form>';
+ dialog.innerHTML='<div class="panelhead"><h2 id="userProfileTitle">My Profile</h2><button class="iconbtn profile-close" type="button" aria-label="Close profile">×</button></div><form id="userProfileForm"><label>Account Type<span id="profileRole"></span></label><label>Username<span id="profileUsername"></span></label><label>Email<span id="profileEmail"></span></label><div class="profile-color-row"><label>Bubble color<input id="profileBubbleColor" type="color" value="#1d5c8f"></label><span id="profileBubblePreview" class="editor-bubble profile-bubble-preview" aria-label="Your bubble preview"></span></div><p class="profile-help">Your bubble shows when you open a transfer to edit it.</p><h3 class="profile-language-heading">Language</h3><div id="profileLanguage"></div><p><a href="password.html">Change Password</a></p><p id="userProfileMessage" role="status" aria-live="polite"></p><div class="modalactions"><button type="button" class="profile-close">Cancel</button><button id="saveUserProfile" type="submit" class="primary">Save Profile</button></div></form>';
  document.body.appendChild(dialog);
+ const roleLabel=document.getElementById("accessRoleLabel");
+ if(roleLabel)dialog.querySelector("#profileRole").appendChild(roleLabel);
+ const signOut=document.getElementById("signout");
+ if(signOut){signOut.type="button";const actions=document.createElement("div");actions.className="modalactions profile-account-actions";actions.style.marginTop="16px";actions.appendChild(signOut);dialog.appendChild(actions);signOut.addEventListener("click",()=>dialog.close());}
+ const updateRole=()=>{if(!roleLabel)dialog.querySelector("#profileRole").textContent=window.TransfersAccess?.role||""};
+ document.addEventListener("transfer-access-changed",updateRole);
  const mountLanguage=()=>window.SiteLanguage.mount(dialog.querySelector("#profileLanguage"));
  if(window.SiteLanguage)mountLanguage();else document.addEventListener("site-language-ready",mountLanguage,{once:true});
  const $=id=>dialog.querySelector("#"+id),form=$("userProfileForm"),message=$("userProfileMessage"),save=$("saveUserProfile"),picker=$("profileBubbleColor"),preview=$("profileBubblePreview");
@@ -16,6 +22,7 @@
   preview.style.color=.2126*c[0]+.7152*c[1]+.0722*c[2]>.179?"#101820":"#ffffff";
  }
  async function open(){
+  updateRole();
   const token=++version;account=null;displayName="";message.textContent="Loading profile…";save.disabled=true;picker.disabled=true;$("profileUsername").textContent="";$("profileEmail").textContent="";dialog.showModal();
   try{
    const result=await sb.auth.getUser();if(result.error)throw result.error;if(!result.data.user)throw new Error("Sign in to edit your profile.");
