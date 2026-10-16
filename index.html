@@ -11,7 +11,7 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20261014-sms-resize">
+  <link rel="stylesheet" href="styles.css?v=20261016-panel-date">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="edit-guard.js?v=20261016-permissions"></script>
   <script src="config.js?v=20261009-permissions"></script>
@@ -24,7 +24,7 @@
 <header>
   <div class="brand-cluster"><img class="company-logo" src="/Transfers/site-logo.png?v=2" alt="Fanatics Collectibles"><div class="app-brand"><nav class="app-tabs" aria-label="Main navigation"><a class="active" href="index.html" aria-current="page">Transfers</a><a href="drivers.html">Drivers</a><a href="locations.html">Locations</a>
         <a href="summary.html">Summary</a></nav><small><a class="live-board-link" href="/live-dock-board/">Live Trailer Board</a></small></div></div>
-  <div class="header-right"><div class="nav"><button id="duplicateDay" class="duplicate-day-btn" type="button">Duplicate Day</button><button id="prev">←</button><button id="today">Today</button><input id="boardDate" type="date"><button id="next">→</button></div><label class="theme-switch" for="themeToggle"><span class="theme-label light-label">Light</span><input id="themeToggle" type="checkbox" role="switch" aria-label="Toggle dark theme"><span class="switch-track"><span class="switch-thumb"></span></span><span class="theme-label dark-label">Dark</span></label><div class="user-session"><a id="me" class="account-toggle user-profile-open" href="#userProfile" aria-haspopup="dialog" aria-label="Open My Profile"></a><small id="accessRoleLabel"></small><small id="email"></small><button id="signout" class="hidden">Sign Out</button></div></div>
+  <div class="header-right"><label class="theme-switch" for="themeToggle"><span class="theme-label light-label">Light</span><input id="themeToggle" type="checkbox" role="switch" aria-label="Toggle dark theme"><span class="switch-track"><span class="switch-thumb"></span></span><span class="theme-label dark-label">Dark</span></label><div class="user-session"><a id="me" class="account-toggle user-profile-open" href="#userProfile" aria-haspopup="dialog" aria-label="Open My Profile"></a><small id="accessRoleLabel"></small><small id="email"></small><button id="signout" class="hidden">Sign Out</button></div></div>
 </header>
 <main>
   <aside>
@@ -123,7 +123,10 @@
     </section>
   </aside>
   <section class="panel board">
-    <div class="boardhead"><div class="planning-month-total" id="planningMonthTotal">Orders in Planning: <strong>0</strong></div><div id="scheduleCurrentTime" class="schedule-current-time" aria-live="off"></div><h2 id="title" class="schedule-date">Transfer Board</h2></div>
+    <div class="boardhead"><div class="planning-month-total" id="planningMonthTotal">Orders in Planning: <strong>0</strong></div><div id="scheduleCurrentTime" class="schedule-current-time" aria-live="off"></div><div class="board-date-controls" data-permission="board_navigation">
+ <div class="board-date-row"><button id="prev" type="button" aria-label="Previous day">←</button><div class="board-date-picker"><button id="title" class="schedule-date" type="button" title="Choose schedule date">Transfer Board</button><input id="boardDate" type="date" tabindex="-1" aria-label="Schedule date"></div><button id="next" type="button" aria-label="Next day">→</button></div>
+ <div class="board-date-actions"><button id="today" type="button">Today</button><button id="duplicateDay" class="duplicate-day-btn" type="button">Duplicate Day</button></div>
+ </div></div>
     <div id="gridWrap"><div id="grid"></div></div>
   </section>
   <aside class="right-sidebar">
@@ -201,7 +204,7 @@
 <script src="status-history.js?v=20261012-swapped-status-colors"></script>
 <script src="editor-bubbles.js?v=20261009-vertical-bubbles"></script>
 <script src="driver-availability.js?v=20261012-overnight"></script>
-<script src="app.js?v=20261016-edit-conflicts-final"></script>
+<script src="app.js?v=20261016-panel-date"></script>
 <script src="order-status.js?v=20261009-permissions"></script>
 <script src="recent-activity.js?v=20261009-permissions"></script>
 <script src="duplicate-transfer.js?v=20261013-dock-field"></script>
