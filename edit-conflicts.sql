@@ -291,3 +291,42 @@ begin
  return jsonb_build_object('outcome',outcome,'status',requested,'transfer_id',selected.id,'duplicate',false);
 end;$function$
 ;
+
+create or replace function public.guarded_board_action(p_action text,p_args jsonb,p_expected jsonb)
+returns jsonb language plpgsql security invoker set search_path='' as $fn$
+declare member record;t text;rid uuid;r jsonb;snapshots jsonb:='{}';conflict boolean:=false;result jsonb;reason text;
+begin
+ if auth.uid() is null then raise exception 'Sign in required' using errcode='42501';end if;
+ if p_action not in ('move_board_link_group','resize_board_link_group') then raise exception 'Invalid board action';end if;
+ perform pg_advisory_xact_lock(70428119);
+ for member in select box_key from public.board_link_group(p_args->>'p_anchor') order by split_part(box_key,':',1),split_part(box_key,':',2) loop
+  t:=case split_part(member.box_key,':',1) when 'job' then 'transfers' when 'status' then 'transfer_slot_statuses' end;
+  if t is null then raise exception 'Invalid box';end if;
+  rid:=split_part(member.box_key,':',2)::uuid;
+  execute format('select to_jsonb(x) from public.%I x where id=$1 for update',t) into r using rid;
+  if r is null then raise exception 'Box unavailable or permission denied';end if;
+  snapshots:=jsonb_set(snapshots,array[t||':'||rid::text],r);
+  if (p_expected->>(t||':'||rid::text))::bigint is distinct from (r->>'edit_revision')::bigint then conflict:=true;end if;
+ end loop;
+ if conflict then
+  for member in select key,value from jsonb_each(snapshots) loop
+   t:=split_part(member.key,':',1);rid:=(member.value->>'id')::uuid;
+   perform edit_private.record_attempt(t,rid,'conflict',p_action,(p_expected->>member.key)::bigint,(member.value->>'edit_revision')::bigint,p_args,member.value,'A box in this linked group changed; no boxes moved.');
+  end loop;
+  return jsonb_build_object('ok',false,'conflict',true,'current',snapshots,'message','A box in this group changed. Your attempt was recorded; review the latest boxes before moving or resizing.');
+ end if;
+ begin
+  if p_action='move_board_link_group' then result:=public.move_board_link_group(p_args->>'p_anchor',p_args->>'p_driver',(p_args->>'p_start')::int);
+  else result:=public.resize_board_link_group(p_args->>'p_anchor',(p_args->>'p_start')::int,(p_args->>'p_end')::int,(p_args->>'p_expected_start')::int,(p_args->>'p_expected_end')::int);end if;
+ exception when others then
+  reason:=sqlerrm;
+  for member in select key,value from jsonb_each(snapshots) loop
+   t:=split_part(member.key,':',1);rid:=(member.value->>'id')::uuid;
+   perform edit_private.record_attempt(t,rid,'rejected',p_action,(p_expected->>member.key)::bigint,(member.value->>'edit_revision')::bigint,p_args,member.value,reason);
+  end loop;
+  return jsonb_build_object('ok',false,'message',reason);
+ end;
+ return jsonb_build_object('ok',true,'result',result);
+end $fn$;
+revoke all on function public.guarded_board_action(text,jsonb,jsonb) from public,anon;
+grant execute on function public.guarded_board_action(text,jsonb,jsonb) to authenticated;
