@@ -117,7 +117,7 @@
         D.fetchAll(query("summary_deleted_records","*","deleted_at"),()=>token===generation)
       ]);
       if(token!==generation)return;
-      rows=[...D.records(jobs,slots),...D.archivedRecords(deleted)].sort((a,b)=>b.date.localeCompare(a.date)||(b.start||0)-(a.start||0));scope={from,to,driver};render();message(rows.length?count(rows.length)+" past records loaded. Export uses the detailed-record filters.":"No past records found. Try another date range or driver slot.");
+      rows=[...D.records(jobs,slots),...D.archivedRecords(deleted)].sort((a,b)=>b.date.localeCompare(a.date)||(b.start||0)-(a.start||0));scope={from,to,driver};render();message(rows.length?count(rows.length)+" past records loaded.":"No past records found. Try another date range or driver slot.");
     }catch(error){
       if(token!==generation)return;
       rows=[];visible=[];scope=null;message("Could not run the report: "+(error.message||"Please try again."),true);
