@@ -11,7 +11,7 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20261016-panel-date">
+  <link rel="stylesheet" href="styles.css?v=20261016-date-right">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="edit-guard.js?v=20261016-permissions"></script>
   <script src="config.js?v=20261009-permissions"></script>
@@ -124,8 +124,8 @@
   </aside>
   <section class="panel board">
     <div class="boardhead"><div class="planning-month-total" id="planningMonthTotal">Orders in Planning: <strong>0</strong></div><div id="scheduleCurrentTime" class="schedule-current-time" aria-live="off"></div><div class="board-date-controls" data-permission="board_navigation">
- <div class="board-date-row"><button id="prev" type="button" aria-label="Previous day">←</button><div class="board-date-picker"><button id="title" class="schedule-date" type="button" title="Choose schedule date">Transfer Board</button><input id="boardDate" type="date" tabindex="-1" aria-label="Schedule date"></div><button id="next" type="button" aria-label="Next day">→</button></div>
- <div class="board-date-actions"><button id="today" type="button">Today</button><button id="duplicateDay" class="duplicate-day-btn" type="button">Duplicate Day</button></div>
+ <div class="board-date-row"><div class="board-date-picker"><button id="title" class="schedule-date" type="button" title="Choose schedule date">Transfer Board</button><input id="boardDate" type="date" tabindex="-1" aria-label="Schedule date"></div></div>
+ <div class="board-date-actions"><button id="prev" type="button" aria-label="Previous day">←</button><button id="today" type="button">Today</button><button id="duplicateDay" class="duplicate-day-btn" type="button">Duplicate Day</button><button id="next" type="button" aria-label="Next day">→</button></div>
  </div></div>
     <div id="gridWrap"><div id="grid"></div></div>
   </section>
