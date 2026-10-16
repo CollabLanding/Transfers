@@ -405,7 +405,61 @@ async function loadBoardSchedule(){if(!window.TransfersAccess.can("view_board"))
   renderBoard();
 }
 async function loadData(){if(!window.TransfersAccess.can("view_board")){const r=await sb.rpc("get_transfer_board_options");items=[];driverSchedule=[];drivers=orderedUniq(["Planning",...(r.data?.drivers||[]).map(x=>x.name)]);locations=uniq((r.data?.locations||[]).map(x=>x.name));renderOptions();if(r.error)msg("Could not load form options: "+r.error.message,"error");return}if(!live){loadLocal();driverSchedule=[];renderOptions();renderBoard();return}const [tr,dr,lr,sc]=await Promise.all([sb.from("transfers").select("*").order("scheduled_date").order("scheduled_time"),loadDriversWithFallback(),loadLocationsWithFallback(),sb.from("driver_schedules").select("driver_name,schedule_date,start_time,end_time").gte("schedule_date",add(E.boardDate.value,-1)).lte("schedule_date",E.boardDate.value)]);if(tr.error){msg("Transfers could not load: "+tr.error.message,"error");items=[]}else items=(tr.data||[]).map(normalize);drivers=orderedUniq(["Planning",...(dr.error?[]:(dr.data||[]).map(x=>x.name)),...items.map(x=>x.driver)]);locations=uniq([...(lr.error?["Sunnyvale 100","Sunnyvale 200"]:(lr.data||[]).map(x=>x.name)),...items.flatMap(x=>[x.origin,x.destination]),"Sunnyvale 100","Sunnyvale 200"]);driverSchedule=sc.error?[]:(sc.data||[]);if(dr.error||lr.error){const details=[dr.error?"Drivers: "+dr.error.message:"",lr.error?"Locations: "+lr.error.message:""].filter(Boolean).join(" · ");msg("Could not load driver/location lists. "+details,"error")}renderOptions();renderBoard()}
-async function subscribe(){if(!window.TransfersAccess.can("view_board"))return;if(!live)return;editorPresenceReady=false;if(dataChannel)await sb.removeChannel(dataChannel);if(presence)await sb.removeChannel(presence);dataChannel=sb.channel("transfers-data").on("postgres_changes",{event:"INSERT",schema:"public",table:"transfers"},handleNewTransfer).on("postgres_changes",{event:"*",schema:"public",table:"transfers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"transfer_locations"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"driver_schedules"},loadBoardSchedule).on("postgres_changes",{event:"*",schema:"public",table:"transfer_slot_statuses"},()=>slotStatuses.refresh()).on("postgres_changes",{event:"*",schema:"public",table:"board_box_links"},()=>boxLinks.refresh()).on("postgres_changes",{event:"UPDATE",schema:"public",table:"profiles",filter:"id=eq."+user.id},event=>{profile={...profile,...event.new};publishEditorPresence()}).subscribe();presence=sb.channel("transfers-active",{config:{presence:{key:user.id}}}).on("presence",{event:"sync"},()=>{const unique=new Map();Object.values(presence.presenceState()).forEach(v=>v.forEach(x=>{const id=x.user_id||x.email;if(id&&!unique.has(id))unique.set(id,x)}));renderUsers([...unique.values()]);window.TransferEditors?.sync(Object.values(presence.presenceState()).flat())}).subscribe(s=>{editorPresenceReady=s==="SUBSCRIBED";if(editorPresenceReady)publishEditorPresence();else window.TransferEditors?.sync([])})}
+
+/* Apply live row changes locally; keep full loads for initial load/recovery. */
+let liveLaneTimer=null,liveFullRender=false;
+const liveDirtyDrivers=new Set();
+function queueLiveLanes(names,full=false){
+ names.forEach(n=>{if(n)liveDirtyDrivers.add(n)});liveFullRender=liveFullRender||full;
+ if(liveLaneTimer)return;
+ liveLaneTimer=setTimeout(flushLiveLanes,16);
+}
+function flushLiveLanes(){
+ liveLaneTimer=null;
+ if(!user||!window.TransfersAccess.can("view_board")){liveDirtyDrivers.clear();liveFullRender=false;return}
+ if(draggedTransferId||draggedDriver||E.grid.querySelector(".resizing,.dragging,.slot-selection")){
+  liveLaneTimer=setTimeout(flushLiveLanes,100);return;
+ }
+ const names=[...liveDirtyDrivers];liveDirtyDrivers.clear();
+ if(liveFullRender){liveFullRender=false;renderBoard();return}
+ const date=E.boardDate.value;
+ for(const lane of E.grid.querySelectorAll(".lane")){
+  if(!names.includes(lane.dataset.driver))continue;
+  lane.querySelectorAll(".card").forEach(n=>n.remove());
+  const entries=items.filter(x=>x.scheduled_date===date&&x.driver===lane.dataset.driver&&timeToMin(x.scheduled_time)>=GRID_START&&timeToMin(x.scheduled_time)<GRID_END);
+  layoutLaneCards(entries).forEach(entry=>lane.appendChild(makeCard(entry.x,entry.top,entry.height,entry.stacked)));
+ }
+ const start=today(),end=add(start,6),total=items.filter(x=>String(x.driver||"").trim().toLowerCase()==="planning"&&x.scheduled_date>=start&&x.scheduled_date<=end).length;
+ const metric=document.getElementById("planningMonthTotal");if(metric)metric.innerHTML='Orders in Planning: <strong>'+total+'</strong>';
+ boxLinks.render();window.TransferEditors?.render();
+}
+function handleTransferRealtime(payload){
+ if(!window.TransfersAccess.can("view_board"))return;
+ const row=payload.eventType==="DELETE"?payload.old:payload.new;if(!row?.id)return;
+ const id=String(row.id),previous=items.find(x=>x.id===id);
+ if(payload.eventType!=="DELETE"&&!row.scheduled_date){loadData();return}
+ const next=payload.eventType==="DELETE"?null:normalize(row);
+ if(previous&&next&&JSON.stringify(previous)===JSON.stringify(next))return;
+ items=items.filter(x=>x.id!==id);if(next)items.push(next);
+ let optionsChanged=false,full=false;
+ if(next){
+  if(!drivers.includes(next.driver)){drivers=orderedUniq([...drivers,next.driver]);optionsChanged=true;full=true}
+  if([next.origin,next.destination].some(x=>x&&!locations.includes(x))){locations=uniq([...locations,next.origin,next.destination]);optionsChanged=true}
+  if(next.scheduled_date===E.boardDate.value&&![...E.grid.querySelectorAll(".lane")].some(l=>l.dataset.driver===next.driver))full=true;
+ }
+ if(optionsChanged)renderOptions();
+ queueLiveLanes([previous?.driver,next?.driver],full);
+}
+async function refreshLiveOptions(){
+ const [dr,lr]=await Promise.all([loadDriversWithFallback(),loadLocationsWithFallback()]);
+ if(dr.error||lr.error)return;
+ const nextDrivers=orderedUniq(["Planning",...(dr.data||[]).map(x=>x.name),...items.map(x=>x.driver)]);
+ const changed=JSON.stringify(nextDrivers)!==JSON.stringify(drivers);
+ drivers=nextDrivers;locations=uniq([...(lr.data||[]).map(x=>x.name),...items.flatMap(x=>[x.origin,x.destination]),"Sunnyvale 100","Sunnyvale 200"]);
+ renderOptions();if(changed)queueLiveLanes([],true);
+}
+
+async function subscribe(){if(!window.TransfersAccess.can("view_board"))return;if(!live)return;editorPresenceReady=false;if(dataChannel)await sb.removeChannel(dataChannel);if(presence)await sb.removeChannel(presence);dataChannel=sb.channel("transfers-data").on("postgres_changes",{event:"INSERT",schema:"public",table:"transfers"},handleNewTransfer).on("postgres_changes",{event:"*",schema:"public",table:"transfers"},handleTransferRealtime).on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},refreshLiveOptions).on("postgres_changes",{event:"*",schema:"public",table:"transfer_locations"},refreshLiveOptions).on("postgres_changes",{event:"*",schema:"public",table:"driver_schedules"},loadBoardSchedule).on("postgres_changes",{event:"*",schema:"public",table:"transfer_slot_statuses"},payload=>slotStatuses.handleRealtime(payload)).on("postgres_changes",{event:"*",schema:"public",table:"board_box_links"},()=>boxLinks.refresh()).on("postgres_changes",{event:"UPDATE",schema:"public",table:"profiles",filter:"id=eq."+user.id},event=>{profile={...profile,...event.new};publishEditorPresence()}).subscribe();presence=sb.channel("transfers-active",{config:{presence:{key:user.id}}}).on("presence",{event:"sync"},()=>{const unique=new Map();Object.values(presence.presenceState()).forEach(v=>v.forEach(x=>{const id=x.user_id||x.email;if(id&&!unique.has(id))unique.set(id,x)}));renderUsers([...unique.values()]);window.TransferEditors?.sync(Object.values(presence.presenceState()).flat())}).subscribe(s=>{editorPresenceReady=s==="SUBSCRIBED";if(editorPresenceReady)publishEditorPresence();else window.TransferEditors?.sync([])})}
 let statusNotesBaseline=null;
 function closeStatusEditor(showTransferForm=true){
   statusNotesBaseline=null;
