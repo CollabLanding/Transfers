@@ -330,3 +330,43 @@ begin
 end $fn$;
 revoke all on function public.guarded_board_action(text,jsonb,jsonb) from public,anon;
 grant execute on function public.guarded_board_action(text,jsonb,jsonb) to authenticated;
+
+
+create or replace function public.guarded_summary_edit(p_args jsonb,p_expected bigint)
+returns jsonb language plpgsql security invoker set search_path='' as $fn$
+declare t text;rid uuid:=(p_args->>'p_id')::uuid;r jsonb;result jsonb;reason text;
+begin
+ if auth.uid() is null or not transfers_private.has_permission('summary_edit') then raise exception 'Report editing access required' using errcode='42501';end if;
+ if coalesce((p_args->>'p_deleted')::boolean,false) then raise exception 'Use restoration for deleted records';end if;
+ t:=case p_args->>'p_type' when 'Job' then 'transfers' when 'Time-slot status' then 'transfer_slot_statuses' end;
+ if t is null then raise exception 'Invalid record type';end if;
+ execute format('select to_jsonb(x) from public.%I x where id=$1 for update',t) into r using rid;
+ if r is null then raise exception 'Record unavailable';end if;
+ if p_expected is distinct from (r->>'edit_revision')::bigint then
+  perform edit_private.record_attempt(t,rid,'conflict','summary edit',p_expected,(r->>'edit_revision')::bigint,p_args,r,'Record changed since report was loaded.');
+  return jsonb_build_object('ok',false,'conflict',true,'table',t,'current',jsonb_build_object(rid::text,r),'message','This record changed since the report was loaded. Run the report again before saving.');
+ end if;
+ begin
+  result:=public.save_summary_record(p_args->>'p_type',rid,false,(p_args->>'p_date')::date,p_args->>'p_status',p_args->>'p_custom_title',(p_args->>'p_time')::time,(p_args->>'p_duration')::integer,(p_args->>'p_pallets')::integer);
+ exception when others then
+  reason:=sqlerrm;
+  perform edit_private.record_attempt(t,rid,'rejected','summary edit',p_expected,(r->>'edit_revision')::bigint,p_args,r,reason);
+  return jsonb_build_object('ok',false,'message',reason);
+ end;
+ execute format('select to_jsonb(x) from public.%I x where id=$1',t) into r using rid;
+ return jsonb_build_object('ok',true,'result',result,'table',t,'row',r);
+end $fn$;
+revoke all on function public.guarded_summary_edit(jsonb,bigint) from public,anon;
+grant execute on function public.guarded_summary_edit(jsonb,bigint) to authenticated;
+
+create or replace function edit_private.audit_applied() returns trigger language plpgsql security definer set search_path='' as $fn$
+declare before_row jsonb;after_row jsonb;patch jsonb;rid uuid;
+begin
+ before_row:=case when tg_op='INSERT' then '{}'::jsonb else to_jsonb(old) end;
+ after_row:=case when tg_op='DELETE' then '{}'::jsonb else to_jsonb(new) end;
+ rid:=coalesce((after_row->>'id')::uuid,(before_row->>'id')::uuid);
+ select coalesce(jsonb_object_agg(key,value),'{}') into patch from jsonb_each(after_row)
+ where value is distinct from before_row->key and key not in ('edit_revision','updated_at','updated_by','updated_by_email');
+ perform edit_private.record_attempt(tg_table_name,rid,'applied',lower(tg_op),(before_row->>'edit_revision')::bigint,(after_row->>'edit_revision')::bigint,patch,case when tg_op='DELETE' then before_row else after_row end,null);
+ if tg_op='DELETE' then return old;end if;return new;
+end $fn$;
