@@ -258,6 +258,14 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
       if(!sb)localStorage.setItem(key,JSON.stringify(localRows().map(r=>map.get(r.id)||r)));
       rows=rows.filter(r=>!map.has(r.id)).concat(updates.filter(r=>r.scheduled_date===getDate()));paint();
     },
+    handleRealtime(payload) {
+      const row=payload.eventType==="DELETE"?payload.old:payload.new;
+      if(!row?.id)return;
+      if(payload.eventType!=="DELETE"&&!row.scheduled_date){refresh();return}
+      rows=rows.filter(r=>String(r.id)!==String(row.id));
+      if(payload.eventType!=="DELETE"&&row.scheduled_date===getDate())rows.push(row);
+      paint();
+    },
     refresh,
     saveNotes,
     reset() { endMove(); generation++; rows = []; date = null; close(); paint(); }
