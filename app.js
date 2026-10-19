@@ -396,11 +396,14 @@ async function loadLocationsWithFallback(){
  const r=await sb.rpc("get_transfer_board_options");
  return {data:r.data?.locations||[],error:r.error};
 }
+let boardScheduleRequest=0;
 async function loadBoardSchedule(){if(!window.TransfersAccess.can("view_board"))return;
+  const requestedDate=E.boardDate.value,token=++boardScheduleRequest;
   if(!live){driverSchedule=[];renderBoard();return}
   const r=await sb.from("driver_schedules")
     .select("driver_name,schedule_date,start_time,end_time")
-    .gte("schedule_date",add(E.boardDate.value,-1)).lte("schedule_date",E.boardDate.value);
+    .gte("schedule_date",add(requestedDate,-1)).lte("schedule_date",requestedDate);
+  if(token!==boardScheduleRequest||requestedDate!==E.boardDate.value)return;
   driverSchedule=r.error?[]:(r.data||[]);
   renderBoard();
 }
@@ -519,10 +522,11 @@ async function openTransferEditor(id){
     }
   }
   if(!x)return;
+  const changedDay=E.boardDate.value!==x.scheduled_date;
   E.boardDate.value=x.scheduled_date;
   renderOptions();
-  renderBoard();
-  edit(x.id);
+  if(changedDay)await loadBoardSchedule();else renderBoard();
+  if(E.boardDate.value===x.scheduled_date)edit(x.id);
 }
 window.openTransferEditor=openTransferEditor;
 function urgentColumnMissing(error){
@@ -623,10 +627,11 @@ async function submit(ev){
     saveLocal()
   }
 
+  const changedDay=E.boardDate.value!==p.scheduled_date;
   E.boardDate.value=p.scheduled_date;
   renderOptions();
-  renderBoard();
   reset();
+  if(changedDay)await loadBoardSchedule();else renderBoard();
   if(urgentFallback)msg("Transfer saved. Run migration-v12.sql to enable the Urgent flag.","error");
   else msg(id?"Transfer updated.":"Transfer added.","ok")
 }
