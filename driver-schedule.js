@@ -18,7 +18,7 @@
   let user=null,profile=null,drivers=[],scheduleRows=[],weekTransfers=[],channel=null,dirty=false,lastWeekValue="";
 
   let loadVersion=0,editVersion=0,refreshPending=false,refreshTimer=null;
-  function scheduleFocused(){return E.body.contains(document.activeElement)}
+  function scheduleFocused(){return E.body.contains(document.activeElement)&&document.activeElement?.matches('input[type="time"]')}
   function requestScheduleRefresh(){
     refreshPending=true;
     clearTimeout(refreshTimer);
@@ -365,11 +365,15 @@
     return result;
   }
 
+  let copyingSchedule=false;
   async function copyPeriod(driver,period,sourceDate){if(!window.TransfersAccess.can("copy_schedules"))return;
-    if(!live||!user)return;
+    if(!live||!user||copyingSchedule)return;
+    copyingSchedule=true;
+    try{
     if(dirty){
       const saved=await save(true);
       if(!saved)return;
+      if(dirty){show("New schedule edits need saving before copying. Please save and try again.","error");return}
     }
 
     let sourceStart,sourceEnd,targetStart,targetEnd,label;
@@ -402,17 +406,26 @@
     const copies=copiedDates(src.data||[],period,sourceStart,sourceEnd,targetStart,targetEnd).map(row=>({
       ...row,driver_name:driver,updated_by:user.id,updated_by_name:userName(),updated_at:new Date().toISOString()
     }));
-    const ins=await sb.from("driver_schedules").upsert(copies,{onConflict:"driver_name,schedule_date"});
+    const ins=await sb.from("driver_schedules").upsert(copies,{onConflict:"driver_name,schedule_date"}).select("driver_name,schedule_date,start_time,end_time");
     if(ins.error){show("Could not copy schedule: "+ins.error.message,"error");return}
 
-    await loadWeek();
+    const persisted=scheduleEntries(ins.data||[]);
+    const verified=copies.every(row=>{
+      const saved=persisted.get(row.driver_name+"|"+row.schedule_date);
+      return saved&&saved.start===String(row.start_time||"").slice(0,5)&&saved.end===String(row.end_time||"").slice(0,5);
+    });
+    if(!verified){show("The copied schedule could not be confirmed. Refresh and check the destination dates before trying again.","error");return}
+    await loadWeek({background:true});
     window.recordDriverActivity?.([{
       driver_name:driver,
       action:"Schedule copied",
       details:label+" · "+(period==="day"?"day":period)+" schedule copied forward",
       actor_name:userName()
     }]);
-    show(driver+" "+period+" schedule copied forward.","ok");
+    const destination=targetStart===targetEnd?friendly(targetStart,{month:"short",day:"numeric",year:"numeric"}):friendly(targetStart,{month:"short",day:"numeric"})+" – "+friendly(targetEnd,{month:"short",day:"numeric",year:"numeric"});
+    show(driver+" "+period+" schedule copied to "+destination+(dirty?". Newer edits still need saving.":"."),"ok");
+    }catch(error){show("Could not copy schedule: "+(error.message||String(error)),"error")}
+    finally{copyingSchedule=false}
   }
 
 
