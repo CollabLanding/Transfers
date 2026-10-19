@@ -11,7 +11,7 @@
       document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
     }catch(_err){}
   </script>
-  <link rel="stylesheet" href="styles.css?v=20261009-editor-bubbles">
+  <link rel="stylesheet" href="styles.css?v=20261019-driver-heading">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="edit-guard.js?v=20261016-rapid-saves"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js?v=20261009-permissions"></script>
@@ -57,9 +57,8 @@
   <section class="panel driver-schedule-panel">
     <div class="driver-schedule-heading">
       <div>
-        <small>DRIVER SCHEDULING</small>
+        <h2 class="schedule-title">Driver Scheduling</h2>
         <h2 id="weekTitle">Driver Hours</h2>
-        <p>Set each driver's scheduled start and end time. Leave both fields blank for a day off.</p>
       </div>
       <div class="schedule-heading-actions"><button id="addDriver" type="button">Add Driver</button><button id="saveSchedule" class="primary" type="button">Save Schedule</button><button id="runReports" type="button">Run Reports</button></div>
     </div>
