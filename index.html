@@ -20,7 +20,7 @@
 <link rel="stylesheet" href="status-history.css?v=20261009-permissions">
 <script src="popup-dismiss.js?v=20261016" defer></script>
 <script src="site-language.js?v=20261014" defer></script>
-<style>#form .driver-status-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 54px;gap:10px}#form .driver-status-row label,#form .driver-status-row select{min-width:0}#form .route-add-stop-field{flex:0 0 auto;padding-top:32px}#addStop{padding:8px 6px;white-space:nowrap;font-size:12px}#form .additional-stop-field{display:flex;align-items:center;gap:8px}#form .additional-stop-row{display:flex;flex-wrap:nowrap;gap:12px;width:max-content}#form .additional-stop-field{flex:0 0 auto}#form .additional-stop-field label{flex:0 0 auto}#form .additional-stop-field select{min-width:180px}#removeStop,#removeStop2{margin-top:18px}
+<style>#form .driver-status-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 54px;gap:10px}#form .driver-status-row label,#form .driver-status-row select{min-width:0}#form .route-add-stop-field{flex:0 0 auto;padding-top:32px}#addStop{padding:8px 6px;white-space:nowrap;font-size:12px}#form .additional-stop-field{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin:12px 0}#form .additional-stop-row{display:flex;flex-wrap:nowrap;gap:12px;width:max-content}#form .additional-stop-field{flex:0 0 auto}#form .additional-stop-heading{display:flex;align-items:center;gap:4px;white-space:nowrap}#form .additional-stop-heading label{margin:0}#form .additional-stop-field select{min-width:0}#form .additional-stop-heading button{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;min-height:0;padding:0;margin:0;border:0;background:transparent;font-size:14px;line-height:1}
 /* Keep dropdown chevrons inset from the field edge. */
 #form select{appearance:none;-webkit-appearance:none;padding-right:26px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='m1 1 4 4 4-4' fill='none' stroke='%237c8995' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-size:10px 6px;background-position:right 7px center}
 @media(forced-colors:active){#form select{appearance:auto;-webkit-appearance:auto;background-image:none}}
@@ -69,7 +69,7 @@
           <label class="route-destination-field">Load Destination<select id="destination" required></select></label>
           <div class="route-add-stop-field"><button id="addStop" type="button" aria-expanded="false" aria-controls="additionalStopRow">Add Stop</button></div>
         </div>
-        <div id="additionalStopRow" class="additional-stop-row hidden"><div id="additionalStopField" class="additional-stop-field hidden"><label>Additional Stop<select id="additionalStop"><option value="">—</option></select></label><button id="removeStop" type="button" aria-label="Remove first additional stop">×</button></div><div id="additionalStopField2" class="additional-stop-field hidden"><label>Additional Stop 2<select id="additionalStop2"><option value="">—</option></select></label><button id="removeStop2" type="button" aria-label="Remove second additional stop">×</button></div></div>
+        <div id="additionalStopRow" class="additional-stop-row hidden"><div id="additionalStopField" class="additional-stop-field hidden"><div class="additional-stop-heading"><label for="additionalStop">Additional Stop</label><button id="removeStop" type="button" aria-label="Remove first additional stop">×</button></div><select id="additionalStop"><option value="">—</option></select></div><div id="additionalStopField2" class="additional-stop-field hidden"><div class="additional-stop-heading"><label for="additionalStop2">Additional Stop 2</label><button id="removeStop2" type="button" aria-label="Remove second additional stop">×</button></div><select id="additionalStop2"><option value="">—</option></select></div></div>
         <div class="row job-row">
           <label>Pallet Count<input id="pallet" type="number" min="0" max="999" required></label>
           <label>Job Number / Notes<input id="job" required></label>
@@ -212,7 +212,7 @@
 <script src="status-history.js?v=20261012-swapped-status-colors"></script>
 <script src="editor-bubbles.js?v=20261009-vertical-bubbles"></script>
 <script src="driver-availability.js?v=20261012-overnight"></script>
-<script src="app.js?v=20261021-two-stops"></script>
+<script src="app.js?v=20261021-stop-field-fit"></script>
 <script src="order-status.js?v=20261009-permissions"></script>
 <script src="recent-activity.js?v=20261009-permissions"></script>
 <script src="duplicate-transfer.js?v=20261021-two-stops"></script>
