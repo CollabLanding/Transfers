@@ -82,6 +82,7 @@
         origin:source.origin,
         destination:source.destination,
         additional_stop:source.additional_stop||null,
+        additional_stop_2:source.additional_stop_2||null,
         dock_number:source.dock_number??null,
         pallet_count:source.pallet_count,
         job_number:source.job_number,
