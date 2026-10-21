@@ -9,6 +9,7 @@
   const sourceLabel=document.getElementById("duplicateDaySourceLabel");
   const target=document.getElementById("duplicateDayTarget");
   const note=document.getElementById("duplicateDayMsg");
+  const overwrite=document.getElementById("duplicateDayOverwrite");
   const boardDate=document.getElementById("boardDate");
 
   if(!openBtn||!modal||!form||!target||!boardDate)return;
@@ -45,6 +46,8 @@
     if(!sourceDate)return;
     sourceLabel.textContent=friendlyDate(sourceDate);
     target.value=addDays(sourceDate,1);
+    overwrite.checked=false;
+    overwrite.disabled=!window.TransfersAccess?.can("delete_load");
     show("");
     modal.classList.remove("hidden");
     setTimeout(()=>target.focus(),0);
@@ -79,7 +82,10 @@
       return;
     }
 
+    const replaceDay=overwrite.checked;
+    if(replaceDay&&!window.TransfersAccess?.can("delete_load")){show("Delete Load permission is required to overwrite a day.","error");return;}
     confirmBtn.disabled=true;
+    overwrite.disabled=true;
     target.disabled=true;
     show("Reading "+friendlyDate(sourceDate)+"…");
 
@@ -143,17 +149,20 @@
 
       show("Duplicating "+copies.length+" transfer"+(copies.length===1?"":"s")+"…");
 
-      const insertResult=await sb.from("transfers").insert(copies).select("id,move_number");
+      const insertResult=replaceDay
+        ? await sb.rpc("overwrite_transfer_day",{p_source:sourceDate,p_destination:destination})
+        : await sb.from("transfers").insert(copies).select("id,move_number");
       if(insertResult.error){
         show("Could not duplicate day: "+insertResult.error.message,"error");
         return;
       }
 
+      const copied=replaceDay?Number(insertResult.data?.copied||0):copies.length;
       boardDate.value=destination;
       boardDate.dispatchEvent(new Event("change",{bubbles:true}));
 
       show(
-        copies.length+" transfer"+(copies.length===1?"":"s")+" duplicated to "+friendlyDate(destination)+".",
+        copied+" transfer"+(copied===1?"":"s")+(replaceDay?" copied, replacing the jobs on ":" duplicated to ")+friendlyDate(destination)+".",
         "ok"
       );
 
@@ -166,6 +175,7 @@
     }finally{
       confirmBtn.disabled=false;
       target.disabled=false;
+      overwrite.disabled=!window.TransfersAccess?.can("delete_load");
     }
   });
 })();
