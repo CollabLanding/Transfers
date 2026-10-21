@@ -5,6 +5,7 @@ const $=id=>document.getElementById(id),grid=$("grid"),wrap=$("gridWrap"),day=$(
 const token=new URLSearchParams(location.hash.slice(1)).get("key")||"";
 const PX15=20,GRID_START=210,GRID_END=1320,GRID_HEIGHT=(GRID_END-GRID_START)/15*PX15;
 let driverSchedule=[],generation=0,renderedData=null,loading=false;
+function compactLocation(value){return String(value??"").replace(/\bSunnyvale\b/gi,"SV").replace(/\bBrodnax\b/gi,"Bnax").replace(/\bPallet\s+Logistics\b/gi,"PLA")}
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const timeToMin=t=>{const [h,m]=String(t||"00:00").split(":").map(Number);return h*60+m};
 const minToTime=m=>String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
@@ -71,7 +72,7 @@ function makeCard(x,top,height,stacked){
  const deadlineText=(d,t)=>[d?new Date(d+"T12:00:00").toLocaleDateString(undefined,{month:"numeric",day:"numeric"}):"",t?fmt(t):""].filter(Boolean).join(" ");
  const deadlines=[["PU",deadlineText(x.pickup_by_date,x.pickup_by_time)],["DL",deadlineText(x.deliver_by_date,x.deliver_by_time)]].filter(([,s])=>s);
  if(deadlines.length)b.classList.add("has-deadlines");
- b.innerHTML=(x.urgent?'<span class="urgent-tape" aria-hidden="true"></span>':'')+'<span class="card-topline"><span class="card-status">'+esc(x.order_status||"Planned")+'</span>'+(x.dock_number!=null?'<span class="card-dock">Dock '+esc(x.dock_number)+'</span>':'')+'<span class="card-move">Move #'+esc(x.move_number??"—")+'</span></span><small class="card-route">'+[x.origin,x.additional_stop,x.additional_stop_2,x.destination].filter(Boolean).map(esc).join(' → ')+'</small><b class="card-job">'+esc(x.job_number)+'</b><span class="card-pallet"><span class="card-pallet-count">'+esc(x.pallet_count)+'</span></span>'+(deadlines.length?'<span class="card-deadlines">'+deadlines.map(([k,v])=>'<span>'+k+': '+esc(v)+'</span>').join("")+'</span>':"");
+ b.innerHTML=(x.urgent?'<span class="urgent-tape" aria-hidden="true"></span>':'')+'<span class="card-topline"><span class="card-status">'+esc(x.order_status||"Planned")+'</span>'+(x.dock_number!=null?'<span class="card-dock">Dock '+esc(x.dock_number)+'</span>':'')+'<span class="card-move">Move #'+esc(x.move_number??"—")+'</span></span><small class="card-route">'+[x.origin,x.additional_stop,x.additional_stop_2,x.destination].filter(Boolean).map(value=>esc(compactLocation(value))).join(' → ')+'</small><b class="card-job">'+esc(x.job_number)+'</b><span class="card-pallet"><span class="card-pallet-count">'+esc(x.pallet_count)+'</span></span>'+(deadlines.length?'<span class="card-deadlines">'+deadlines.map(([k,v])=>'<span>'+k+': '+esc(v)+'</span>').join("")+'</span>':"");
  b.title=[x.order_status,"Move #"+x.move_number,[x.origin,x.additional_stop,x.additional_stop_2,x.destination].filter(Boolean).join(" → "),x.job_number,x.pallet_count+" Pallets",x.dock_number!=null?"Dock "+x.dock_number:""].filter(Boolean).join("\n");return b;
 }
 function render(data){
