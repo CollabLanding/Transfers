@@ -102,6 +102,7 @@ function createdByMessage(x){
   link?.addEventListener("click",()=>window.focusTransferActivity?.(x.id,"Created"));
 }
 function optionMsg(s,c){E.optionMsg.textContent=s||"";E.optionMsg.style.color=c==="error"?"#a43c3c":c==="ok"?"#2f6f49":""}
+function compactLocation(value){return String(value??"").replace(/\bSunnyvale\b/gi,"SV").replace(/\bBrodnax\b/gi,"Bnax").replace(/\bPallet\s+Logistics\b/gi,"PLA")}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function unlockAudio(){
   try{
@@ -304,7 +305,7 @@ function makeCard(x,visualTop=null,visualHeight=null,stacked=false){
  b.style.height=(Number.isFinite(visualHeight)?visualHeight:cardHeightPx(x))+"px";
  b.innerHTML=(x.urgent?'<span class="urgent-tape" aria-hidden="true"></span>':'')+
    '<span class="card-topline"><span class="card-status">'+esc(x.order_status||"Planned")+'</span>'+(x.dock_number!=null?'<span class="card-dock">Dock '+esc(x.dock_number)+'</span>':'')+'<span class="card-move">Move #'+esc(x.move_number??"—")+'</span></span>'+
-   '<small class="card-route">'+[x.origin,x.additional_stop,x.additional_stop_2,x.destination].filter(Boolean).map(esc).join(' → ')+'</small>'+
+   '<small class="card-route">'+[x.origin,x.additional_stop,x.additional_stop_2,x.destination].filter(Boolean).map(value=>esc(compactLocation(value))).join(' → ')+'</small>'+
    '<b class="card-job">'+esc(x.job_number)+'</b>'+
    '<span class="card-pallet"><span class="card-pallet-count">'+esc(x.pallet_count)+'</span></span>'+
    '<small class="card-creator">'+esc(x.created_by_name)+'</small>'+
