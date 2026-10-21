@@ -158,7 +158,8 @@
     <label>Duplicate To
       <input id="duplicateDayTarget" type="date" required>
     </label>
-    <p class="duplicate-day-help">Times, drivers, routes, pallet counts, notes, durations, and statuses will be copied. Each copied transfer will receive a new Move number.</p>
+    <label style="display:flex;flex-direction:row;align-items:center;gap:8px"><input id="duplicateDayOverwrite" type="checkbox" style="width:16px;min-height:16px;margin:0">Overwrite Day</label>
+    <p class="duplicate-day-help">Overwrite Day replaces the destination day’s jobs. Otherwise, copies are added to that day. Copies start as Planned and receive new Move numbers.</p>
     <div class="modalactions">
       <button type="button" id="duplicateDayCancel">Cancel</button>
       <button class="primary" type="submit" id="duplicateDayConfirm">Duplicate Day</button>
@@ -216,7 +217,7 @@
 <script src="order-status.js?v=20261009-permissions"></script>
 <script src="recent-activity.js?v=20261009-permissions"></script>
 <script src="duplicate-transfer.js?v=20261021-two-stops"></script>
-<script src="duplicate-day.js?v=20261021-two-stops"></script>
+<script src="duplicate-day.js?v=20261021-overwrite-day"></script>
 <script src="theme.js?v=20261009-permissions"></script>
 <script src="chat-typing.js?v=20261014"></script>
 <script src="chat.js?v=20261014-typing"></script>
