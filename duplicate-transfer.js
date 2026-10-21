@@ -81,6 +81,7 @@
         driver:source.driver,
         origin:source.origin,
         destination:source.destination,
+        additional_stop:source.additional_stop||null,
         dock_number:source.dock_number??null,
         pallet_count:source.pallet_count,
         job_number:source.job_number,
