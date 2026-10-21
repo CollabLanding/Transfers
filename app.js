@@ -175,18 +175,22 @@ function saveLocal(){localStorage.setItem(key,JSON.stringify(items));localStorag
 function loadLocal(){try{items=(JSON.parse(localStorage.getItem(key)||"[]")||[]).map(normalize)}catch{items=[]}try{drivers=JSON.parse(localStorage.getItem(driverKey)||"[]")||[]}catch{drivers=[]}try{locations=JSON.parse(localStorage.getItem(locationKey)||'["Sunnyvale 100","Sunnyvale 200"]')||[]}catch{locations=["Sunnyvale 100","Sunnyvale 200"]}drivers=orderedUniq(["Planning",...drivers,...items.map(x=>x.driver)]);locations=uniq([...locations,...items.flatMap(x=>[x.origin,x.destination,x.additional_stop,x.additional_stop_2]),"Sunnyvale 100","Sunnyvale 200"])}
 function fillSelect(select,values,placeholder,addText,sentinel,preserve){let current=preserve??select.value;select.innerHTML='<option value="" disabled>'+esc(placeholder)+'</option>'+values.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("")+(window.TransfersAccess.can(sentinel==="__add_driver__"?"driver_profiles":"locations")?'<option value="'+sentinel+'">＋ '+esc(addText)+'</option>':'');if(values.includes(current))select.value=current;else select.value=""}
 function fitRouteFields(){
- const row=E.origin.closest(".route-row");if(!row)return;
+ const fields=[E.origin,E.destination,E.additionalStop,E.additionalStop2];
  const context=document.createElement("canvas").getContext("2d");if(!context)return;
- for(const [select,key]of [[E.origin,"origin"],[E.destination,"destination"]]){
-  const style=getComputedStyle(select);context.font=style.font||style.fontSize+" "+style.fontFamily;
-  const optionWidth=Math.max(...[...select.options].map(o=>context.measureText(o.textContent).width));
-  const label=select.parentElement,caption=label.firstChild.textContent.trim(),labelStyle=getComputedStyle(label);
-  context.font=labelStyle.font||labelStyle.fontSize+" "+labelStyle.fontFamily;
-  const width=Math.ceil(Math.max(context.measureText(caption).width,optionWidth+parseFloat(style.paddingLeft)+parseFloat(style.paddingRight)+22));
-  row.style.setProperty("--"+key+"-fit",width+"px");
+ let width=0;
+ for(const field of fields){
+  const style=getComputedStyle(field);context.font=style.font||style.fontSize+" "+style.fontFamily;
+  const options=[...field.options].filter(o=>o.value);
+  width=Math.max(width,...options.map(o=>context.measureText(o.textContent).width+parseFloat(style.paddingLeft)+parseFloat(style.paddingRight)+2));
+ }
+ const value=Math.ceil(width)+"px";
+ for(const field of fields){
+  field.style.width=value;field.style.minWidth=value;field.style.maxWidth=value;
+  const group=field===E.origin||field===E.destination?field.parentElement:field.closest(".additional-stop-field");
+  group.style.flex="0 0 "+value;group.style.width=value;
  }
 }
-function renderOptions(){let dv=E.driver.value||"Planning",ov=E.origin.value,tv=E.destination.value;fillSelect(E.driver,drivers,"Select driver","Add a Driver…","__add_driver__",window.TransfersAccess.role==="Vendor"?"Planning":dv);E.driver.disabled=window.TransfersAccess.role==="Vendor";fillSelect(E.origin,locations,"Select origin","Add a Location…","__add_location__",ov);fillSelect(E.destination,locations,"Select destination","Add a Location…","__add_location__",tv);fillSelect(E.additionalStop,locations,"Select location","Add a Location…","__add_location__",E.additionalStop.value);E.additionalStop.options[0].disabled=false;fillSelect(E.additionalStop2,locations,"Select location","Add a Location…","__add_location__",E.additionalStop2.value);E.additionalStop2.options[0].disabled=false;fitRouteFields();for(const field of [E.additionalStop,E.additionalStop2]){const ctx=document.createElement("canvas").getContext("2d");if(ctx){ctx.font=getComputedStyle(field).font;const style=getComputedStyle(field),options=[...field.options].filter(o=>o.value&&!o.value.startsWith("__"));field.style.width=Math.ceil(Math.max(0,...options.map(o=>ctx.measureText(o.textContent).width))+parseFloat(style.paddingLeft)+parseFloat(style.paddingRight)+2)+"px"}}}
+function renderOptions(){let dv=E.driver.value||"Planning",ov=E.origin.value,tv=E.destination.value;fillSelect(E.driver,drivers,"Select driver","Add a Driver…","__add_driver__",window.TransfersAccess.role==="Vendor"?"Planning":dv);E.driver.disabled=window.TransfersAccess.role==="Vendor";fillSelect(E.origin,locations,"Select origin","Add a Location…","__add_location__",ov);fillSelect(E.destination,locations,"Select destination","Add a Location…","__add_location__",tv);fillSelect(E.additionalStop,locations,"Select location","Add a Location…","__add_location__",E.additionalStop.value);E.additionalStop.options[0].disabled=false;fillSelect(E.additionalStop2,locations,"Select location","Add a Location…","__add_location__",E.additionalStop2.value);E.additionalStop2.options[0].disabled=false;fitRouteFields()}
 function renderUsers(list){E.active.innerHTML="";(list||[]).forEach(u=>{let d=document.createElement("div");d.className="activeRow";d.textContent=u.display_name||u.email||"User";E.active.appendChild(d)})}
 function scheduleOverlay(lane,top,height,kind,label=""){
   if(height<=0)return;
