@@ -125,6 +125,7 @@
           origin:row.origin,
           destination:row.destination,
         additional_stop:row.additional_stop||null,
+        additional_stop_2:row.additional_stop_2||null,
           dock_number:row.dock_number??null,
           pallet_count:Number(row.pallet_count||0),
           job_number:row.job_number,
