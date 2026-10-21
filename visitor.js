@@ -96,7 +96,7 @@ async function load(){
  const request=++generation;loading=true;status.textContent="Updating board…";status.className="";
  try{const r=await sb.rpc("get_visitor_transfer_board",{p_token:token,p_date:date});if(request!==generation||date!==day.value)return;if(r.error)throw r.error;
  const signature=JSON.stringify(r.data);if(signature!==renderedData){render(r.data);renderedData=signature}
- status.textContent="Updated "+new Date().toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"})+" · Read only";
+ status.textContent="Updated "+new Date().toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
  }catch(e){if(request!==generation)return;status.textContent=e.message||"Could not load board. Use Refresh to try again.";status.className="visitor-error"}finally{if(request===generation)loading=false}
 }
 function navigate(date){day.value=date;load()}
