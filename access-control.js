@@ -44,7 +44,7 @@
     finally{shareBusy=false;shareButton.disabled=false}
    };
   }
-  shareButton.hidden=!isAdmin();shareButton.classList.toggle("hidden",!isAdmin());
+  shareButton.hidden=!isAdmin();shareButton.dataset.accessDenied=String(!isAdmin());shareButton.classList.toggle("hidden",!isAdmin());
  }
  function apply(){
   applyShareButton();
