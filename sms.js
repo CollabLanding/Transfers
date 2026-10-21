@@ -48,7 +48,7 @@
   function templateText(kind){
     if(!transfer)return "";
     const move=(transfer.urgent?"HOT ":"")+"Move #"+(transfer.move_number??"—");
-    const route=transfer.origin+" → "+transfer.destination;
+    const route=[transfer.origin,transfer.additional_stop,transfer.destination].filter(Boolean).join(" → ");
     const schedule=fmtDate(transfer.scheduled_date)+" at "+fmtTime(transfer.scheduled_time);
     const job=transfer.job_number?" Job/Notes: "+transfer.job_number+".":"";
     if(kind==="update"){
@@ -58,7 +58,7 @@
       return "Transfers Dispatch: "+move+" delay/update. "+route+". Current scheduled time is "+schedule+"."+job+" Please contact dispatch if you need updated timing.";
     }
     return [
-      [move, transfer.origin+" to "+transfer.destination].join(", "),
+      [move, [transfer.origin,transfer.additional_stop,transfer.destination].filter(Boolean).join(" to ")].join(", "),
       [transfer.pallet_count!=null&&transfer.pallet_count!==""?transfer.pallet_count+" Pallets":"",transfer.dock_number!=null&&transfer.dock_number!==""?"Dock "+transfer.dock_number:""].filter(Boolean).join(", "),
       transfer.job_number||""
     ].join("\n").trim();
@@ -112,7 +112,7 @@
     modal.classList.remove("hidden");
 
     const {data,error}=await sb.from("transfers")
-      .select("id,move_number,scheduled_date,scheduled_time,duration_minutes,driver,origin,destination,pallet_count,dock_number,job_number,order_status,urgent")
+      .select("id,move_number,scheduled_date,scheduled_time,duration_minutes,driver,origin,destination,additional_stop,pallet_count,dock_number,job_number,order_status,urgent")
       .eq("id",id)
       .single();
     if(error){
