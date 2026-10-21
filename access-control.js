@@ -17,7 +17,37 @@
   "#exportCsv,#printReport":"summary_export",".record-edit-control,.record-save":"summary_edit",
   "#clearChat":"clear_chat","#signout,#vendorSignout":"sign_out","#permissionsButton":"view_permissions"
  };
+ let shareButton=null,shareBusy=false,shareReset=null;
+ const shareIcon='<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V3m-4 4 4-4 4 4"/><path d="M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8"/></svg>';
+ function applyShareButton(){
+  if(!shareButton){
+   const host=document.querySelector("header .header-right")||document.querySelector("header .user-session");if(!host)return;
+   shareButton=document.createElement("button");shareButton.type="button";shareButton.className="visitor-share-button hidden";shareButton.dataset.adminOnly="";shareButton.dataset.noTranslate="";
+   shareButton.title="Copy visitor board link";shareButton.setAttribute("aria-label","Copy visitor board link");shareButton.innerHTML=shareIcon;
+   shareButton.style.cssText="width:38px;height:36px;padding:7px;flex:0 0 auto;background:transparent;color:inherit;border:1px solid #53616e;border-radius:8px";
+   host.prepend(shareButton);
+   shareButton.onclick=async()=>{
+    if(!isAdmin()||shareBusy)return;shareBusy=true;shareButton.disabled=true;
+    try{
+     const r=await sb.rpc("get_visitor_board_share_link");if(r.error)throw r.error;if(!isAdmin())return;
+     let copied=false;
+     try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(r.data);copied=true}}catch{}
+     if(!copied){
+      const field=document.createElement("textarea");field.value=r.data;field.readOnly=true;field.style.cssText="position:fixed;left:0;top:0;opacity:0";document.body.append(field);field.select();
+      try{copied=document.execCommand("copy")}catch{}field.remove();shareButton.focus();
+     }
+     if(copied){shareButton.textContent="✓";shareButton.title="Copied";shareButton.setAttribute("aria-label","Visitor link copied");clearTimeout(shareReset);shareReset=setTimeout(()=>{shareButton.innerHTML=shareIcon;shareButton.title="Copy visitor board link";shareButton.setAttribute("aria-label",shareButton.title)},2000)}
+     else{
+      const d=document.createElement("dialog"),h=document.createElement("h2"),input=document.createElement("input"),close=document.createElement("button");h.textContent="Visitor board link";input.value=r.data;input.readOnly=true;input.setAttribute("aria-label","Visitor board link");input.style.width="100%";close.textContent="Close";close.onclick=()=>d.close();d.style.cssText="width:min(520px,90vw);padding:20px;border-radius:12px;background:var(--panel);color:var(--text)";d.append(h,input,close);document.body.append(d);d.onclose=()=>d.remove();d.showModal();input.select();
+     }
+    }catch(error){alert("Could not copy visitor link: "+error.message)}
+    finally{shareBusy=false;shareButton.disabled=false}
+   };
+  }
+  shareButton.hidden=!isAdmin();shareButton.classList.toggle("hidden",!isAdmin());
+ }
  function apply(){
+  applyShareButton();
   const root=document.documentElement;
   root.dataset.boardAccess=String(can("view_board"));
   root.dataset.sidebarAccess=String(any(["recent_activity","active_users"]));
