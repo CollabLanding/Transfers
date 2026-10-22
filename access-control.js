@@ -33,14 +33,31 @@
   return shareLinkPromise;
  }
  async function copyShareLink(link){
-  if(typeof link!=="string"||!link.trim()||!navigator.clipboard?.writeText)return false;
-  try{await navigator.clipboard.writeText(link);return true}catch{return false}
+  if(typeof link!=="string"||!link.trim())return "blocked";
+  let sent=false;
+  const supply=event=>{if(event.clipboardData){event.preventDefault();event.clipboardData.setData("text/plain",link);sent=true;}};
+  document.addEventListener("copy",supply,true);
+  try{document.execCommand("copy")}catch{}finally{document.removeEventListener("copy",supply,true)}
+  if(navigator.clipboard){
+   try{
+    if(navigator.clipboard.write&&window.ClipboardItem){
+     await navigator.clipboard.write([new ClipboardItem({"text/plain":new Blob([link],{type:"text/plain"})})]);sent=true;
+    }else if(navigator.clipboard.writeText){await navigator.clipboard.writeText(link);sent=true;}
+   }catch{}
+   if(sent&&navigator.clipboard.readText){
+    try{return await navigator.clipboard.readText()===link?"verified":"mismatch"}catch{}
+   }
+  }
+  return sent?"requested":"blocked";
  }
  function showShareLink(link){
-  const d=document.createElement("dialog"),h=document.createElement("h2"),input=document.createElement("input"),copy=document.createElement("button"),close=document.createElement("button"),status=document.createElement("p");
-  h.textContent="Visitor board link";input.value=link;input.readOnly=true;input.setAttribute("aria-label","Visitor board link");input.style.width="100%";
-  copy.type="button";copy.textContent="Copy link";copy.onclick=async()=>{input.focus();input.select();input.setSelectionRange(0,link.length);const copied=await copyShareLink(link);status.textContent=copied?"Link copied.":"Select the link and press Ctrl+C (Command+C on Mac) to copy it.";};
-  close.type="button";close.textContent="Close";close.onclick=()=>d.close();d.style.cssText="width:min(520px,90vw);padding:20px;border-radius:12px;background:var(--panel);color:var(--text)";status.setAttribute("role","status");d.append(h,input,copy,close,status);document.body.append(d);d.onclose=()=>d.remove();d.showModal();input.focus();input.select();
+  const d=document.createElement("dialog"),h=document.createElement("h2"),input=document.createElement("textarea"),copy=document.createElement("button"),close=document.createElement("button"),open=document.createElement("a"),status=document.createElement("p");
+  d.dataset.noTranslate="";h.textContent="Visitor board link";input.value=link;input.readOnly=true;input.rows=3;input.setAttribute("aria-label","Visitor board link");input.style.cssText="display:block;width:100%;font:13px/1.5 Arial,sans-serif;overflow-wrap:anywhere;white-space:pre-wrap;padding:10px;margin:12px 0";
+  const report=result=>{status.textContent=result==="verified"?"Link copied and verified.":result==="mismatch"?"The clipboard did not retain the link. Select the link above and press Ctrl+C, or right-click it and choose Copy.":"Select the link above and press Ctrl+C, or right-click it and choose Copy.";};
+  copy.type="button";copy.textContent="Copy link";copy.onclick=async()=>{input.focus();input.select();input.setSelectionRange(0,link.length);status.textContent="Copying…";report(await copyShareLink(link));};
+  open.textContent="Open visitor view";open.href=link;open.target="_blank";open.rel="noopener";open.style.cssText="display:inline-block;margin:10px;color:var(--accent,#1d5c8f)";
+  close.type="button";close.textContent="Close";close.onclick=()=>d.close();d.style.cssText="width:min(620px,94vw);padding:20px;border-radius:12px;background:var(--panel);color:var(--text)";status.setAttribute("role","status");d.append(h,input,copy,open,close,status);document.body.append(d);d.onclose=()=>d.remove();d.showModal();input.focus();input.select();report("requested");
+  return {report,input};
  }
  function applyShareButton(){
   if(!shareButton){
@@ -53,9 +70,7 @@
     if(!isAdmin()||shareBusy)return;shareBusy=true;shareButton.disabled=true;
     try{
      const link=shareLink||await prepareShareLink();if(!isAdmin())return;
-     const copied=await copyShareLink(link);shareButton.focus();
-     if(copied){shareButton.textContent="✓";shareButton.title="Copied";shareButton.setAttribute("aria-label","Visitor link copied");clearTimeout(shareReset);shareReset=setTimeout(()=>{shareButton.innerHTML=shareIcon;shareButton.title="Copy visitor board link";shareButton.setAttribute("aria-label",shareButton.title)},2000)}
-     else showShareLink(link);
+     const view=showShareLink(link);view.report(await copyShareLink(link));
     }catch(error){alert("Could not copy visitor link: "+error.message)}
     finally{shareBusy=false;shareButton.disabled=false}
    };
