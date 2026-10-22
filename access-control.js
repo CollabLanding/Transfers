@@ -33,20 +33,13 @@
   return shareLinkPromise;
  }
  async function copyShareLink(link){
-  if(navigator.clipboard?.writeText){
-   try{await navigator.clipboard.writeText(link);return true}catch{}
-  }
-  return legacyCopyShareLink(link);
- }
- function legacyCopyShareLink(link){
-  const field=document.createElement("textarea");field.value=link;field.readOnly=true;field.setAttribute("aria-label","Visitor board link");field.style.cssText="position:fixed;left:8px;top:8px;width:1px;height:1px;opacity:0;pointer-events:none";
-  document.body.append(field);field.focus();field.select();field.setSelectionRange(0,link.length);
-  let copied=false;try{copied=document.execCommand("copy")}catch{}field.remove();return copied;
+  if(typeof link!=="string"||!link.trim()||!navigator.clipboard?.writeText)return false;
+  try{await navigator.clipboard.writeText(link);return true}catch{return false}
  }
  function showShareLink(link){
   const d=document.createElement("dialog"),h=document.createElement("h2"),input=document.createElement("input"),copy=document.createElement("button"),close=document.createElement("button"),status=document.createElement("p");
   h.textContent="Visitor board link";input.value=link;input.readOnly=true;input.setAttribute("aria-label","Visitor board link");input.style.width="100%";
-  copy.type="button";copy.textContent="Copy link";copy.onclick=async()=>{input.focus();input.select();input.setSelectionRange(0,link.length);let copied=false;try{copied=document.execCommand("copy")}catch{}if(!copied)copied=await copyShareLink(link);status.textContent=copied?"Link copied.":"Select the link and press Ctrl+C (Command+C on Mac) to copy it.";};
+  copy.type="button";copy.textContent="Copy link";copy.onclick=async()=>{input.focus();input.select();input.setSelectionRange(0,link.length);const copied=await copyShareLink(link);status.textContent=copied?"Link copied.":"Select the link and press Ctrl+C (Command+C on Mac) to copy it.";};
   close.type="button";close.textContent="Close";close.onclick=()=>d.close();d.style.cssText="width:min(520px,90vw);padding:20px;border-radius:12px;background:var(--panel);color:var(--text)";status.setAttribute("role","status");d.append(h,input,copy,close,status);document.body.append(d);d.onclose=()=>d.remove();d.showModal();input.focus();input.select();
  }
  function applyShareButton(){
@@ -60,7 +53,7 @@
     if(!isAdmin()||shareBusy)return;shareBusy=true;shareButton.disabled=true;
     try{
      const link=shareLink||await prepareShareLink();if(!isAdmin())return;
-     const copied=legacyCopyShareLink(link)||await copyShareLink(link);shareButton.focus();
+     const copied=await copyShareLink(link);shareButton.focus();
      if(copied){shareButton.textContent="✓";shareButton.title="Copied";shareButton.setAttribute("aria-label","Visitor link copied");clearTimeout(shareReset);shareReset=setTimeout(()=>{shareButton.innerHTML=shareIcon;shareButton.title="Copy visitor board link";shareButton.setAttribute("aria-label",shareButton.title)},2000)}
      else showShareLink(link);
     }catch(error){alert("Could not copy visitor link: "+error.message)}
