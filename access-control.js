@@ -17,8 +17,38 @@
   "#exportCsv,#printReport":"summary_export",".record-edit-control,.record-save":"summary_edit",
   "#clearChat":"clear_chat","#signout,#vendorSignout":"sign_out","#permissionsButton":"view_permissions"
  };
- let shareButton=null,shareBusy=false,shareReset=null;
+ let shareButton=null,shareBusy=false,shareReset=null,shareLink="",shareLinkUser=null,shareLinkPromise=null;
  const shareIcon='<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V3m-4 4 4-4 4 4"/><path d="M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8"/></svg>';
+ function prepareShareLink(){
+  const requestedUser=userId;
+  if(shareLinkUser!==requestedUser){shareLink="";shareLinkPromise=null;shareLinkUser=requestedUser}
+  if(shareLink)return Promise.resolve(shareLink);
+  if(shareLinkPromise)return shareLinkPromise;
+  shareLinkPromise=sb.rpc("get_visitor_board_share_link").then(r=>{
+   if(r.error)throw r.error;
+   if(typeof r.data!=="string"||!r.data.startsWith("https://collablanding.github.io/Transfers/visitor.html#key="))throw new Error("Visitor link unavailable.");
+   if(isAdmin()&&userId===requestedUser)shareLink=r.data;
+   return r.data;
+  }).finally(()=>{if(shareLinkUser===requestedUser)shareLinkPromise=null});
+  return shareLinkPromise;
+ }
+ async function copyShareLink(link){
+  if(navigator.clipboard?.writeText){
+   try{await navigator.clipboard.writeText(link);return true}catch{}
+  }
+  return legacyCopyShareLink(link);
+ }
+ function legacyCopyShareLink(link){
+  const field=document.createElement("textarea");field.value=link;field.readOnly=true;field.setAttribute("aria-label","Visitor board link");field.style.cssText="position:fixed;left:8px;top:8px;width:1px;height:1px;opacity:0;pointer-events:none";
+  document.body.append(field);field.focus();field.select();field.setSelectionRange(0,link.length);
+  let copied=false;try{copied=document.execCommand("copy")}catch{}field.remove();return copied;
+ }
+ function showShareLink(link){
+  const d=document.createElement("dialog"),h=document.createElement("h2"),input=document.createElement("input"),copy=document.createElement("button"),close=document.createElement("button"),status=document.createElement("p");
+  h.textContent="Visitor board link";input.value=link;input.readOnly=true;input.setAttribute("aria-label","Visitor board link");input.style.width="100%";
+  copy.type="button";copy.textContent="Copy link";copy.onclick=async()=>{input.focus();input.select();input.setSelectionRange(0,link.length);let copied=false;try{copied=document.execCommand("copy")}catch{}if(!copied)copied=await copyShareLink(link);status.textContent=copied?"Link copied.":"Select the link and press Ctrl+C (Command+C on Mac) to copy it.";};
+  close.type="button";close.textContent="Close";close.onclick=()=>d.close();d.style.cssText="width:min(520px,90vw);padding:20px;border-radius:12px;background:var(--panel);color:var(--text)";status.setAttribute("role","status");d.append(h,input,copy,close,status);document.body.append(d);d.onclose=()=>d.remove();d.showModal();input.focus();input.select();
+ }
  function applyShareButton(){
   if(!shareButton){
    const host=document.querySelector("header .header-right")||document.querySelector("header .user-session");if(!host)return;
@@ -29,21 +59,15 @@
    shareButton.onclick=async()=>{
     if(!isAdmin()||shareBusy)return;shareBusy=true;shareButton.disabled=true;
     try{
-     const r=await sb.rpc("get_visitor_board_share_link");if(r.error)throw r.error;if(!isAdmin())return;
-     let copied=false;
-     try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(r.data);copied=true}}catch{}
-     if(!copied){
-      const field=document.createElement("textarea");field.value=r.data;field.readOnly=true;field.style.cssText="position:fixed;left:0;top:0;opacity:0";document.body.append(field);field.select();
-      try{copied=document.execCommand("copy")}catch{}field.remove();shareButton.focus();
-     }
+     const link=shareLink||await prepareShareLink();if(!isAdmin())return;
+     const copied=legacyCopyShareLink(link)||await copyShareLink(link);shareButton.focus();
      if(copied){shareButton.textContent="✓";shareButton.title="Copied";shareButton.setAttribute("aria-label","Visitor link copied");clearTimeout(shareReset);shareReset=setTimeout(()=>{shareButton.innerHTML=shareIcon;shareButton.title="Copy visitor board link";shareButton.setAttribute("aria-label",shareButton.title)},2000)}
-     else{
-      const d=document.createElement("dialog"),h=document.createElement("h2"),input=document.createElement("input"),close=document.createElement("button");h.textContent="Visitor board link";input.value=r.data;input.readOnly=true;input.setAttribute("aria-label","Visitor board link");input.style.width="100%";close.textContent="Close";close.onclick=()=>d.close();d.style.cssText="width:min(520px,90vw);padding:20px;border-radius:12px;background:var(--panel);color:var(--text)";d.append(h,input,close);document.body.append(d);d.onclose=()=>d.remove();d.showModal();input.select();
-     }
+     else showShareLink(link);
     }catch(error){alert("Could not copy visitor link: "+error.message)}
     finally{shareBusy=false;shareButton.disabled=false}
    };
   }
+  if(isAdmin())prepareShareLink().catch(()=>{});else{shareLink="";shareLinkUser=null;shareLinkPromise=null}
   shareButton.hidden=!isAdmin();shareButton.dataset.accessDenied=String(!isAdmin());shareButton.classList.toggle("hidden",!isAdmin());
  }
  function apply(){
