@@ -15,7 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="edit-guard.js?v=20261016-rapid-saves"></script>
   <script src="config.js?v=20261009-permissions"></script>
-  <script src="access-control.js?v=20261022-share-reset"></script>
+  <script src="access-control.js?v=20261023-panel-layout"></script>
 <link rel="stylesheet" href="slot-status.css?v=20261016-status-grip-correction">
 <link rel="stylesheet" href="status-history.css?v=20261009-permissions">
 <script src="popup-dismiss.js?v=20261016" defer></script>
@@ -24,6 +24,18 @@
 /* Keep dropdown chevrons inset from the field edge. */
 #form select{appearance:none;-webkit-appearance:none;padding-right:26px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='m1 1 4 4 4-4' fill='none' stroke='%237c8995' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-size:10px 6px;background-position:right 7px center}
 @media(forced-colors:active){#form select{appearance:auto;-webkit-appearance:auto;background-image:none}}
+
+/* Keep each lower panel aligned with its sidebar companion. */
+main.transfer-layout>.transfer-sidebar{min-width:0;align-items:stretch}
+main.transfer-layout>.transfer-sidebar>.panel{width:100%;min-width:0;max-width:100%}
+main.transfer-layout>.right-sidebar{flex-direction:column;align-items:stretch;min-width:0}
+main.transfer-layout>.right-sidebar>.panel{width:100%;min-width:0;max-width:100%;align-self:stretch;flex:0 0 auto}
+html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{display:none}
+@media(min-width:1181px){
+ html[data-left-sidebar-access="false"] body main.transfer-layout{grid-template-columns:minmax(0,1fr) 270px!important}
+ html[data-left-sidebar-access="true"][data-sidebar-access="false"] body main.transfer-layout{grid-template-columns:380px minmax(0,1fr)!important}
+ html[data-left-sidebar-access="false"][data-sidebar-access="false"] body main.transfer-layout{grid-template-columns:minmax(0,1fr)!important}
+}
 </style>
 </head>
 <body>
@@ -32,8 +44,8 @@
         <a href="summary.html">Summary</a></nav><small><a class="live-board-link" href="/live-dock-board/">Live Trailer Board</a></small></div></div>
   <div class="header-right"><label class="theme-switch" for="themeToggle"><span class="theme-label light-label">Light</span><input id="themeToggle" type="checkbox" role="switch" aria-label="Toggle dark theme"><span class="switch-track"><span class="switch-thumb"></span></span><span class="theme-label dark-label">Dark</span></label><div class="user-session"><a id="me" class="account-toggle user-profile-open" href="#userProfile" aria-haspopup="dialog" aria-label="Open My Profile"></a><small id="accessRoleLabel"></small><small id="email"></small><button id="signout" class="hidden">Sign Out</button></div></div>
 </header>
-<main>
-  <aside>
+<main class="transfer-layout">
+  <aside class="transfer-sidebar">
     <section class="panel build-transfer-panel">
       <div class="transfer-form-head">
         <h2 id="formTitle">Build Transfer Load</h2><div id="transferEditorBubbles" class="editor-bubbles panel-editor-bubbles" aria-label="Users editing this load" hidden></div><button id="vendorSignout" class="vendor-only" type="button">Sign Out</button>
@@ -117,6 +129,23 @@
 </div>
     </section>
     
+    <section class="panel recent-activity-panel">
+      <div class="section-heading"><div><h2>Recent Activity</h2></div><span id="mode" class="mode-badge">Demo</span></div>
+      <div id="recentActivity" class="activity-list"><div class="activity-empty">Loading activity…</div></div>
+    </section>
+  </aside>
+  <section class="panel board">
+    <div class="boardhead"><div class="planning-month-total" id="planningMonthTotal">Orders in Planning: <strong>0</strong></div><div id="scheduleCurrentTime" class="schedule-current-time" aria-live="off"></div><div class="board-date-controls" data-permission="board_navigation">
+ <div class="board-date-row"><div class="board-date-picker"><button id="title" class="schedule-date" type="button" title="Choose schedule date">Transfer Board</button><input id="boardDate" type="date" tabindex="-1" aria-label="Schedule date"></div></div>
+ <div class="board-date-actions"><button id="prev" type="button" aria-label="Previous day">←</button><button id="today" type="button">Today</button><button id="duplicateDay" class="duplicate-day-btn" type="button">Duplicate Day</button><button id="next" type="button" aria-label="Next day">→</button></div>
+ </div></div>
+    <div id="gridWrap"><div id="grid"></div></div>
+  </section>
+  <aside class="right-sidebar">
+    <section class="panel active-users-panel" aria-label="Active users">
+      <div class="active-users-heading"><h2><a href="users.html" class="access-users-link" data-admin-only>Active Users</a></h2><span id="activeUsersCount" class="active-count">0</span></div>
+      <div id="active" class="active-users-list"><div class="active-empty">Connecting…</div></div>
+    </section>
     <section class="panel chat-panel" aria-label="Team chat">
       <div class="chat-heading"><div class="chat-title-row"><h2>Team Chat</h2><button id="clearChat" class="chat-clear hidden" type="button">Clear Chat</button></div><small>LIVE</small></div>
       <div id="chatList" class="chat-list" aria-live="polite"><div class="chat-empty">Loading chat…</div></div>
@@ -129,23 +158,6 @@
         </div>
         <button id="chatSend" class="primary" type="submit">Send</button>
       </form>
-    </section>
-  </aside>
-  <section class="panel board">
-    <div class="boardhead"><div class="planning-month-total" id="planningMonthTotal">Orders in Planning: <strong>0</strong></div><div id="scheduleCurrentTime" class="schedule-current-time" aria-live="off"></div><div class="board-date-controls" data-permission="board_navigation">
- <div class="board-date-row"><div class="board-date-picker"><button id="title" class="schedule-date" type="button" title="Choose schedule date">Transfer Board</button><input id="boardDate" type="date" tabindex="-1" aria-label="Schedule date"></div></div>
- <div class="board-date-actions"><button id="prev" type="button" aria-label="Previous day">←</button><button id="today" type="button">Today</button><button id="duplicateDay" class="duplicate-day-btn" type="button">Duplicate Day</button><button id="next" type="button" aria-label="Next day">→</button></div>
- </div></div>
-    <div id="gridWrap"><div id="grid"></div></div>
-  </section>
-  <aside class="right-sidebar">
-    <section class="panel recent-activity-panel">
-      <div class="section-heading"><div><h2>Recent Activity</h2></div><span id="mode" class="mode-badge">Demo</span></div>
-      <div id="recentActivity" class="activity-list"><div class="activity-empty">Loading activity…</div></div>
-    </section>
-    <section class="panel active-users-panel" aria-label="Active users">
-      <div class="active-users-heading"><h2><a href="users.html" class="access-users-link" data-admin-only>Active Users</a></h2><span id="activeUsersCount" class="active-count">0</span></div>
-      <div id="active" class="active-users-list"><div class="active-empty">Connecting…</div></div>
     </section>
   </aside>
 </main>
