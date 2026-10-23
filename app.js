@@ -197,7 +197,31 @@ function matchAdditionalStopWidths(){
 }
 new ResizeObserver(matchAdditionalStopWidths).observe(E.origin);
 function renderOptions(){let dv=E.driver.value||"Planning",ov=E.origin.value,tv=E.destination.value;fillSelect(E.driver,drivers,"Select driver","Add a Driver…","__add_driver__",window.TransfersAccess.role==="Vendor"?"Planning":dv);E.driver.disabled=window.TransfersAccess.role==="Vendor";fillSelect(E.origin,locations,"Select origin","Add a Location…","__add_location__",ov);fillSelect(E.destination,locations,"Select destination","Add a Location…","__add_location__",tv);fillSelect(E.additionalStop,locations,"Select location","Add a Location…","__add_location__",E.additionalStop.value);E.additionalStop.options[0].disabled=false;fillSelect(E.additionalStop2,locations,"Select location","Add a Location…","__add_location__",E.additionalStop2.value);E.additionalStop2.options[0].disabled=false;fitRouteFields()}
-function renderUsers(list){E.active.innerHTML="";(list||[]).forEach(u=>{let d=document.createElement("div");d.className="activeRow";d.textContent=u.display_name||u.email||"User";E.active.appendChild(d)})}
+const activeUserRows=new Map();
+let activeUsersSignature="",presenceRemovalTimer=null;
+const PRESENCE_GRACE_MS=15000;
+function renderUsers(list,clear=false){
+ clearTimeout(presenceRemovalTimer);presenceRemovalTimer=null;
+ if(clear){activeUserRows.clear();activeUsersSignature="";E.active.replaceChildren();const count=$("activeUsersCount");if(count)count.textContent="0";return}
+ const now=Date.now(),incoming=new Map();
+ for(const row of list||[]){const id=row.user_id||row.email||row.display_name;if(id)incoming.set(id,row)}
+ if(user&&window.TransfersAccess.can("view_board"))incoming.set(user.id,{user_id:user.id,display_name:name()});
+ for(const [id,row] of incoming)activeUserRows.set(id,{row,missingSince:null});
+ for(const [id,entry] of activeUserRows){
+  if(incoming.has(id))continue;
+  if(entry.missingSince==null)entry.missingSince=now;
+  if(now-entry.missingSince>=PRESENCE_GRACE_MS)activeUserRows.delete(id);
+ }
+ const rows=[...activeUserRows].sort(([a],[b])=>String(a).localeCompare(String(b)));
+ const signature=JSON.stringify(rows.map(([id,{row}])=>[id,String(row.display_name||row.email||"User").split("@")[0]]));
+ if(signature!==activeUsersSignature){
+  activeUsersSignature=signature;
+  E.active.replaceChildren(...rows.map(([,entry])=>{const d=document.createElement("div");d.className="activeRow";d.textContent=String(entry.row.display_name||entry.row.email||"User").split("@")[0];return d}));
+  const count=$("activeUsersCount");if(count)count.textContent=String(rows.length);
+ }
+ const pending=[...activeUserRows.values()].filter(entry=>entry.missingSince!=null);
+ if(pending.length)presenceRemovalTimer=setTimeout(()=>renderUsers([...incoming.values()]),Math.max(1,Math.min(...pending.map(entry=>entry.missingSince+PRESENCE_GRACE_MS-now))));
+}
 function scheduleOverlay(lane,top,height,kind,label=""){
   if(height<=0)return;
   const block=document.createElement("div");
@@ -656,7 +680,12 @@ function managedChange(kind,select){if(select.value==="__add_driver__")openOptio
 function openOption(kind,select){if(!window.TransfersAccess.can(kind==="driver"?"driver_profiles":"locations")){select.value="";return}optionContext={kind,select};E.optionTitle.textContent=kind==="driver"?"Add a Driver":"Add a Location";E.optionLabel.firstChild.textContent=kind==="driver"?"Driver Name":"Building / Location Name";E.optionName.value="";optionMsg("");E.optionModal.classList.remove("hidden");setTimeout(()=>E.optionName.focus(),0)}
 function closeOption(){if(optionContext?.select&&optionContext.select.value.startsWith("__"))optionContext.select.value="";optionContext=null;E.optionModal.classList.add("hidden");optionMsg("")}
 async function addOption(ev){ev.preventDefault();if(!optionContext)return;const value=E.optionName.value.trim(),kind=optionContext.kind,list=kind==="driver"?drivers:locations;if(!value){optionMsg("Enter a name.","error");return}const existing=list.find(x=>x.toLowerCase()===value.toLowerCase());if(existing){renderOptions();optionContext.select.value=existing;closeOption();return}if(live){const table=kind==="driver"?"transfer_drivers":"transfer_locations",payload={name:value,created_by:user.id,created_by_name:name()};if(kind==="driver")payload.sort_order=drivers.length;const r=await sb.from(table).insert(payload).select("name").single();if(r.error){optionMsg("Could not add option: "+r.error.message,"error");return}}if(kind==="driver")drivers=orderedUniq([...drivers,value]);else locations=uniq([...locations,value]);if(!live)saveLocal();const target=optionContext.select;renderOptions();target.value=value;closeOption();renderBoard()}
-async function session(s){await window.TransfersAccess.ready;await window.TransfersAccess.refresh(s);if(!s?.user){boxLinks.reset();slotStatuses.reset();user=null;editorPresenceReady=false;if(presence){sb.removeChannel(presence);presence=null;}window.TransferEditors?.setLocal(null);window.TransferEditors?.sync([]);E.login.classList.remove("hidden");return}user=s.user;E.login.classList.add("hidden");E.signout.classList.remove("hidden");let r=await sb.from("profiles").select("display_name,bubble_color").eq("id",user.id).maybeSingle();profile=r.data||{display_name:user.email?.split("@")[0]||"User"};E.me.textContent=String(name()).split("@")[0];E.email.textContent=user.email||"";await loadData();if(!window.TransfersAccess.can("view_board")){reset();return}await slotStatuses.refresh();await boxLinks.refresh();await subscribe()}
+let initializedSessionUser=null,sessionQueue=Promise.resolve();
+function session(s){
+ const next=sessionQueue.then(()=>applySession(s),()=>applySession(s));
+ sessionQueue=next.catch(()=>{});return next;
+}
+async function applySession(s){await window.TransfersAccess.ready;await window.TransfersAccess.refresh(s);if(!s?.user){initializedSessionUser=null;renderUsers([],true);boxLinks.reset();slotStatuses.reset();user=null;editorPresenceReady=false;if(presence){await sb.removeChannel(presence);presence=null;}if(dataChannel){await sb.removeChannel(dataChannel);dataChannel=null;}window.TransferEditors?.setLocal(null);window.TransferEditors?.sync([]);E.login.classList.remove("hidden");return}if(initializedSessionUser===s.user.id&&user?.id===s.user.id){user=s.user;return}if(user?.id!==s.user.id)renderUsers([],true);user=s.user;E.login.classList.add("hidden");E.signout.classList.remove("hidden");let r=await sb.from("profiles").select("display_name,bubble_color").eq("id",user.id).maybeSingle();profile=r.data||{display_name:user.email?.split("@")[0]||"User"};E.me.textContent=String(name()).split("@")[0];E.email.textContent=user.email||"";await loadData();if(!window.TransfersAccess.can("view_board")){initializedSessionUser=user.id;reset();return}await slotStatuses.refresh();await boxLinks.refresh();await subscribe();initializedSessionUser=user.id}
 
 document.addEventListener("edit-load-latest",event=>{
  if(event.detail.table==="transfers"){
@@ -739,7 +768,7 @@ updateScheduleClock();
 setInterval(updateScheduleClock,1000);
 setInterval(updateCurrentTimeLine,30000);
 E.loginForm.onsubmit=async e=>{e.preventDefault();E.loginMsg.textContent="Signing in…";let r=await sb.auth.signInWithPassword({email:E.loginEmail.value.trim(),password:E.loginPassword.value});E.loginMsg.textContent=r.error?r.error.message:""};
-(async()=>{E.boardDate.value=today();E.date.value=today();E.time.value="08:00";E.duration.value="60";if(!live){user={id:"demo-user",email:"Local preview mode",user_metadata:{display_name:"Demo User"}};profile={display_name:"Demo User"};renderUsers([{display_name:"Demo User"}]);loadLocal();renderOptions();renderBoard();boxLinks.refresh();return}E.mode.textContent="Live";let s=await sb.auth.getSession();await session(s.data.session);sb.auth.onAuthStateChange((_e,s)=>session(s))})();
+(async()=>{E.boardDate.value=today();E.date.value=today();E.time.value="08:00";E.duration.value="60";if(!live){user={id:"demo-user",email:"Local preview mode",user_metadata:{display_name:"Demo User"}};profile={display_name:"Demo User"};renderUsers([{display_name:"Demo User"}]);loadLocal();renderOptions();renderBoard();boxLinks.refresh();return}E.mode.textContent="Live";let s=await sb.auth.getSession();await session(s.data.session);sb.auth.onAuthStateChange((_e,s)=>{setTimeout(()=>{session(s).catch(error=>msg("Could not refresh session: "+error.message,"error"))},0)})})();
 })();
 
 /* Fit the sticky schedule panel below its current viewport position. */
