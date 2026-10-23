@@ -20,13 +20,14 @@
  function apply(){
   const root=document.documentElement;
   root.dataset.boardAccess=String(can("view_board"));
-  root.dataset.sidebarAccess=String(any(["recent_activity","active_users"]));
+  root.dataset.sidebarAccess=String(any(["active_users","chat"]));
   root.dataset.chatAccess=String(can("chat"));
   root.dataset.buildOnly=String(!!role&&can("create_load")&&!any(["view_board","chat","recent_activity","active_users",...driverFeatures,"locations","summary_reports","trailer_link","theme","manage_users","view_permissions"]));
   root.dataset.createAccess=String(can("create_load"));root.dataset.editAccess=String(can("edit_load"));root.dataset.summaryEdit=String(can("summary_edit"));
   const editing=!!document.getElementById("editId")?.value;
   const notesOpen=document.getElementById("slotStatusEditor")&&!document.getElementById("slotStatusEditor").classList.contains("hidden");
   root.dataset.buildAccess=String(can("create_load")||(editing&&can("edit_load"))||(notesOpen&&can("status_notes")));
+  root.dataset.leftSidebarAccess=String(root.dataset.buildAccess==="true"||can("recent_activity"));
   root.dataset.pageAllowed=String(pageAllowed());
   const map={...controlPermissions,".chat-panel":"chat",".recent-activity-panel":"recent_activity",".active-users-panel":"active_users",".theme-switch":"theme",".live-board-link":"trailer_link"};
   if(page==="index.html")map[".header-right .nav,.schedule-current-time,.schedule-date,.planning-month-total"]="board_navigation";
