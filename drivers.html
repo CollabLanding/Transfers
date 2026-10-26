@@ -20,6 +20,13 @@
   <script src="access-control.js?v=20261022-share-reset"></script>
 <script src="popup-dismiss.js?v=20261016" defer></script>
 <script src="site-language.js?v=20261014" defer></script>
+<style>
+.schedule-heading-tools{display:flex;flex-direction:column;align-items:flex-end;gap:10px;max-width:100%}
+.schedule-week-nav{display:flex;align-items:center;gap:8px}
+.schedule-week-nav input{width:auto;min-width:140px}
+.schedule-week-nav button{white-space:nowrap;flex:0 0 auto}
+@media(max-width:900px){.schedule-heading-tools{width:100%;align-items:flex-start}.schedule-week-nav{flex-wrap:wrap}}
+</style>
 </head>
 <body>
 <header>
@@ -33,12 +40,6 @@
     <small><a class="live-board-link" href="/live-dock-board/">Live Trailer Board</a></small>
   </div></div>
   <div class="header-right">
-    <div class="nav week-nav">
-      <button id="prevWeek" type="button">←</button>
-      <button id="thisWeek" type="button">This Week</button>
-      <input id="weekStart" type="date" aria-label="Week starting">
-      <button id="nextWeek" type="button">→</button>
-    </div>
     <label class="theme-switch" for="themeToggle">
       <span class="theme-label light-label">Light</span>
       <input id="themeToggle" type="checkbox" role="switch" aria-label="Toggle dark theme">
@@ -60,7 +61,15 @@
         <h2 class="schedule-title">Driver Scheduling</h2>
         <h2 id="weekTitle">Driver Hours</h2>
       </div>
+      <div class="schedule-heading-tools">
+    <div class="week-nav schedule-week-nav">
+      <button id="prevWeek" type="button">←</button>
+      <button id="thisWeek" type="button">This Week</button>
+      <input id="weekStart" type="date" aria-label="Week starting">
+      <button id="nextWeek" type="button">→</button>
+    </div>
       <div class="schedule-heading-actions"><button id="addDriver" type="button">Add Driver</button><button id="saveSchedule" class="primary" type="button">Save Schedule</button><button id="runReports" type="button">Run Reports</button></div>
+      </div>
     </div>
 
     <div id="scheduleMsg" class="schedule-message" aria-live="polite"></div>
