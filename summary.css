@@ -1,5 +1,5 @@
 /* Summary uses the Transfers palette and shared header. */
-main.summary-main{display:block!important;max-width:1600px;margin:0 auto;padding:20px}
+main.summary-main{display:block!important;max-width:none;margin:0;padding:20px max(20px,calc((100% - 1600px)/2 + 20px))}
 .summary-main>.panel{margin-bottom:16px}
 .summary-heading{display:flex;align-items:center;justify-content:space-between;gap:20px}
 .summary-heading small{font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:700}
