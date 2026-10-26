@@ -483,13 +483,13 @@ body.dark-theme .duplicate-day-source{background:#151c23;border-color:#34404c}
   line-height:1.15;
   font-weight:800;
   padding:2px 0 5px;
-  border-bottom:2px solid transparent;
+  border-bottom:1px solid transparent;
   transition:color .15s ease,border-color .15s ease
 }
 .app-tabs a:hover{color:#fff}
-.app-tabs a.active{color:#fff;border-bottom-color:#6fa7cd}
+.app-tabs a.active{color:#fff;border-bottom-color:#60a5fa}
 html[data-theme="dark"] .app-tabs a.active,
-body.dark-theme .app-tabs a.active{border-bottom-color:#6fa7cd}
+body.dark-theme .app-tabs a.active{border-bottom-color:#60a5fa}
 
 /* Driver scheduling page */
 .drivers-main{
