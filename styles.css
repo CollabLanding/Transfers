@@ -1827,3 +1827,9 @@ main > .board .board-date-controls{gap:3px}
 /* Match the LTB username account link. */
 .user-session #me.account-toggle{border:0;background:transparent;color:var(--muted);padding:0;min-height:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer}
 .user-session #me.account-toggle:hover{color:var(--accent);text-decoration:underline}
+
+/* Keep the site header outside the page's scrolling surface. */
+html:has(body.header-scroll-shell){height:100%;overflow:hidden;scrollbar-gutter:auto}
+body.header-scroll-shell{height:100dvh;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+body.header-scroll-shell>header{flex:0 0 auto}
+body.header-scroll-shell>main{flex:1 1 0;min-height:0;overflow:auto;scrollbar-gutter:stable;align-content:start;width:100%}
