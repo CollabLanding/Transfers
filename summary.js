@@ -126,7 +126,7 @@
   async function session(s){
     const id=s?.user?.id||null;
     el("login").classList.toggle("hidden",!!id);el("signout").classList.toggle("hidden",!id);
-    el("me").textContent=s?.user?.user_metadata?.display_name||s?.user?.email||"";el("email").textContent=s?.user?.email||"";
+    el("me").textContent=(s?.user?.user_metadata?.display_name||s?.user?.email||"").split("@")[0];el("email").textContent=s?.user?.email||"";
     if(id===userId)return;
     clear();userId=id;busy(false);
     if(!id){message("Sign in to run a report.");return;}
