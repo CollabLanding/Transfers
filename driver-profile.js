@@ -8,7 +8,7 @@
   const monthNow=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"America/Chicago",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date()).slice(0,7);
   function message(text,type=""){$("profileMessage").textContent=text;$("profileMessage").className=type;}
   function week(){return days.map((_,i)=>({start:$("start"+i).value||null,end:$("end"+i).value||null}));}
-  function snapshot(){return JSON.stringify({name:$("driverSlotName").value,full:$("driverFullName").value,phone:$("driverPhone").value,email:$("driverEmail").value,notes:$("driverNotes").value,repeat:$("autoRepeat").checked,week:week()});}
+  function snapshot(){return JSON.stringify({name:$("driverSlotName").value,jobType:$("driverJobType").value,full:$("driverFullName").value,phone:$("driverPhone").value,email:$("driverEmail").value,notes:$("driverNotes").value,repeat:$("autoRepeat").checked,week:week()});}
   function dirty(){return !!baseline&&baseline!==snapshot();}
   function mark(){$("unsavedNotice").textContent=dirty()?"Unsaved changes":"";}
   function setWeek(w){days.forEach((_,i)=>{$("start"+i).value=w?.[i]?.start||"";$("end"+i).value=w?.[i]?.end||"";});mark();}
@@ -21,11 +21,11 @@
     if(s.startsWith("+")&&/^[1-9][0-9]{7,14}$/.test(digits))return "+"+digits;
     throw Error("Use a 10-digit US phone number or an international number starting with +.");
   }
-  function lock(value){working=value;$("saveDriver").disabled=value;$("applySchedule").disabled=value;$("loadTemplateWeek").disabled=value||!original;document.querySelectorAll("#driverProfileForm input,#driverProfileForm textarea,#weeklyTemplate button").forEach(e=>e.disabled=value);window.TransfersAccess.apply();}
+  function lock(value){working=value;$("saveDriver").disabled=value;$("applySchedule").disabled=value;$("loadTemplateWeek").disabled=value||!original;document.querySelectorAll("#driverProfileForm input,#driverProfileForm textarea,#driverProfileForm select,#weeklyTemplate button").forEach(e=>e.disabled=value);window.TransfersAccess.apply();}
   function scheduleLink(){const m=$("applyMonth").value||monthNow();$("viewSchedule").href="drivers.html?week="+encodeURIComponent(m+"-01");}
   function savedState(row){
     $("profileTitle").textContent="Driver Information · "+row.name;
-    $("driverSlotName").value=row.name;$("driverSlotName").readOnly=!window.TransfersAccess.isAdmin();
+    $("driverJobType").value=row.job_type||"Shuttle";$("driverSlotName").value=row.name;$("driverSlotName").readOnly=!window.TransfersAccess.isAdmin();
     $("slotNameHelp").textContent=window.TransfersAccess.isAdmin()?"Admin and Owner accounts can rename this slot. Loads, schedules, and records keep their connection.":"Only Admin and Owner accounts can rename this slot.";
     $("driverFullName").value=row.full_name||"";$("driverPhone").value=row.phone_number||"";
     $("driverEmail").value=row.email||"";$("driverNotes").value=row.notes||"";$("autoRepeat").checked=!!row.auto_repeat;
@@ -38,7 +38,7 @@
     const token=++version;lock(true);message(original?"Loading driver…":"");
     try{
       if(original){
-        const {data,error}=await sb.from("transfer_drivers").select("name,full_name,phone_number,email,notes,weekly_schedule,auto_repeat,auto_generated_month").eq("name",original).single();
+        const {data,error}=await sb.from("transfer_drivers").select("name,job_type,full_name,phone_number,email,notes,weekly_schedule,auto_repeat,auto_generated_month").eq("name",original).single();
         if(token!==version)return;if(error)throw error;savedState(data);
       }else{baseline=snapshot();$("loadTemplateWeek").disabled=true;}
       $("driverProfileForm").classList.remove("hidden");message("");
@@ -55,7 +55,7 @@
     }catch(e){message(e.message,"error");return false;}
     const token=version;lock(true);message("Saving driver…");
     try{
-      const {data,error}=await sb.rpc("save_driver_profile",{p_original:original,p_name:$("driverSlotName").value.trim(),p_full_name:$("driverFullName").value.trim(),p_phone:number,p_email:$("driverEmail").value.trim(),p_notes:$("driverNotes").value.trim(),p_week:week(),p_repeat:$("autoRepeat").checked});
+      const {data,error}=await sb.rpc("save_driver_profile_with_job_type",{p_original:original,p_name:$("driverSlotName").value.trim(),p_full_name:$("driverFullName").value.trim(),p_phone:number,p_email:$("driverEmail").value.trim(),p_notes:$("driverNotes").value.trim(),p_week:week(),p_repeat:$("autoRepeat").checked,p_job_type:$("driverJobType").value});
       if(token!==version)return false;if(error)throw error;
       original=data.name;history.replaceState(null,"","driver-profile.html?driver="+encodeURIComponent(original));
       $("driverSlotName").value=original;$("driverSlotName").readOnly=!window.TransfersAccess.isAdmin();$("driverPhone").value=number||"";$("profileTitle").textContent="Driver Information · "+original;
