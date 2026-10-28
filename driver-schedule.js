@@ -8,7 +8,7 @@
     week:$("weekStart"),prev:$("prevWeek"),next:$("nextWeek"),thisWeek:$("thisWeek"),
     title:$("weekTitle"),body:$("scheduleBody"),save:$("saveSchedule"),msg:$("scheduleMsg"),
     reports:$("runReports"),reportModal:$("reportModal"),reportForm:$("reportForm"),reportClose:$("reportClose"),reportCancel:$("reportCancel"),
-    reportDriverList:$("reportDriverList"),reportSelectAll:$("reportSelectAll"),reportClearAll:$("reportClearAll"),reportPeriod:$("reportPeriod"),
+    reportDriverList:$("reportDriverList"),reportSelectAll:$("reportSelectAll"),reportClearAll:$("reportClearAll"),reportPeriod:$("reportPeriod"),reportSort:$("reportSort"),
     reportWeekFields:$("reportWeekFields"),reportMonthFields:$("reportMonthFields"),reportQuarterFields:$("reportQuarterFields"),reportCustomFields:$("reportCustomFields"),
     reportWeekDate:$("reportWeekDate"),reportMonth:$("reportMonth"),reportQuarterYear:$("reportQuarterYear"),reportQuarter:$("reportQuarter"),
     reportStartDate:$("reportStartDate"),reportEndDate:$("reportEndDate"),reportRun:$("reportRun"),reportMsg:$("reportMsg"),
@@ -502,7 +502,7 @@
     };
   }
 
-  function buildDriverPdf(selected,range,rows){
+  function buildDriverPdf(selected,range,rows,sortBy="driver"){
     const JsPdf=window.jspdf?.jsPDF;
     if(!JsPdf)throw new Error("PDF library did not load. Refresh the page and try again.");
     const doc=new JsPdf({orientation:"portrait",unit:"pt",format:"letter"});
@@ -543,8 +543,8 @@
       doc.setFillColor(239,243,246);
       doc.rect(margin,y-12,pageW-margin*2,rowH,"F");
       doc.setFontSize(9);
-      doc.text("Date",margin+5,y);
-      doc.text("Day",margin+100,y);
+      doc.text(sortBy==="day"?"Driver":"Date",margin+5,y);
+      if(sortBy!=="day")doc.text("Day",margin+100,y);
       doc.text("Start",margin+220,y);
       doc.text("End",margin+300,y);
       doc.text("Hours",margin+380,y);
@@ -553,8 +553,12 @@
 
     pageHeader(true);
 
-    selected.forEach((driver,driverIndex)=>{
-      const list=rows.filter(r=>r.driver_name===driver).sort((a,b)=>String(a.schedule_date).localeCompare(String(b.schedule_date)));
+    const reportRows=rows.filter(r=>selected.includes(r.driver_name));
+    const groups=sortBy==="day"
+      ? [...new Set(reportRows.map(r=>String(r.schedule_date)))].sort().map(date=>({title:friendly(date,{weekday:"long",month:"short",day:"numeric",year:"numeric"}),list:reportRows.filter(r=>String(r.schedule_date)===date).sort((a,b)=>a.driver_name.localeCompare(b.driver_name,undefined,{numeric:true,sensitivity:"base"}))}))
+      : [...selected].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"})).map(driver=>({title:driver,list:reportRows.filter(r=>r.driver_name===driver).sort((a,b)=>String(a.schedule_date).localeCompare(String(b.schedule_date)))}));
+    if(!groups.length){doc.setFontSize(10);doc.text("No scheduled days in this date range.",margin,y)}
+    groups.forEach(({title:driver,list},driverIndex)=>{
       const total=list.reduce((sum,r)=>sum+hoursBetween(r.start_time,r.end_time),0);
       const overtimeDays=list.filter(r=>hoursBetween(r.start_time,r.end_time)>10).length;
       const overtimeHours=list.reduce((sum,r)=>sum+Math.max(0,hoursBetween(r.start_time,r.end_time)-10),0);
@@ -580,13 +584,19 @@
           doc.setFont("helvetica","normal");
           doc.setFontSize(9);
           doc.setTextColor(25,35,45);
-          doc.text(friendly(r.schedule_date,{month:"short",day:"numeric",year:"numeric"}),margin+5,y);
-          doc.text(day,margin+100,y);
+          if(sortBy==="day"){
+            const name=String(r.driver_name);
+            doc.setFontSize(Math.min(9,9*200/Math.max(1,doc.getTextWidth(name))));
+            doc.text(name,margin+5,y);doc.setFontSize(9);
+          }else{
+            doc.text(friendly(r.schedule_date,{month:"short",day:"numeric",year:"numeric"}),margin+5,y);
+            doc.text(day,margin+100,y);
+          }
           if(hrs>10){
             const dayWidth=doc.getTextWidth(day);
             doc.setTextColor(200,35,35);
             doc.setFont("helvetica","bold");
-            doc.text("!",margin+104+dayWidth,y);
+            doc.text("!",sortBy==="day"?margin+365:margin+104+dayWidth,y);
             doc.setTextColor(25,35,45);
             doc.setFont("helvetica","normal");
           }
@@ -629,6 +639,7 @@
     if(!live||!user)return;
     const selected=selectedReportDrivers();
     if(!selected.length){reportShow("Select at least one driver.","error");return}
+    const sortBy=E.reportSort?.value==="day"?"day":"driver";
     const range=getReportRange();
     if(!range){reportShow("Choose a report period.","error");return}
     if(range.error){reportShow(range.error,"error");return}
@@ -651,7 +662,7 @@
         .order("schedule_date",{ascending:true});
 
       if(result.error){reportShow("Could not load report data: "+result.error.message,"error");return}
-      buildDriverPdf(selected,range,result.data||[]);
+      buildDriverPdf(selected,range,result.data||[],sortBy);
       reportShow("PDF report generated.","ok");
     }catch(err){
       reportShow("Could not generate PDF: "+(err?.message||String(err)),"error");
