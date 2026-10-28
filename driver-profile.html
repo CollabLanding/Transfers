@@ -18,6 +18,7 @@
   <script src="access-control.js?v=20261022-share-reset"></script>
 <script src="popup-dismiss.js?v=20261016" defer></script>
 <script src="site-language.js?v=20261014" defer></script>
+<style>.driver-job-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(145px,.65fr);gap:12px}.driver-job-fields label{min-width:0}.driver-job-fields input,.driver-job-fields select{min-width:0}@media(max-width:520px){.driver-job-fields{grid-template-columns:1fr}}</style>
 </head>
 <body class="header-scroll-shell">
 <header>
@@ -51,7 +52,7 @@
   <form id="driverProfileForm" class="hidden">
     <div class="profile-layout">
       <section class="panel"><h2>Driver information</h2>
-        <label>Driver slot name<input id="driverSlotName" maxlength="120" required placeholder="Name shown on the Transfers board"></label>
+        <div class="driver-job-fields"><label>Driver slot name<input id="driverSlotName" maxlength="120" required placeholder="Name shown on the Transfers board"></label><label>Job Type<select id="driverJobType"><option value="Shuttle">Shuttle</option><option value="Terminal Truck">Terminal Truck</option></select></label></div>
         <p class="profile-help" id="slotNameHelp">The slot name identifies this driver throughout the schedule.</p>
         <label>Full name<input id="driverFullName" maxlength="200" autocomplete="name"></label>
         <label>Phone number<input id="driverPhone" type="tel" autocomplete="tel" maxlength="30" placeholder="(555) 555-1234"></label>
@@ -84,7 +85,7 @@
 </div>
 
 <script src="theme.js?v=20261009-permissions"></script>
-<script src="driver-profile.js?v=20261012-slot-renaming"></script>
+<script src="driver-profile.js?v=20261028-job-type"></script>
 <script src="user-profile.js?v=20261016-account-options"></script>
 <script src="visitor-share.js?v=20261022-simple" defer></script>
 </body>
