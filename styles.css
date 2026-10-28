@@ -1833,3 +1833,9 @@ html:has(body.header-scroll-shell){height:100%;overflow:hidden;scrollbar-gutter:
 body.header-scroll-shell{height:100dvh;min-height:0;overflow:hidden;display:flex;flex-direction:column}
 body.header-scroll-shell>header{flex:0 0 auto}
 body.header-scroll-shell>main{flex:1 1 0;min-height:0;overflow:auto;scrollbar-gutter:stable;align-content:start;width:100%}
+
+/* Share the lane's exact inner bounds; retain the 1px time boundary above boxes. */
+.lane>.card,.lane>.slot-status-block,.lane>.slot-selection,.lane>.slot-status-move-preview,.lane>.linked-box-preview{
+ left:0!important;right:0!important;width:auto!important;box-sizing:border-box;margin-left:0;margin-right:0;
+ clip-path:inset(1px 0 0 0);
+}
