@@ -13,6 +13,7 @@
     const now=new Date(),end=new Date(now);end.setDate(end.getDate()-1);
     const p=el("period").value,begin=new Date(end);
     if(p==="custom")return;
+    if(p==="today"){el("dateFrom").value=D.dateKey(now);el("dateTo").value=D.dateKey(now);return;}
     if(p==="all"){el("dateFrom").value="";el("dateTo").value=D.dateKey(now);return;}
     if(p==="month"){begin.setFullYear(now.getFullYear(),now.getMonth(),1);end.setTime(now.getTime());}
     else begin.setDate(begin.getDate()-(Number(p)-1));
