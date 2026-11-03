@@ -598,7 +598,7 @@ async function submit(ev){
   if(scheduledMinutes<240||scheduledMinutes>1200){
     msg("Scheduled time must be between 4:00 AM and 8:00 PM.","error");return
   }
-  if(p.origin.toLowerCase()===p.destination.toLowerCase()){
+  if(p.origin.toLowerCase()===p.destination.toLowerCase()&&![p.additional_stop,p.additional_stop_2].some(stop=>String(stop||"").trim()&&!String(stop).startsWith("__"))){
     msg("Origination and destination must be different.","error");return
   }
 
