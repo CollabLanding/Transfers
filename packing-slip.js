@@ -11,7 +11,7 @@
  window.PackingSlip={load(lines,count=0){saved=Array.isArray(lines)&&lines.length?copy(lines):null;legacy=Number(count)||0;updateButton()},value:()=>saved?copy(saved):null};
  function addPart(group,part={}){
   const row=document.createElement("div");row.className="packing-part";
-  row.innerHTML='<label>Part number<input class="packing-number" maxlength="120" value="'+esc(part.number)+'"></label><label>Pieces / pallet<input class="packing-pieces" type="number" min="1" max="999999" step="1" value="'+esc(part.pieces)+'"></label><button type="button" aria-label="Remove part">×</button>';
+  row.innerHTML='<label>Part number<input class="packing-number" maxlength="120" value="'+esc(part.number)+'"></label><label>Pieces per pallet<input class="packing-pieces" type="number" min="1" max="999999" step="1" value="'+esc(part.pieces)+'"></label><button type="button" aria-label="Remove part">×</button>';
   if(!group.children.length){
    const label=document.createElement("label");label.className="packing-pallets";
    label.innerHTML='Pallets<input class="packing-count" type="number" min="1" max="999" step="1" required value="'+esc(group.closest(".packing-line").dataset.pallets)+'">';
@@ -83,7 +83,7 @@
    apply(lines);
    const print=$("packingPrintSheet");
    const route=["origin","additionalStop","additionalStop2","destination"].map(id=>$(id)?.value).filter(x=>x&&!x.startsWith("__")).join(" → ");
-   print.innerHTML='<h1>Packing Slip</h1><p><strong>Schedule:</strong> '+esc($("date").value)+' '+esc($("time").value)+'</p><p><strong>Route:</strong> '+esc(route)+'</p><p><strong>Driver:</strong> '+esc($("driver").value)+'</p><p><strong>Notes:</strong> '+esc($("job").value)+'</p><p><strong>Total pallets:</strong> '+total(lines)+'</p>'+lines.map((line,i)=>'<section><h2>Line '+(i+1)+' — '+line.pallets+' pallet'+(line.pallets===1?'':'s')+'</h2><table><thead><tr><th>Part number</th><th>Pieces / pallet</th></tr></thead><tbody>'+line.parts.map(part=>'<tr><td>'+esc(part.number)+'</td><td>'+esc(part.pieces??'—')+'</td></tr>').join("")+'</tbody></table>'+(line.notes?'<p><strong>Notes:</strong> '+esc(line.notes)+'</p>':'')+'</section>').join("");
+   print.innerHTML='<h1>Packing Slip</h1><p><strong>Schedule:</strong> '+esc($("date").value)+' '+esc($("time").value)+'</p><p><strong>Route:</strong> '+esc(route)+'</p><p><strong>Driver:</strong> '+esc($("driver").value)+'</p><p><strong>Notes:</strong> '+esc($("job").value)+'</p><p><strong>Total pallets:</strong> '+total(lines)+'</p>'+lines.map((line,i)=>'<section><h2>Line '+(i+1)+' — '+line.pallets+' pallet'+(line.pallets===1?'':'s')+'</h2><table><thead><tr><th>Part number</th><th>Pieces per pallet</th></tr></thead><tbody>'+line.parts.map(part=>'<tr><td>'+esc(part.number)+'</td><td>'+esc(part.pieces??'—')+'</td></tr>').join("")+'</tbody></table>'+(line.notes?'<p><strong>Notes:</strong> '+esc(line.notes)+'</p>':'')+'</section>').join("");
    document.body.classList.add("printing-packing-slip");
    try{window.print()}finally{document.body.classList.remove("printing-packing-slip")}
   }catch(e){error.textContent=e.message}
