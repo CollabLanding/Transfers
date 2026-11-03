@@ -16,8 +16,8 @@
   group.append(row);
  }
  function addLine(line={}){
-  const block=document.createElement("section");block.className="packing-line";
-  block.innerHTML='<div class="packing-line-head"><strong class="packing-line-title"></strong><button type="button" class="packing-remove">Remove line</button></div><label>Pallets with this mix<input class="packing-count" type="number" min="1" max="999" step="1" value="'+esc(line.pallets??1)+'"></label><div class="packing-parts"></div><button type="button" class="packing-add-part">Add Part</button><label>Line notes<input class="packing-notes" maxlength="500" value="'+esc(line.notes)+'"></label>';
+  const block=document.createElement("section");block.className="packing-line";block.dataset.pallets=String(line.pallets??1);
+  block.innerHTML='<div class="packing-line-head"><strong class="packing-line-title"></strong><button type="button" class="packing-remove">Remove line</button></div><div class="packing-parts"></div><button type="button" class="packing-add-part">Add Part</button><label>Line notes<input class="packing-notes" maxlength="500" value="'+esc(line.notes)+'"></label>';
   const parts=block.querySelector(".packing-parts");
   for(const part of line.parts?.length?line.parts:[{}])addPart(parts,part);
   block.querySelector(".packing-add-part").onclick=()=>{if(parts.children.length<30){addPart(parts);parts.lastElementChild.querySelector("input").focus()}};
@@ -25,7 +25,7 @@
   list.append(block);refresh();
  }
  function refresh(){
-  let n=0;[...list.children].forEach((line,i)=>{line.querySelector(".packing-line-title").textContent="Line "+(i+1);if([...line.querySelectorAll(".packing-number")].some(input=>input.value.trim()))n+=Number(line.querySelector(".packing-count").value)||0});
+  let n=0;[...list.children].forEach((line,i)=>{line.querySelector(".packing-line-title").textContent="Line "+(i+1)+(Number(line.dataset.pallets)>1?" · "+line.dataset.pallets+" pallets":"");if([...line.querySelectorAll(".packing-number")].some(input=>input.value.trim()))n+=Number(line.dataset.pallets)||0});
   $("packingDraftTotal").textContent="Total: "+(n||(!saved?legacy:0))+" pallets";
   error.textContent="";
  }
@@ -39,15 +39,15 @@
     if(!number||!field.checkValidity())throw Error("Enter a part number and a valid pieces count on each filled part row.");
     parts.push({number,pieces:field.value?Number(field.value):null});
    }
-   const field=block.querySelector(".packing-count"),notes=block.querySelector(".packing-notes").value.trim();
+   const notes=block.querySelector(".packing-notes").value.trim();
    if(!parts.length){if(notes)throw Error("Enter a part number for the line with notes.");continue;}
    if(!field.value||!field.checkValidity())throw Error("Enter a pallet count from 1 to 999 for each filled line.");
-   lines.push({pallets:Number(field.value),parts,notes});
+   lines.push({pallets:Number(block.dataset.pallets),parts,notes});
   }
   if(total(lines)>999)throw Error("The packing slip cannot exceed 999 pallets.");
   return lines;
  }
- $("openPackingSlip").onclick=()=>{list.replaceChildren();if(saved)for(const line of saved)addLine(line);else addLine({pallets:legacy||1});refresh();modal.showModal()};
+ $("openPackingSlip").onclick=()=>{list.replaceChildren();if(saved)for(const line of saved)addLine(line);else addLine();refresh();modal.showModal()};
  $("packingAddLine").onclick=()=>{if(list.children.length<100){addLine();list.lastElementChild.querySelector(".packing-number").focus()}};
  $("packingCancel").onclick=()=>modal.close();
  $("packingClose").onclick=()=>modal.close();
