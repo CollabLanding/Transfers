@@ -53,7 +53,6 @@
    }
    const notes=block.querySelector(".packing-notes").value.trim();
    if(!parts.length){if(notes)throw Error("Enter a part number for the line with notes.");continue;}
-   if(!field.value||!field.checkValidity())throw Error("Enter a pallet count from 1 to 999 for each filled line.");
    const count=block.querySelector(".packing-count");
    if(!count.checkValidity())throw Error("Enter 1 to 999 pallets for each filled line.");
    lines.push({pallets:Number(count.value),parts,notes});
