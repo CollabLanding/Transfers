@@ -85,6 +85,7 @@
         additional_stop_2:source.additional_stop_2||null,
         dock_number:source.dock_number??null,
         pallet_count:source.pallet_count,
+        packing_slip:source.packing_slip??null,
         job_number:source.job_number,
         order_status:"Planned",
         created_by:currentUser.id,
