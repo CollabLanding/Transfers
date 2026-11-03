@@ -12,7 +12,19 @@
  function addPart(group,part={}){
   const row=document.createElement("div");row.className="packing-part";
   row.innerHTML='<label>Part number<input class="packing-number" maxlength="120" value="'+esc(part.number)+'"></label><label>Pieces / pallet<input class="packing-pieces" type="number" min="1" max="999999" step="1" value="'+esc(part.pieces)+'"></label><button type="button" aria-label="Remove part">×</button>';
-  row.querySelector("button").onclick=()=>{if(group.children.length>1)row.remove();else row.querySelectorAll("input").forEach(i=>i.value="");refresh()};
+  if(!group.children.length){
+   const label=document.createElement("label");label.className="packing-pallets";
+   label.innerHTML='Pallets<input class="packing-count" type="number" min="1" max="999" step="1" required value="'+esc(group.closest(".packing-line").dataset.pallets)+'">';
+   row.insertBefore(label,row.querySelector("button"));
+  }
+  row.querySelector("button").onclick=()=>{
+   if(group.children.length>1){
+    const count=row.querySelector(".packing-pallets"),next=row.nextElementSibling;
+    if(count&&next)next.insertBefore(count,next.querySelector("button"));
+    row.remove();
+   }else row.querySelectorAll(".packing-number,.packing-pieces").forEach(i=>i.value="");
+   refresh();
+  };
   group.append(row);
  }
  function addLine(line={}){
@@ -25,7 +37,7 @@
   list.append(block);refresh();
  }
  function refresh(){
-  let n=0;[...list.children].forEach((line,i)=>{line.querySelector(".packing-line-title").textContent="Line "+(i+1)+(Number(line.dataset.pallets)>1?" · "+line.dataset.pallets+" pallets":"");if([...line.querySelectorAll(".packing-number")].some(input=>input.value.trim()))n+=Number(line.dataset.pallets)||0});
+  let n=0;[...list.children].forEach((line,i)=>{line.querySelector(".packing-line-title").textContent="Line "+(i+1);if([...line.querySelectorAll(".packing-number")].some(input=>input.value.trim()))n+=Number(line.querySelector(".packing-count").value)||0});
   $("packingDraftTotal").textContent="Total: "+(n||(!saved?legacy:0))+" pallets";
   error.textContent="";
  }
@@ -42,7 +54,9 @@
    const notes=block.querySelector(".packing-notes").value.trim();
    if(!parts.length){if(notes)throw Error("Enter a part number for the line with notes.");continue;}
    if(!field.value||!field.checkValidity())throw Error("Enter a pallet count from 1 to 999 for each filled line.");
-   lines.push({pallets:Number(block.dataset.pallets),parts,notes});
+   const count=block.querySelector(".packing-count");
+   if(!count.checkValidity())throw Error("Enter 1 to 999 pallets for each filled line.");
+   lines.push({pallets:Number(count.value),parts,notes});
   }
   if(total(lines)>999)throw Error("The packing slip cannot exceed 999 pallets.");
   return lines;
