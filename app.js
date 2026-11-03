@@ -589,7 +589,7 @@ async function submit(ev){
     created_by:user?.id||"demo-user",
     created_by_name:name()
   };
-  if(!p.scheduled_date||!p.scheduled_time||!p.duration_minutes||!p.driver||p.driver.startsWith("__")||!p.origin||p.origin.startsWith("__")||!p.destination||p.destination.startsWith("__")||!p.job_number||Number.isNaN(p.pallet_count)){
+  if(!p.scheduled_date||!p.scheduled_time||!p.duration_minutes||!p.driver||p.driver.startsWith("__")||!p.origin||p.origin.startsWith("__")||!p.destination||p.destination.startsWith("__")||Number.isNaN(p.pallet_count)){
     msg("Complete all fields.","error");return
   }
   const scheduledMinutes=timeToMin(p.scheduled_time);
