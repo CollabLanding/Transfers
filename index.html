@@ -66,8 +66,9 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
 #packingSlip::backdrop{background:#0008}
 .packing-line{border:1px solid var(--line);border-radius:8px;padding:10px;margin:8px 0}
 .packing-line-head,.packing-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.packing-part{display:grid;grid-template-columns:minmax(0,2fr) minmax(95px,1fr) auto;gap:8px;align-items:end}
-.packing-part button{margin-bottom:12px}
+.packing-part{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.3fr) minmax(0,1fr) auto;gap:8px;align-items:end}
+.packing-part button{grid-column:4;margin-bottom:12px}
+.packing-part label,.packing-part input{min-width:0}
 #packingError{color:#dc2626}
 #packingPrintSheet{display:none}
 @media print{body.printing-packing-slip{height:auto!important;overflow:visible!important;background:white!important;color:black!important}body.printing-packing-slip>*:not(#packingPrintSheet){display:none!important}body.printing-packing-slip>#packingPrintSheet{display:block!important;color:black;background:white;font:12pt Arial,sans-serif}#packingPrintSheet h2{font-size:14pt;break-after:avoid}#packingPrintSheet table{width:100%;border-collapse:collapse}#packingPrintSheet th,#packingPrintSheet td{border:1px solid #aaa;padding:6px;text-align:left;overflow-wrap:anywhere}#packingPrintSheet tr{break-inside:avoid}}
@@ -259,14 +260,14 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
 <script src="driver-availability.js?v=20261012-overnight"></script>
 <dialog id="packingSlip" aria-labelledby="packingTitle">
  <div class="packing-line-head"><h2 id="packingTitle">Packing Slip</h2><button id="packingClose" type="button" aria-label="Close packing slip">×</button></div>
- <p>Use Add Part for multiple products on the same pallet. Use Add Line for another pallet.</p>
+ <p>Use Add Part for products that share the same pallets. Use Add Line for a different pallet mix.</p>
  <div id="packingLines"></div>
  <div class="packing-line-head"><button id="packingAddLine" type="button">Add Line</button><strong id="packingDraftTotal"></strong></div>
  <p id="packingError" role="alert"></p>
  <div class="packing-actions"><button id="packingPrint" type="button">Print / Save PDF</button><div><button id="packingCancel" type="button">Cancel</button> <button id="packingDone" type="button" class="primary">Done</button></div></div>
 </dialog>
 <article id="packingPrintSheet"></article>
-<script src="packing-slip.js?v=20261103-one-pallet"></script>
+<script src="packing-slip.js?v=20261103-pallet-column"></script>
 <script src="app.js?v=20261103-packing-slip"></script>
 <script src="order-status.js?v=20261009-permissions"></script>
 <script src="recent-activity.js?v=20261009-permissions"></script>
