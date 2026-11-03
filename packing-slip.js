@@ -63,13 +63,24 @@
  $("openPackingSlip").onclick=()=>{list.replaceChildren();if(saved)for(const line of saved)addLine(line);else addLine();refresh();modal.showModal()};
  $("packingAddLine").onclick=()=>{if(list.children.length<100){addLine();list.lastElementChild.querySelector(".packing-number").focus()}};
  $("packingCancel").onclick=()=>modal.close();
- $("packingClose").onclick=()=>modal.close();
+
  list.addEventListener("input",refresh);
- $("packingDone").onclick=()=>{try{const lines=read();if(!lines.length&&saved)legacy=0;saved=lines.length?lines:null;updateButton();modal.close()}catch(e){error.textContent=e.message}};
+ function apply(lines){
+  if(!lines.length&&saved)legacy=0;
+  saved=lines.length?copy(lines):null;
+  updateButton();
+ }
+ function finish(){
+  try{apply(read());modal.close()}catch(e){error.textContent=e.message}
+ }
+ $("packingDone").onclick=finish;
+ $("packingClose").onclick=finish;
+ modal.addEventListener("cancel",event=>{event.preventDefault();finish()});
  $("packingPrint").onclick=()=>{
   try{
    const lines=read();
    if(!lines.length)throw Error("Add a part number before printing the packing slip.");
+   apply(lines);
    const print=$("packingPrintSheet");
    const route=["origin","additionalStop","additionalStop2","destination"].map(id=>$(id)?.value).filter(x=>x&&!x.startsWith("__")).join(" → ");
    print.innerHTML='<h1>Packing Slip</h1><p><strong>Schedule:</strong> '+esc($("date").value)+' '+esc($("time").value)+'</p><p><strong>Route:</strong> '+esc(route)+'</p><p><strong>Driver:</strong> '+esc($("driver").value)+'</p><p><strong>Notes:</strong> '+esc($("job").value)+'</p><p><strong>Total pallets:</strong> '+total(lines)+'</p>'+lines.map((line,i)=>'<section><h2>Line '+(i+1)+' — '+line.pallets+' pallet'+(line.pallets===1?'':'s')+'</h2><table><thead><tr><th>Part number</th><th>Pieces / pallet</th></tr></thead><tbody>'+line.parts.map(part=>'<tr><td>'+esc(part.number)+'</td><td>'+esc(part.pieces??'—')+'</td></tr>').join("")+'</tbody></table>'+(line.notes?'<p><strong>Notes:</strong> '+esc(line.notes)+'</p>':'')+'</section>').join("");
