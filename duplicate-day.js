@@ -134,6 +134,7 @@
         additional_stop_2:row.additional_stop_2||null,
           dock_number:row.dock_number??null,
           pallet_count:Number(row.pallet_count||0),
+          packing_slip:row.packing_slip??null,
           job_number:row.job_number,
           order_status:"Planned",
           created_by:currentUser.id,
