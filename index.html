@@ -48,6 +48,12 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
 .pallet-stepper button:hover{color:var(--text)}
 .pallet-stepper svg{display:block;flex:none;max-width:100%;max-height:100%}
 </style>
+<style>
+#form .job-row{grid-template-columns:max-content minmax(0,1fr)}
+#form .job-row>label{min-width:0}
+#form .job-row .pallet-number-field{width:0;min-width:100%}
+#form .job-row #pallet{min-width:0}
+</style>
 </head>
 <body class="header-scroll-shell">
 <header>
