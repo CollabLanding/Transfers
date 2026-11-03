@@ -54,6 +54,25 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
 #form .job-row .pallet-number-field{width:0;min-width:100%}
 #form .job-row #pallet{min-width:0}
 </style>
+<style>
+#form .packing-schedule-row{grid-template-columns:minmax(0,1fr) minmax(0,.86fr) max-content;gap:7px;align-items:center}
+#form .packing-schedule-row input{min-width:0;padding-inline:5px}
+#form .packing-schedule-row label{min-width:0}
+#form .packing-trigger{display:grid;gap:3px;text-align:center;align-self:end;margin-bottom:7px}
+#openPackingSlip{white-space:nowrap;padding:6px 8px;font-size:12px}
+#packingTotal{color:var(--muted);font-weight:700}
+#form .job-row{grid-template-columns:minmax(0,1fr)}
+#packingSlip{width:min(720px,calc(100vw - 32px));max-height:85vh;overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);padding:18px}
+#packingSlip::backdrop{background:#0008}
+.packing-line{border:1px solid var(--line);border-radius:8px;padding:10px;margin:8px 0}
+.packing-line-head,.packing-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.packing-part{display:grid;grid-template-columns:minmax(0,2fr) minmax(95px,1fr) auto;gap:8px;align-items:end}
+.packing-part button{margin-bottom:12px}
+.packing-count{max-width:110px}
+#packingError{color:#dc2626}
+#packingPrintSheet{display:none}
+@media print{body.printing-packing-slip{height:auto!important;overflow:visible!important;background:white!important;color:black!important}body.printing-packing-slip>*:not(#packingPrintSheet){display:none!important}body.printing-packing-slip>#packingPrintSheet{display:block!important;color:black;background:white;font:12pt Arial,sans-serif}#packingPrintSheet h2{font-size:14pt;break-after:avoid}#packingPrintSheet table{width:100%;border-collapse:collapse}#packingPrintSheet th,#packingPrintSheet td{border:1px solid #aaa;padding:6px;text-align:left;overflow-wrap:anywhere}#packingPrintSheet tr{break-inside:avoid}}
+</style>
 </head>
 <body class="header-scroll-shell">
 <header>
@@ -70,9 +89,8 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
       <form id="form">
         <input id="editId" type="hidden">
         <input id="duration" type="hidden" value="60">
-        <div class="row">
-          <label>Scheduled Date<input id="date" type="date" required></label>
-          <label>Scheduled Time<input id="time" type="time" step="900" required></label>
+        <div class="row packing-schedule-row"><label>Scheduled Date<input id="date" type="date" required></label>
+          <label>Scheduled Time<input id="time" type="time" step="900" required></label><div class="packing-trigger"><button type="button" id="openPackingSlip">Packing Slip</button><small id="packingTotal">0 pallets</small></div>
 
         </div>
         <div class="row driver-status-row">
@@ -98,7 +116,7 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
           <div class="route-add-stop-field"><button id="addStop" type="button" aria-expanded="false" aria-controls="additionalStopRow">Add Stop</button></div>
         </div>
         <div class="row job-row">
-          <label>Pallet Count<span class="pallet-number-field"><input id="pallet" type="number" min="0" max="999" required><span class="pallet-stepper"><button type="button" data-pallet-step="1" tabindex="-1" aria-label="Increase pallet count"><svg viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path d="M1 7L6 1l5 6Z" fill="currentColor"/></svg></button><button type="button" data-pallet-step="-1" tabindex="-1" aria-label="Decrease pallet count"><svg viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path d="M1 1l5 6 5-6Z" fill="currentColor"/></svg></button></span></span></label>
+          <input id="pallet" type="hidden" value="0">
           <label>Job Number / Notes<input id="job" required></label>
         </div>
         <div class="transfer-actions">
@@ -240,11 +258,21 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
 <script src="status-history.js?v=20261012-swapped-status-colors"></script>
 <script src="editor-bubbles.js?v=20261009-vertical-bubbles"></script>
 <script src="driver-availability.js?v=20261012-overnight"></script>
-<script src="app.js?v=20261103-no-duration-field"></script>
+<dialog id="packingSlip" aria-labelledby="packingTitle">
+ <div class="packing-line-head"><h2 id="packingTitle">Packing Slip</h2><button id="packingClose" type="button" aria-label="Close packing slip">×</button></div>
+ <p>Use Add Part for multiple products on the same pallet. Use Add Line for a different pallet mix.</p>
+ <div id="packingLines"></div>
+ <div class="packing-line-head"><button id="packingAddLine" type="button">Add Line</button><strong id="packingDraftTotal"></strong></div>
+ <p id="packingError" role="alert"></p>
+ <div class="packing-actions"><button id="packingPrint" type="button">Print / Save PDF</button><div><button id="packingCancel" type="button">Cancel</button> <button id="packingDone" type="button" class="primary">Done</button></div></div>
+</dialog>
+<article id="packingPrintSheet"></article>
+<script src="packing-slip.js?v=20261103"></script>
+<script src="app.js?v=20261103-packing-slip"></script>
 <script src="order-status.js?v=20261009-permissions"></script>
 <script src="recent-activity.js?v=20261009-permissions"></script>
-<script src="duplicate-transfer.js?v=20261021-two-stops"></script>
-<script src="duplicate-day.js?v=20261021-overwrite-day"></script>
+<script src="duplicate-transfer.js?v=20261103-packing-slip"></script>
+<script src="duplicate-day.js?v=20261103-packing-slip"></script>
 <script src="theme.js?v=20261009-permissions"></script>
 <script src="chat-typing.js?v=20261014"></script>
 <script src="chat.js?v=20261014-typing"></script>
@@ -282,12 +310,6 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
 </script>
 
 <script src="visitor-share.js?v=20261022-simple" defer></script>
-<script>
-document.querySelectorAll("[data-pallet-step]").forEach(button=>button.addEventListener("click",event=>{
- event.preventDefault();const input=document.getElementById("pallet");if(input.disabled||input.readOnly)return;
- if(Number(button.dataset.palletStep)>0)input.stepUp();else input.stepDown();
- input.dispatchEvent(new Event("input",{bubbles:true}));input.dispatchEvent(new Event("change",{bubbles:true}));
-}));
-</script>
+
 </body>
 </html>
