@@ -38,6 +38,15 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
  html[data-left-sidebar-access="false"][data-sidebar-access="false"] body main.transfer-layout{grid-template-columns:minmax(0,1fr)!important}
 }
 </style>
+<style>
+.pallet-number-field{position:relative;display:block;overflow:visible}
+#pallet{padding-right:28px;appearance:textfield;-moz-appearance:textfield}
+#pallet::-webkit-inner-spin-button,#pallet::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.pallet-stepper{position:absolute;right:5px;top:50%;transform:translateY(-50%);height:40px;width:20px;display:flex;flex-direction:column;z-index:2;overflow:visible}
+.pallet-stepper button{display:flex;align-items:center;justify-content:center;flex:1 1 0;width:20px;height:20px;min-height:0!important;padding:0!important;border:1px solid var(--line);border-radius:3px;background:var(--panel);color:var(--muted);line-height:1;cursor:pointer}
+.pallet-stepper button:hover{color:var(--text)}
+.pallet-stepper svg{display:block;flex:none;overflow:visible}
+</style>
 </head>
 <body class="header-scroll-shell">
 <header>
@@ -85,7 +94,7 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
           <div class="route-add-stop-field"><button id="addStop" type="button" aria-expanded="false" aria-controls="additionalStopRow">Add Stop</button></div>
         </div>
         <div class="row job-row">
-          <label>Pallet Count<input id="pallet" type="number" min="0" max="999" required></label>
+          <label>Pallet Count<span class="pallet-number-field"><input id="pallet" type="number" min="0" max="999" required><span class="pallet-stepper"><button type="button" data-pallet-step="1" aria-label="Increase pallet count"><svg viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path d="M1 7L6 1l5 6Z" fill="currentColor"/></svg></button><button type="button" data-pallet-step="-1" aria-label="Decrease pallet count"><svg viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path d="M1 1l5 6 5-6Z" fill="currentColor"/></svg></button></span></span></label>
           <label>Job Number / Notes<input id="job" required></label>
         </div>
         <div class="transfer-actions">
@@ -269,5 +278,12 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
 </script>
 
 <script src="visitor-share.js?v=20261022-simple" defer></script>
+<script>
+document.querySelectorAll("[data-pallet-step]").forEach(button=>button.addEventListener("click",event=>{
+ event.preventDefault();const input=document.getElementById("pallet");if(input.disabled||input.readOnly)return;
+ if(Number(button.dataset.palletStep)>0)input.stepUp();else input.stepDown();
+ input.dispatchEvent(new Event("input",{bubbles:true}));input.dispatchEvent(new Event("change",{bubbles:true}));
+}));
+</script>
 </body>
 </html>
