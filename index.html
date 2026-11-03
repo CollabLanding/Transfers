@@ -69,14 +69,11 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
       </div>
       <form id="form">
         <input id="editId" type="hidden">
-        <div class="row three">
+        <input id="duration" type="hidden" value="60">
+        <div class="row">
           <label>Scheduled Date<input id="date" type="date" required></label>
           <label>Scheduled Time<input id="time" type="time" step="900" required></label>
-          <label>Load Duration
-            <select id="duration" required>
-              <option value="30">30 min</option><option value="60" selected>1 hour</option><option value="90">1 hr 30 min</option><option value="120">2 hours</option><option value="150">2 hr 30 min</option><option value="180">3 hours</option><option value="210">3 hr 30 min</option><option value="240">4 hours</option>
-            </select>
-          </label>
+
         </div>
         <div class="row driver-status-row">
           <label>Driver<select id="driver" required></select></label>
@@ -243,7 +240,7 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
 <script src="status-history.js?v=20261012-swapped-status-colors"></script>
 <script src="editor-bubbles.js?v=20261009-vertical-bubbles"></script>
 <script src="driver-availability.js?v=20261012-overnight"></script>
-<script src="app.js?v=20261103-multi-stop-roundtrip"></script>
+<script src="app.js?v=20261103-no-duration-field"></script>
 <script src="order-status.js?v=20261009-permissions"></script>
 <script src="recent-activity.js?v=20261009-permissions"></script>
 <script src="duplicate-transfer.js?v=20261021-two-stops"></script>
