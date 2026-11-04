@@ -37,6 +37,7 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
  html[data-left-sidebar-access="true"][data-sidebar-access="false"] body main.transfer-layout{grid-template-columns:380px minmax(0,1fr)!important}
  html[data-left-sidebar-access="false"][data-sidebar-access="false"] body main.transfer-layout{grid-template-columns:minmax(0,1fr)!important}
 }
+.packing-stop{border-bottom:1px solid var(--border);padding:12px 0 18px;margin-bottom:12px}.packing-stop h3{margin:0;font-size:16px}.packing-stop>.packing-line-head{gap:12px;flex-wrap:wrap}.packing-stop>.packing-line-head button{white-space:nowrap}
 </style>
 <style>
 .pallet-number-field{position:relative;display:block;overflow:visible}
@@ -262,12 +263,12 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
  <div class="packing-line-head"><h2 id="packingTitle">Packing Slip</h2><button id="packingClose" type="button" aria-label="Close packing slip">×</button></div>
  <p>Use Add Part for products that share the same pallets. Use Add Line for a different pallet mix.</p>
  <div id="packingLines"></div>
- <div class="packing-line-head"><button id="packingAddLine" type="button">Add Line</button><strong id="packingDraftTotal"></strong></div>
+ <div class="packing-line-head"><strong id="packingDraftTotal"></strong></div>
  <p id="packingError" role="alert"></p>
- <div class="packing-actions"><button id="packingPrint" type="button">Print / Save PDF</button><div><button id="packingCancel" type="button">Cancel</button> <button id="packingDone" type="button" class="primary">Done</button></div></div>
+ <div class="packing-actions"><div><button id="packingCancel" type="button">Cancel</button> <button id="packingDone" type="button" class="primary">Done</button></div></div>
 </dialog>
 <article id="packingPrintSheet"></article>
-<script src="packing-slip.js?v=20261104-done-update"></script>
+<script src="packing-slip.js?v=20261104-stop-slips"></script>
 <script src="app.js?v=20261103-optional-notes"></script>
 <script src="order-status.js?v=20261009-permissions"></script>
 <script src="recent-activity.js?v=20261009-permissions"></script>
