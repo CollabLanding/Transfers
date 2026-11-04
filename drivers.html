@@ -26,6 +26,16 @@
 .schedule-week-nav input{width:auto;min-width:140px}
 .schedule-week-nav button{white-space:nowrap;flex:0 0 auto}
 @media(max-width:900px){.schedule-heading-tools{width:100%;align-items:flex-start}.schedule-week-nav{flex-wrap:wrap}}
+
+.downtime-summary{font-size:11px;color:var(--muted);margin:6px 0}
+.driver-week-total{white-space:normal;max-width:130px}
+#downtimeList{max-height:240px;overflow:auto;margin:16px 0}
+.downtime-entry{padding:10px 0;border-bottom:1px solid var(--border)}
+.downtime-entry small{display:block;color:var(--muted);margin:5px 0}
+.downtime-entry button{margin-right:6px}
+.downtime-fields{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.downtime-fields label{flex:1;min-width:140px}
+#downtimeMsg{color:#dc3545}
 </style>
 </head>
 <body class="header-scroll-shell">
@@ -111,6 +121,21 @@
 </main>
 
 
+<div id="downtimeModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="downtimeTitle">
+ <form id="downtimeForm" class="modalbox">
+  <div class="modalhead"><div><h2>Nonbillable Downtime</h2><strong id="downtimeTitle"></strong></div><button type="button" id="downtimeClose" class="iconbtn" aria-label="Close">×</button></div>
+  <div id="downtimeList"></div>
+  <div class="downtime-fields">
+   <label>Start<input id="downtimeStart" type="time" required step="60"><select id="downtimeStartDay" aria-label="Start day"><option value="0">Shift date</option><option value="1">Next day</option></select></label>
+   <label>End<input id="downtimeEnd" type="time" required step="60"><select id="downtimeEndDay" aria-label="End day"><option value="0">Shift date</option><option value="1">Next day</option></select></label>
+   <label>Reason<select id="downtimeReason"><option>Equipment failure</option><option>Driver unavailable</option><option>Other</option></select></label>
+  </div>
+  <label>Notes<textarea id="downtimeNotes" rows="2" maxlength="1000"></textarea></label>
+  <p id="downtimeMsg" role="status"></p>
+  <div class="modalactions"><button type="button" id="downtimeCancel">Clear Fields</button><button type="submit" id="downtimeSave" class="primary">Add Gap</button></div>
+ </form>
+</div>
+
 <div id="reportModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
   <form id="reportForm" class="modalbox report-modalbox">
     <div class="modalhead">
@@ -186,7 +211,7 @@
 </div>
 
 <script src="driver-availability.js?v=20261012-overnight"></script>
-<script src="driver-schedule.js?v=20261028-report-sort"></script>
+<script src="driver-schedule.js?v=20261104-downtime"></script>
 <script src="driver-history.js?v=20261009-permissions"></script>
 <script src="theme.js?v=20261009-permissions"></script>
 <script src="user-profile.js?v=20261016-account-options"></script>
