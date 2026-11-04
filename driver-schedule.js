@@ -17,6 +17,7 @@
   };
   let user=null,profile=null,drivers=[],scheduleRows=[],weekTransfers=[],channel=null,dirty=false,lastWeekValue="";
 
+  let downtimeRows=[],downtimeContext=null,downtimeEditing=null;
   let loadVersion=0,editVersion=0,refreshPending=false,refreshTimer=null;
   function scheduleFocused(){return E.body.contains(document.activeElement)&&document.activeElement?.matches('input[type="time"]')}
   function requestScheduleRefresh(){
@@ -68,9 +69,76 @@
     return diff/60;
   }
   function fmtHours(n){
-    const rounded=Math.round(n*4)/4;
+    const rounded=Math.round(n*100)/100;
     return Number.isInteger(rounded)?String(rounded):rounded.toFixed(2).replace(/0$/,"");
   }
+
+
+  function dayHours(start,end,driver,date,rows=downtimeRows){
+    const scheduled=hoursBetween(start,end),a=minutes(start);
+    if(a==null||!scheduled)return {scheduled,down:0,billable:scheduled};
+    const b=a+scheduled*60,ranges=rows.filter(r=>r.driver_name===driver&&String(r.schedule_date)===date).map(r=>[Math.max(a,r.start_minute),Math.min(b,r.end_minute)]).filter(r=>r[1]>r[0]).sort((x,y)=>x[0]-y[0]);
+    let down=0,last=a;
+    for(const [from,to] of ranges){down+=Math.max(0,to-Math.max(from,last));last=Math.max(last,to)}
+    return {scheduled,down:down/60,billable:scheduled-down/60};
+  }
+  const dtTime=n=>time12(String(Math.floor(n%1440/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0"))+(n>=1440?" (+1 day)":"");
+  function dtReset(){
+    downtimeEditing=null;
+    $("downtimeStart").value="";$("downtimeEnd").value="";
+    $("downtimeStartDay").value="0";$("downtimeEndDay").value="0";
+    $("downtimeReason").value="Equipment failure";$("downtimeNotes").value="";
+    $("downtimeSave").textContent="Add Gap";$("downtimeMsg").textContent="";
+  }
+  function dtRender(){
+    const {driver,date}=downtimeContext;
+    $("downtimeList").replaceChildren();
+    const rows=downtimeRows.filter(r=>r.driver_name===driver&&String(r.schedule_date)===date).sort((a,b)=>a.start_minute-b.start_minute);
+    for(const r of rows){
+      const div=document.createElement("div");div.className="downtime-entry";
+      div.innerHTML='<strong>'+esc(dtTime(r.start_minute)+" – "+dtTime(r.end_minute))+'</strong><div>'+esc(r.reason)+(r.notes?" · "+esc(r.notes):"")+'</div><small>'+esc(r.updated_by_name)+" · "+esc(new Date(r.updated_at).toLocaleString())+'</small>';
+      for(const [title,action] of [["Edit",()=>{downtimeEditing=r.id;$("downtimeStart").value=String(Math.floor(r.start_minute%1440/60)).padStart(2,"0")+":"+String(r.start_minute%60).padStart(2,"0");$("downtimeEnd").value=String(Math.floor(r.end_minute%1440/60)).padStart(2,"0")+":"+String(r.end_minute%60).padStart(2,"0");$("downtimeStartDay").value=String(Math.floor(r.start_minute/1440));$("downtimeEndDay").value=String(Math.floor(r.end_minute/1440));$("downtimeReason").value=r.reason;$("downtimeNotes").value=r.notes;$("downtimeSave").textContent="Save Gap"}],["Remove",async()=>{
+        if(!confirm("Remove this downtime entry? The removal will remain in Driver Changes."))return;
+        const result=await sb.from("driver_downtime").delete().eq("id",r.id).eq("updated_at",r.updated_at).select("id");
+        if(result.error||!result.data?.length){$("downtimeMsg").textContent=result.error?.message||"This entry changed. Close and reopen Downtime.";return}
+        downtimeRows=downtimeRows.filter(x=>x.id!==r.id);dtReset();dtRender();render();
+      }]]){
+        const btn=document.createElement("button");btn.type="button";btn.textContent=title;btn.onclick=action;btn.disabled=!window.TransfersAccess.can("driver_schedules");div.append(btn);
+      }
+      $("downtimeList").append(div);
+    }
+    if(!rows.length)$("downtimeList").textContent="No downtime recorded.";
+  }
+  async function dtOpen(driver,date){
+    if(dirty){if(!await save(true)||dirty)return}
+    downtimeContext={driver,date};dtReset();
+    const allowed=window.TransfersAccess.can("driver_schedules");
+    $("downtimeForm").querySelectorAll("input,select,textarea,button[type=submit]").forEach(el=>el.disabled=!allowed);
+    $("downtimeTitle").textContent=driver+" · "+friendly(date);
+    dtRender();$("downtimeModal").classList.remove("hidden");
+  }
+  $("downtimeClose").onclick=()=>$("downtimeModal").classList.add("hidden");
+  $("downtimeCancel").onclick=dtReset;
+  $("downtimeModal").addEventListener("click",e=>{if(e.target===$("downtimeModal"))$("downtimeModal").classList.add("hidden")});
+  $("downtimeForm").onsubmit=async e=>{
+    e.preventDefault();if(!window.TransfersAccess.can("driver_schedules")||!downtimeContext)return;
+    const start=minutes($("downtimeStart").value)+Number($("downtimeStartDay").value)*1440,end=minutes($("downtimeEnd").value)+Number($("downtimeEndDay").value)*1440;
+    if(end<=start){$("downtimeMsg").textContent="End must be after start. For an overnight gap, select Next day.";return}
+    const {driver,date}=downtimeContext;
+    const payload={driver_name:driver,schedule_date:date,start_minute:start,end_minute:end,reason:$("downtimeReason").value,notes:$("downtimeNotes").value.trim(),updated_by:user.id};
+    $("downtimeSave").disabled=true;
+    try{
+      let query;
+      if(downtimeEditing){
+        const old=downtimeRows.find(r=>r.id===downtimeEditing);
+        query=sb.from("driver_downtime").update(payload).eq("id",old.id).eq("updated_at",old.updated_at);
+      }else query=sb.from("driver_downtime").insert(payload);
+      const result=await query.select("*").single();
+      if(result.error){$("downtimeMsg").textContent=result.error.message;return}
+      downtimeRows=downtimeRows.filter(r=>r.id!==result.data.id).concat(result.data);
+      dtReset();dtRender();render();
+    }catch(err){$("downtimeMsg").textContent=err.message}finally{$("downtimeSave").disabled=false}
+  };
 
   function updateOverrunWarnings(){
     const map=new Map(scheduleRows.map(r=>[r.driver_name+"|"+r.schedule_date,r]));
@@ -152,15 +220,18 @@
     E.title.textContent=friendly(E.week.value,{month:"long",day:"numeric",year:"numeric"})+" – "+friendly(end,{month:"long",day:"numeric",year:"numeric"});
   }
   function recalcRow(tr){
-    let total=0;
+    let total=0,scheduledTotal=0,downTotal=0;
     tr.querySelectorAll(".schedule-day-cell").forEach(cell=>{
       const start=cell.querySelector(".shift-start")?.value||"";
       const end=cell.querySelector(".shift-end")?.value||"";
-      total+=hoursBetween(start,end);
+      const h=dayHours(start,end,tr.dataset.driver,cell.dataset.date);
+      total+=h.billable;scheduledTotal+=h.scheduled;downTotal+=h.down;
+      const summary=cell.querySelector(".downtime-summary");
+      if(summary)summary.textContent=fmtHours(h.down)+" hrs downtime · "+fmtHours(h.billable)+" hrs billable";
       cell.classList.toggle("scheduled",!!(start&&end));
     });
     const totalEl=tr.querySelector(".driver-week-total");
-    if(totalEl)totalEl.textContent=fmtHours(total)+" hrs";
+    if(totalEl)totalEl.textContent=fmtHours(total)+" hrs billable · "+fmtHours(scheduledTotal)+" scheduled · "+fmtHours(downTotal)+" downtime";
   }
   function render(){
     updateHeaders();
@@ -188,7 +259,7 @@
         td.innerHTML=
           '<label><span>Start</span><input class="shift-start" type="time" step="900" value="'+esc(row?.start_time?String(row.start_time).slice(0,5):"")+'" aria-label="'+esc(driver)+" "+esc(date)+' start"></label>'+
           '<label><span>End</span><input class="shift-end" type="time" step="900" value="'+esc(row?.end_time?String(row.end_time).slice(0,5):"")+'" aria-label="'+esc(driver)+" "+esc(date)+' end"></label>'+
-          '<div class="shift-actions"><button class="clear-shift" type="button" title="Clear shift">Off</button><button class="copy-day" type="button" title="Copy this day to the next day">Day →</button></div>';
+          '<div class="downtime-summary"></div><button type="button" class="open-downtime">Downtime</button><div class="shift-actions"><button class="clear-shift" type="button" title="Clear shift">Off</button><button class="copy-day" type="button" title="Copy this day to the next day">Day →</button></div>';
         tr.appendChild(td);
       });
 
@@ -225,6 +296,7 @@
     E.body.querySelectorAll(".copy-month").forEach(btn=>{
       btn.addEventListener("click",()=>copyPeriod(btn.closest("tr").dataset.driver,"month",E.week.value));
     });
+    E.body.querySelectorAll(".open-downtime").forEach(btn=>btn.onclick=()=>dtOpen(btn.closest("tr").dataset.driver,btn.closest("td").dataset.date));
     updateOverrunWarnings();
   }
   async function loadDriverList(){
@@ -242,10 +314,11 @@
     if(!background)show("Loading schedule…");
     updateHeaders();
     const start=E.week.value,end=addDays(start,6);
-    const [dr,sc,tr]=await Promise.all([
+    const [dr,sc,tr,dt]=await Promise.all([
       loadDriverList(),
       sb.from("driver_schedules").select("*").gte("schedule_date",addDays(start,-1)).lte("schedule_date",addDays(end,1)),
-      sb.from("transfers").select("driver,scheduled_date,scheduled_time,duration_minutes").gte("scheduled_date",start).lte("scheduled_date",end)
+      sb.from("transfers").select("driver,scheduled_date,scheduled_time,duration_minutes").gte("scheduled_date",start).lte("scheduled_date",end),
+      sb.from("driver_downtime").select("*").gte("schedule_date",start).lte("schedule_date",end)
     ]);
     if(request!==loadVersion||start!==E.week.value||user?.id!==account)return;
     if(editVersion!==revision||dirty||scheduleFocused()){
@@ -270,6 +343,8 @@
       }
       return;
     }
+    if(dt.error){show("Could not load downtime: "+dt.error.message,"error");return}
+    downtimeRows=dt.data||[];
     scheduleRows=sc.data||[];
     if(tr.error){
       weekTransfers=[];
@@ -502,7 +577,7 @@
     };
   }
 
-  function buildDriverPdf(selected,range,rows,sortBy="driver"){
+  function buildDriverPdf(selected,range,rows,sortBy="driver",reportDowntime=[]){
     const JsPdf=window.jspdf?.jsPDF;
     if(!JsPdf)throw new Error("PDF library did not load. Refresh the page and try again.");
     const doc=new JsPdf({orientation:"portrait",unit:"pt",format:"letter"});
@@ -547,7 +622,7 @@
       if(sortBy!=="day")doc.text("Day",margin+100,y);
       doc.text("Start",margin+220,y);
       doc.text("End",margin+300,y);
-      doc.text("Hours",margin+380,y);
+      doc.text("Billable",margin+380,y);
       y+=rowH;
     }
 
@@ -559,9 +634,12 @@
       : [...selected].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"})).map(driver=>({title:driver,list:reportRows.filter(r=>r.driver_name===driver).sort((a,b)=>String(a.schedule_date).localeCompare(String(b.schedule_date)))}));
     if(!groups.length){doc.setFontSize(10);doc.text("No scheduled days in this date range.",margin,y)}
     groups.forEach(({title:driver,list},driverIndex)=>{
-      const total=list.reduce((sum,r)=>sum+hoursBetween(r.start_time,r.end_time),0);
-      const overtimeDays=list.filter(r=>hoursBetween(r.start_time,r.end_time)>10).length;
-      const overtimeHours=list.reduce((sum,r)=>sum+Math.max(0,hoursBetween(r.start_time,r.end_time)-10),0);
+      const hours=r=>dayHours(r.start_time,r.end_time,r.driver_name,String(r.schedule_date),reportDowntime);
+      const total=list.reduce((sum,r)=>sum+hours(r).billable,0);
+      const scheduled=list.reduce((sum,r)=>sum+hours(r).scheduled,0);
+      const down=list.reduce((sum,r)=>sum+hours(r).down,0);
+      const overtimeDays=list.filter(r=>hours(r).billable>10).length;
+      const overtimeHours=list.reduce((sum,r)=>sum+Math.max(0,hours(r).billable-10),0);
 
       if(driverIndex>0)y+=12;
       tableHeader(driver,false);
@@ -579,7 +657,7 @@
             pageHeader(false);
             tableHeader(driver,true);
           }
-          const hrs=hoursBetween(r.start_time,r.end_time);
+          const hrs=hours(r).billable;
           const day=friendly(r.schedule_date,{weekday:"long"});
           doc.setFont("helvetica","normal");
           doc.setFontSize(9);
@@ -606,6 +684,15 @@
           doc.setDrawColor(232,236,240);
           doc.line(margin,y+5,pageW-margin,y+5);
           y+=rowH;
+          const gaps=reportDowntime.filter(d=>d.driver_name===r.driver_name&&String(d.schedule_date)===String(r.schedule_date));
+          if(gaps.length){
+            const detail=["Scheduled: "+fmtHours(hours(r).scheduled)+" hrs · Downtime deducted: "+fmtHours(hours(r).down)+" hrs",
+              ...gaps.map(d=>dtTime(d.start_minute)+" – "+dtTime(d.end_minute)+" · "+d.reason+(d.notes?" · "+d.notes:""))];
+            doc.setFontSize(8);
+            for(const text of detail)for(const line of doc.splitTextToSize(text,pageW-margin*2-10)){
+              ensure(14);doc.text(line,margin+5,y);y+=12;
+            }
+          }
         });
       }
 
@@ -613,7 +700,8 @@
       doc.setFont("helvetica","bold");
       doc.setFontSize(10);
       doc.setTextColor(20,30,40);
-      doc.text("Total Hours: "+fmtHours(total),margin+5,y+5);
+      doc.text("Billable: "+fmtHours(total)+" hrs · Scheduled: "+fmtHours(scheduled)+" hrs · Downtime: "+fmtHours(down)+" hrs",margin+5,y+5);
+      y+=16;
       doc.setFont("helvetica","normal");
       doc.setTextColor(90,100,110);
       doc.text("Overtime Days: "+overtimeDays+"   Overtime Hours: "+fmtHours(overtimeHours),margin+150,y+5);
@@ -662,7 +750,9 @@
         .order("schedule_date",{ascending:true});
 
       if(result.error){reportShow("Could not load report data: "+result.error.message,"error");return}
-      buildDriverPdf(selected,range,result.data||[],sortBy);
+      const dt=await sb.from("driver_downtime").select("*").in("driver_name",selected).gte("schedule_date",range.start).lte("schedule_date",range.end);
+      if(dt.error)throw new Error("Could not load downtime: "+dt.error.message);
+      buildDriverPdf(selected,range,result.data||[],sortBy,dt.data||[]);
       reportShow("PDF report generated.","ok");
     }catch(err){
       reportShow("Could not generate PDF: "+(err?.message||String(err)),"error");
@@ -676,6 +766,7 @@
     if(channel)await sb.removeChannel(channel);
     channel=sb.channel("driver-schedule-data")
       .on("postgres_changes",{event:"*",schema:"public",table:"driver_schedules"},()=>requestScheduleRefresh())
+      .on("postgres_changes",{event:"*",schema:"public",table:"driver_downtime"},()=>requestScheduleRefresh())
       .on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},()=>requestScheduleRefresh())
       .on("postgres_changes",{event:"*",schema:"public",table:"transfers"},()=>refreshTransferWarnings())
       .subscribe();
