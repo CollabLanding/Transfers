@@ -27,6 +27,9 @@
 .schedule-week-nav button{white-space:nowrap;flex:0 0 auto}
 @media(max-width:900px){.schedule-heading-tools{width:100%;align-items:flex-start}.schedule-week-nav{flex-wrap:wrap}}
 
+.schedule-day-cell .shift-actions{grid-template-columns:auto auto minmax(0,1fr);gap:5px;margin-top:6px}
+.schedule-day-cell .open-downtime{background:#f4f6f8;color:var(--muted);min-width:0}
+html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .schedule-day-cell .open-downtime{background:#202a34;color:#aab7c3;border-color:#46525e}
 .downtime-summary{font-size:11px;color:var(--muted);margin:6px 0}
 .driver-week-total{white-space:normal;max-width:130px}
 #downtimeList{max-height:240px;overflow:auto;margin:16px 0}
@@ -212,7 +215,7 @@
 </div>
 
 <script src="driver-availability.js?v=20261012-overnight"></script>
-<script src="driver-schedule.js?v=20261104-driver-pages"></script>
+<script src="driver-schedule.js?v=20261104-compact-downtime"></script>
 <script src="driver-history.js?v=20261009-permissions"></script>
 <script src="theme.js?v=20261009-permissions"></script>
 <script src="user-profile.js?v=20261016-account-options"></script>
