@@ -11,7 +11,7 @@
  window.PackingSlip={load(lines,count=0){saved=Array.isArray(lines)&&lines.length?copy(lines):null;legacy=Number(count)||0;updateButton()},value:()=>saved?copy(saved):null};
  function addPart(group,part={}){
   const row=document.createElement("div");row.className="packing-part";
-  row.innerHTML='<label>Part number<input class="packing-number" maxlength="120" value="'+esc(part.number)+'"></label><label>Pieces per pallet<input class="packing-pieces" type="number" min="1" max="999999" step="1" value="'+esc(part.pieces)+'"></label><button type="button" aria-label="Remove part">×</button>';
+  row.innerHTML='<label>Part number<input class="packing-number" maxlength="120" value="'+esc(part.number)+'"></label><label>Pieces per pallet<input class="packing-pieces" type="text" maxlength="20" value="'+esc(part.pieces)+'"></label><button type="button" aria-label="Remove part">×</button>';
   if(!group.children.length){
    const label=document.createElement("label");label.className="packing-pallets";
    label.innerHTML='Pallets<input class="packing-count" type="number" min="1" max="999" step="1" required value="'+esc(group.closest(".packing-line").dataset.pallets)+'">';
@@ -52,8 +52,10 @@
    for(const row of block.querySelectorAll(".packing-part")){
     const number=row.querySelector(".packing-number").value.trim(),field=row.querySelector(".packing-pieces");
     if(!number&&!field.value)continue;
-    if(!number||!field.checkValidity())throw Error("Enter a part number and a valid pieces count on each filled part row.");
-    parts.push({number,pieces:field.value?Number(field.value):null});
+    const pieces=field.value.trim().replace(/[–—]/g,"-").replace(/\s*-\s*/g,"-");
+    if(!number)throw Error("Enter a part number on each filled part row.");
+    if(pieces&&(!/^[1-9][0-9]{0,5}(-[1-9][0-9]{0,5})?$/.test(pieces)||(pieces.includes("-")&&Number(pieces.split("-")[0])>Number(pieces.split("-")[1]))))throw Error("Pieces per pallet must be a count or a range, such as 2000 or 10-20.");
+    parts.push({number,pieces:pieces?(pieces.includes("-")?pieces:Number(pieces)):null});
    }
    const notes=block.querySelector(".packing-notes").value.trim();
    if(!parts.length){if(notes)throw Error("Enter a part number for the line with notes.");continue;}
