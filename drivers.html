@@ -27,7 +27,8 @@
 .schedule-week-nav button{white-space:nowrap;flex:0 0 auto}
 @media(max-width:900px){.schedule-heading-tools{width:100%;align-items:flex-start}.schedule-week-nav{flex-wrap:wrap}}
 
-.schedule-day-cell .shift-actions{grid-template-columns:auto auto minmax(0,1fr);gap:5px;margin-top:6px}
+.schedule-day-cell .shift-actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:6px}
+.schedule-day-cell .shift-actions button{width:100%;min-width:0;padding-left:2px;padding-right:2px}
 .schedule-day-cell .open-downtime{background:#f4f6f8;color:var(--muted);min-width:0}
 html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .schedule-day-cell .open-downtime{background:#202a34;color:#aab7c3;border-color:#46525e}
 .downtime-summary{font-size:11px;color:var(--muted);margin:6px 0}
