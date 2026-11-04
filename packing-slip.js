@@ -73,7 +73,13 @@
  function finish(){
   try{apply(read());modal.close()}catch(e){error.textContent=e.message}
  }
- $("packingDone").onclick=finish;
+ $("packingDone").onclick=()=>{
+  try{
+   apply(read());
+   modal.close();
+   if($("editId").value)$("form").requestSubmit($("save"));
+  }catch(e){error.textContent=e.message}
+ };
  $("packingClose").onclick=finish;
  modal.addEventListener("cancel",event=>{event.preventDefault();finish()});
  $("packingPrint").onclick=()=>{
