@@ -27,23 +27,27 @@
   };
   group.append(row);
  }
- function addLine(line={}){
-  const block=document.createElement("section");block.className="packing-line";block.dataset.pallets=String(line.pallets??1);
+ function addLine(line={},target=list.querySelector(".packing-stop-lines")){
+  const block=document.createElement("section");block.className="packing-line";block.dataset.pallets=String(line.pallets??1);block.dataset.stop=target.dataset.stop;
   block.innerHTML='<div class="packing-line-head"><strong class="packing-line-title"></strong><button type="button" class="packing-remove">Remove line</button></div><div class="packing-parts"></div><button type="button" class="packing-add-part">Add Part</button><label>Line notes<input class="packing-notes" maxlength="500" value="'+esc(line.notes)+'"></label>';
   const parts=block.querySelector(".packing-parts");
   for(const part of line.parts?.length?line.parts:[{}])addPart(parts,part);
   block.querySelector(".packing-add-part").onclick=()=>{if(parts.children.length<30){addPart(parts);parts.lastElementChild.querySelector("input").focus()}};
   block.querySelector(".packing-remove").onclick=()=>{block.remove();refresh()};
-  list.append(block);refresh();
+  target.append(block);refresh();
  }
  function refresh(){
-  let n=0;[...list.children].forEach((line,i)=>{line.querySelector(".packing-line-title").textContent="Line "+(i+1);if([...line.querySelectorAll(".packing-number")].some(input=>input.value.trim()))n+=Number(line.querySelector(".packing-count").value)||0});
+  let n=0;[...list.querySelectorAll(".packing-line")].forEach((line)=>{line.querySelector(".packing-line-title").textContent="Line "+([...line.parentElement.children].indexOf(line)+1);if([...line.querySelectorAll(".packing-number")].some(input=>input.value.trim()))n+=Number(line.querySelector(".packing-count").value)||0});
+  for(const section of list.querySelectorAll(".packing-stop")){
+   const n=[...section.querySelectorAll(".packing-line")].reduce((sum,line)=>sum+([...line.querySelectorAll(".packing-number")].some(input=>input.value.trim())?Number(line.querySelector(".packing-count").value)||0:0),0);
+   section.querySelector(".packing-stop-total").textContent=n+" pallets";
+  }
   $("packingDraftTotal").textContent="Total: "+(n||(!saved?legacy:0))+" pallets";
   error.textContent="";
  }
  function read(){
   const lines=[];
-  for(const block of list.children){
+  for(const block of list.querySelectorAll(".packing-line")){
    const parts=[];
    for(const row of block.querySelectorAll(".packing-part")){
     const number=row.querySelector(".packing-number").value.trim(),field=row.querySelector(".packing-pieces");
@@ -55,13 +59,33 @@
    if(!parts.length){if(notes)throw Error("Enter a part number for the line with notes.");continue;}
    const count=block.querySelector(".packing-count");
    if(!count.checkValidity())throw Error("Enter 1 to 999 pallets for each filled line.");
-   lines.push({pallets:Number(count.value),parts,notes});
+   lines.push({pallets:Number(count.value),parts,notes,stop:Number(block.dataset.stop||0)});
   }
+  if(lines.length>100)throw Error("Use no more than 100 pallet lines across all stops.");
   if(total(lines)>999)throw Error("The packing slip cannot exceed 999 pallets.");
   return lines;
  }
- $("openPackingSlip").onclick=()=>{list.replaceChildren();if(saved)for(const line of saved)addLine(line);else addLine();refresh();modal.showModal()};
- $("packingAddLine").onclick=()=>{if(list.children.length<100){addLine();list.lastElementChild.querySelector(".packing-number").focus()}};
+ const stopLocation=stop=>$(["origin","additionalStop","additionalStop2"][stop])?.value||"";
+ const stopTitle=stop=>(stop?"Additional Stop "+stop:"Load Origin")+(stopLocation(stop)?" — "+stopLocation(stop):"");
+ $("openPackingSlip").onclick=()=>{
+  list.replaceChildren();
+  for(let stop=0;stop<=2;stop++){
+   if(stop&&!stopLocation(stop)&&!saved?.some(line=>(line.stop||0)===stop))continue;
+   const section=document.createElement("section");section.className="packing-stop";
+   const head=document.createElement("div");head.className="packing-line-head";
+   const title=document.createElement("h3");title.textContent=stopTitle(stop);
+   const print=document.createElement("button");print.type="button";print.textContent="Print / Save PDF";print.onclick=()=>printSlip(stop);
+   const subtotal=document.createElement("strong");subtotal.className="packing-stop-total";
+   head.append(title,subtotal,print);
+   const lines=document.createElement("div");lines.className="packing-stop-lines";lines.dataset.stop=String(stop);
+   const add=document.createElement("button");add.type="button";add.textContent="Add Line";
+   add.onclick=()=>{if(list.querySelectorAll(".packing-line").length<100){addLine({},lines);lines.lastElementChild.querySelector(".packing-number").focus()}};
+   section.append(head,lines,add);list.append(section);
+   const existing=saved?.filter(line=>(line.stop||0)===stop)||[];
+   if(existing.length)for(const line of existing)addLine(line,lines);else addLine({},lines);
+  }
+  refresh();modal.showModal();
+ };
  $("packingCancel").onclick=()=>modal.close();
 
  list.addEventListener("input",refresh);
@@ -82,14 +106,14 @@
  };
  $("packingClose").onclick=finish;
  modal.addEventListener("cancel",event=>{event.preventDefault();finish()});
- $("packingPrint").onclick=()=>{
+ function printSlip(stop){
   try{
-   const lines=read();
+   const allLines=read(),lines=allLines.filter(line=>line.stop===stop);
    if(!lines.length)throw Error("Add a part number before printing the packing slip.");
-   apply(lines);
+   apply(allLines);
    const print=$("packingPrintSheet");
    const route=["origin","additionalStop","additionalStop2","destination"].map(id=>$(id)?.value).filter(x=>x&&!x.startsWith("__")).join(" → ");
-   print.innerHTML='<h1>Packing Slip</h1><p><strong>Schedule:</strong> '+esc($("date").value)+' '+esc($("time").value)+'</p><p><strong>Route:</strong> '+esc(route)+'</p><p><strong>Driver:</strong> '+esc($("driver").value)+'</p><p><strong>Notes:</strong> '+esc($("job").value)+'</p><p><strong>Total pallets:</strong> '+total(lines)+'</p>'+lines.map((line,i)=>'<section><h2>Line '+(i+1)+' — '+line.pallets+' pallet'+(line.pallets===1?'':'s')+'</h2><table><thead><tr><th>Part number</th><th>Pieces per pallet</th></tr></thead><tbody>'+line.parts.map(part=>'<tr><td>'+esc(part.number)+'</td><td>'+esc(part.pieces??'—')+'</td></tr>').join("")+'</tbody></table>'+(line.notes?'<p><strong>Notes:</strong> '+esc(line.notes)+'</p>':'')+'</section>').join("");
+   print.innerHTML='<h1>Packing Slip</h1><h2>'+esc(stopTitle(stop))+'</h2><p><strong>Schedule:</strong> '+esc($("date").value)+' '+esc($("time").value)+'</p><p><strong>Route:</strong> '+esc(route)+'</p><p><strong>Driver:</strong> '+esc($("driver").value)+'</p><p><strong>Notes:</strong> '+esc($("job").value)+'</p><p><strong>Total pallets:</strong> '+total(lines)+'</p>'+lines.map((line,i)=>'<section><h2>Line '+(i+1)+' — '+line.pallets+' pallet'+(line.pallets===1?'':'s')+'</h2><table><thead><tr><th>Part number</th><th>Pieces per pallet</th></tr></thead><tbody>'+line.parts.map(part=>'<tr><td>'+esc(part.number)+'</td><td>'+esc(part.pieces??'—')+'</td></tr>').join("")+'</tbody></table>'+(line.notes?'<p><strong>Notes:</strong> '+esc(line.notes)+'</p>':'')+'</section>').join("");
    document.body.classList.add("printing-packing-slip");
    try{window.print()}finally{document.body.classList.remove("printing-packing-slip")}
   }catch(e){error.textContent=e.message}
