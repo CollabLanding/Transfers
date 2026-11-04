@@ -8,7 +8,7 @@
     week:$("weekStart"),prev:$("prevWeek"),next:$("nextWeek"),thisWeek:$("thisWeek"),
     title:$("weekTitle"),body:$("scheduleBody"),save:$("saveSchedule"),msg:$("scheduleMsg"),
     reports:$("runReports"),reportModal:$("reportModal"),reportForm:$("reportForm"),reportClose:$("reportClose"),reportCancel:$("reportCancel"),
-    reportDriverList:$("reportDriverList"),reportSelectAll:$("reportSelectAll"),reportClearAll:$("reportClearAll"),reportPeriod:$("reportPeriod"),reportSort:$("reportSort"),
+    reportDriverList:$("reportDriverList"),reportSelectAll:$("reportSelectAll"),reportClearAll:$("reportClearAll"),reportPeriod:$("reportPeriod"),reportSort:$("reportSort"),reportSeparate:$("reportSeparate"),
     reportWeekFields:$("reportWeekFields"),reportMonthFields:$("reportMonthFields"),reportQuarterFields:$("reportQuarterFields"),reportCustomFields:$("reportCustomFields"),
     reportWeekDate:$("reportWeekDate"),reportMonth:$("reportMonth"),reportQuarterYear:$("reportQuarterYear"),reportQuarter:$("reportQuarter"),
     reportStartDate:$("reportStartDate"),reportEndDate:$("reportEndDate"),reportRun:$("reportRun"),reportMsg:$("reportMsg"),
@@ -577,7 +577,7 @@
     };
   }
 
-  function buildDriverPdf(selected,range,rows,sortBy="driver",reportDowntime=[]){
+  function buildDriverPdf(selected,range,rows,sortBy="driver",reportDowntime=[],separateDrivers=false){
     const JsPdf=window.jspdf?.jsPDF;
     if(!JsPdf)throw new Error("PDF library did not load. Refresh the page and try again.");
     const doc=new JsPdf({orientation:"portrait",unit:"pt",format:"letter"});
@@ -641,7 +641,7 @@
       const overtimeDays=list.filter(r=>hours(r).billable>10).length;
       const overtimeHours=list.reduce((sum,r)=>sum+Math.max(0,hours(r).billable-10),0);
 
-      if(driverIndex>0)y+=12;
+      if(driverIndex>0){if(separateDrivers)pageHeader(false);else y+=12;}
       tableHeader(driver,false);
 
       if(!list.length){
@@ -727,7 +727,8 @@
     if(!live||!user)return;
     const selected=selectedReportDrivers();
     if(!selected.length){reportShow("Select at least one driver.","error");return}
-    const sortBy=E.reportSort?.value==="day"?"day":"driver";
+    const separateDrivers=Boolean(E.reportSeparate?.checked);
+    const sortBy=!separateDrivers&&E.reportSort?.value==="day"?"day":"driver";
     const range=getReportRange();
     if(!range){reportShow("Choose a report period.","error");return}
     if(range.error){reportShow(range.error,"error");return}
@@ -752,7 +753,7 @@
       if(result.error){reportShow("Could not load report data: "+result.error.message,"error");return}
       const dt=await sb.from("driver_downtime").select("*").in("driver_name",selected).gte("schedule_date",range.start).lte("schedule_date",range.end);
       if(dt.error)throw new Error("Could not load downtime: "+dt.error.message);
-      buildDriverPdf(selected,range,result.data||[],sortBy,dt.data||[]);
+      buildDriverPdf(selected,range,result.data||[],sortBy,dt.data||[],separateDrivers);
       reportShow("PDF report generated.","ok");
     }catch(err){
       reportShow("Could not generate PDF: "+(err?.message||String(err)),"error");
@@ -800,6 +801,10 @@
   E.reports.onclick=openReports;
   E.reportClose.onclick=closeReports;
   E.reportCancel.onclick=closeReports;
+  E.reportSeparate.onchange=()=>{
+    if(E.reportSeparate.checked)E.reportSort.value="driver";
+    E.reportSort.disabled=E.reportSeparate.checked;
+  };
   E.reportPeriod.onchange=toggleReportPeriod;
   document.getElementById("reportCustomRange").onclick=()=>{E.reportPeriod.value="custom";toggleReportPeriod();E.reportStartDate.focus()};
   E.reportSelectAll.onclick=()=>E.reportDriverList.querySelectorAll('input[type="checkbox"]').forEach(x=>x.checked=true);
