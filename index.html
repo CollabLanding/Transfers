@@ -85,6 +85,28 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
 #packingPrintSheet{display:none}
 @media print{body.printing-packing-slip{height:auto!important;overflow:visible!important;background:white!important;color:black!important}body.printing-packing-slip>*:not(#packingPrintSheet){display:none!important}body.printing-packing-slip>#packingPrintSheet{display:block!important;color:black;background:white;font:12pt Arial,sans-serif}#packingPrintSheet h2{font-size:14pt;break-after:avoid}#packingPrintSheet table{width:100%;border-collapse:collapse}#packingPrintSheet th,#packingPrintSheet td{border:1px solid #aaa;padding:6px;text-align:left;overflow-wrap:anywhere}#packingPrintSheet tr{break-inside:avoid}}
 </style>
+<style>
+@media print{
+ #packingPrintSheet .packing-freight-layout{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,1fr);align-items:stretch;margin-top:14px;border:1px solid #000}
+ #packingPrintSheet .packing-freight-table{table-layout:fixed;width:100%;font:8pt Arial,sans-serif;border-collapse:collapse}
+ #packingPrintSheet .packing-freight-table th,#packingPrintSheet .packing-freight-table td{padding:3px 4px;border:0;border-right:1px solid #000;text-align:left;vertical-align:top;overflow-wrap:break-word}
+ #packingPrintSheet .packing-freight-table th{font-weight:bold;line-height:1.1;border-bottom:1px solid #000}
+ #packingPrintSheet .packing-freight-table td{height:21px;border-bottom:2px solid #fff;background:#f2f3fa;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ #packingPrintSheet .packing-freight-table tr{break-inside:avoid}
+ .freight-hm-box{display:block;width:12px;height:8px;border:1px solid #c4c9d5;margin:2px auto}
+ .packing-freight-terms{padding:4px 5px;font:7pt Arial,sans-serif;line-height:1.15;color:#000;break-inside:avoid}
+ .packing-freight-terms p{margin:0 0 10px}
+ .packing-freight-terms small{font-size:6pt}
+ .freight-signature-line{border-bottom:1px solid #000;min-height:18px;margin-top:4px}
+ .packing-freight-terms small+p{margin-top:12px}
+ .freight-check{display:inline-block;width:9px;height:9px;border:1px solid #000;vertical-align:middle}
+ .freight-write-line{display:block;min-height:14px;background:#f2f3fa;border-bottom:1px solid #999}
+ .packing-freight-terms .freight-cod{display:flex;gap:3px;align-items:end;margin-top:12px;font-size:9pt}
+ .freight-cod .freight-write-line{flex:1}
+ .freight-address-lines{height:40px}
+ #packingPrintSheet .packing-slip-footer{margin-top:0;border-top:0}
+}
+</style>
 </head>
 <body class="header-scroll-shell">
 <header>
@@ -279,7 +301,7 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
  <div class="packing-actions"><div><button id="packingCancel" type="button">Cancel</button> <button id="packingDone" type="button" class="primary">Done</button></div></div>
 </dialog>
 <article id="packingPrintSheet"></article>
-<script src="packing-slip.js?v=20261105-print-footer"></script>
+<script src="packing-slip.js?v=20261105-freight-form"></script>
 <script src="app.js?v=20261105-linked-push"></script>
 <script src="order-status.js?v=20261009-permissions"></script>
 <script src="recent-activity.js?v=20261009-permissions"></script>
