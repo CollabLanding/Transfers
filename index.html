@@ -257,6 +257,20 @@ body.printing-packing-slip{height:auto!important;overflow:visible!important;back
  #packingPrintSheet .bol-printed-value{display:block;white-space:pre-wrap;line-height:14px}
 }
 </style>
+<style>
+/* BOL cells must override the site-wide fixed-height input rules. */
+#packingSlip #packingLines .bol-paper .packing-freight-table :is(input:not([type="checkbox"]),textarea){
+ box-sizing:border-box!important;height:20px!important;min-height:20px!important;max-height:none!important;
+ padding:2px 4px!important;font-size:12px!important;line-height:16px!important;margin:0!important
+}
+#packingSlip #packingLines .bol-paper .packing-freight-table textarea.packing-number{
+ resize:none!important;overflow:hidden!important
+}
+#packingSlip #packingLines .bol-paper .packing-freight-table td{height:auto!important;padding:1px 4px!important;vertical-align:top}
+@media print{
+ #packingPrintSheet .packing-freight-table td{padding:2px 4px;height:auto}
+}
+</style>
 </head>
 <body class="header-scroll-shell">
 <header>
@@ -451,7 +465,7 @@ body.printing-packing-slip{height:auto!important;overflow:visible!important;back
  <div class="packing-actions"><div><button id="packingCancel" type="button">Cancel</button> <button id="packingDone" type="button" class="primary">Done</button></div></div>
 </dialog>
 <article id="packingPrintSheet"></article>
-<script src="packing-slip.js?v=20261105-default-pallet"></script>
+<script src="packing-slip.js?v=20261105-row-height-override"></script>
 <script src="app.js?v=20261105-linked-push"></script>
 <script src="order-status.js?v=20261009-permissions"></script>
 <script src="recent-activity.js?v=20261009-permissions"></script>
