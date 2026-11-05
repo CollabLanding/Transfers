@@ -249,7 +249,7 @@ function applyDriverDowntimeOverlay(lane,driver,date){
   if(offset===null)continue;
   const start=Math.max(GRID_START,Number(gap.start_minute)+offset),end=Math.min(GRID_END,Number(gap.end_minute)+offset);
   if(end<=start)continue;
-  scheduleOverlay(lane,px(start),px(end)-px(start),"driver-downtime-overlay","DOWNTIME · "+gap.reason);
+  scheduleOverlay(lane,px(start),px(end)-px(start),"driver-downtime-overlay",gap.notes||"");
  }
 }
 function updateScheduleClock(){
@@ -446,7 +446,7 @@ async function loadBoardSchedule(){if(!window.TransfersAccess.can("view_board"))
   if(!live){driverSchedule=[];driverDowntime=[];renderBoard();return}
   const [r,dt]=await Promise.all([
    sb.from("driver_schedules").select("driver_name,schedule_date,start_time,end_time").gte("schedule_date",add(requestedDate,-1)).lte("schedule_date",requestedDate),
-   sb.from("driver_downtime").select("id,driver_name,schedule_date,start_minute,end_minute,reason").gte("schedule_date",add(requestedDate,-1)).lte("schedule_date",requestedDate)
+   sb.from("driver_downtime").select("id,driver_name,schedule_date,start_minute,end_minute,notes").gte("schedule_date",add(requestedDate,-1)).lte("schedule_date",requestedDate)
   ]);
   if(token!==boardScheduleRequest||requestedDate!==E.boardDate.value)return;
   driverSchedule=r.error?[]:(r.data||[]);
@@ -454,7 +454,7 @@ async function loadBoardSchedule(){if(!window.TransfersAccess.can("view_board"))
   if(dt.error)msg("Could not load driver downtime: "+dt.error.message,"error");
   renderBoard();
 }
-async function loadData(){if(!window.TransfersAccess.can("view_board")){const r=await sb.rpc("get_transfer_board_options");items=[];driverSchedule=[];drivers=orderedUniq(["Planning",...(r.data?.drivers||[]).map(x=>x.name)]);locations=uniq((r.data?.locations||[]).map(x=>x.name));renderOptions();if(r.error)msg("Could not load form options: "+r.error.message,"error");return}if(!live){loadLocal();driverSchedule=[];renderOptions();renderBoard();return}const [tr,dr,lr,sc,dt]=await Promise.all([sb.from("transfers").select("*").order("scheduled_date").order("scheduled_time"),loadDriversWithFallback(),loadLocationsWithFallback(),sb.from("driver_schedules").select("driver_name,schedule_date,start_time,end_time").gte("schedule_date",add(E.boardDate.value,-1)).lte("schedule_date",E.boardDate.value),sb.from("driver_downtime").select("id,driver_name,schedule_date,start_minute,end_minute,reason").gte("schedule_date",add(E.boardDate.value,-1)).lte("schedule_date",E.boardDate.value)]);if(tr.error){msg("Transfers could not load: "+tr.error.message,"error");items=[]}else items=(tr.data||[]).map(normalize);drivers=orderedUniq(["Planning",...(dr.error?[]:(dr.data||[]).map(x=>x.name)),...items.map(x=>x.driver)]);locations=uniq([...(lr.error?["Sunnyvale 100","Sunnyvale 200"]:(lr.data||[]).map(x=>x.name)),...items.flatMap(x=>[x.origin,x.destination,x.additional_stop,x.additional_stop_2]),"Sunnyvale 100","Sunnyvale 200"]);driverSchedule=sc.error?[]:(sc.data||[]);driverDowntime=dt.error?[]:(dt.data||[]);if(dt.error)msg("Could not load driver downtime: "+dt.error.message,"error");if(dr.error||lr.error){const details=[dr.error?"Drivers: "+dr.error.message:"",lr.error?"Locations: "+lr.error.message:""].filter(Boolean).join(" · ");msg("Could not load driver/location lists. "+details,"error")}renderOptions();renderBoard()}
+async function loadData(){if(!window.TransfersAccess.can("view_board")){const r=await sb.rpc("get_transfer_board_options");items=[];driverSchedule=[];drivers=orderedUniq(["Planning",...(r.data?.drivers||[]).map(x=>x.name)]);locations=uniq((r.data?.locations||[]).map(x=>x.name));renderOptions();if(r.error)msg("Could not load form options: "+r.error.message,"error");return}if(!live){loadLocal();driverSchedule=[];renderOptions();renderBoard();return}const [tr,dr,lr,sc,dt]=await Promise.all([sb.from("transfers").select("*").order("scheduled_date").order("scheduled_time"),loadDriversWithFallback(),loadLocationsWithFallback(),sb.from("driver_schedules").select("driver_name,schedule_date,start_time,end_time").gte("schedule_date",add(E.boardDate.value,-1)).lte("schedule_date",E.boardDate.value),sb.from("driver_downtime").select("id,driver_name,schedule_date,start_minute,end_minute,notes").gte("schedule_date",add(E.boardDate.value,-1)).lte("schedule_date",E.boardDate.value)]);if(tr.error){msg("Transfers could not load: "+tr.error.message,"error");items=[]}else items=(tr.data||[]).map(normalize);drivers=orderedUniq(["Planning",...(dr.error?[]:(dr.data||[]).map(x=>x.name)),...items.map(x=>x.driver)]);locations=uniq([...(lr.error?["Sunnyvale 100","Sunnyvale 200"]:(lr.data||[]).map(x=>x.name)),...items.flatMap(x=>[x.origin,x.destination,x.additional_stop,x.additional_stop_2]),"Sunnyvale 100","Sunnyvale 200"]);driverSchedule=sc.error?[]:(sc.data||[]);driverDowntime=dt.error?[]:(dt.data||[]);if(dt.error)msg("Could not load driver downtime: "+dt.error.message,"error");if(dr.error||lr.error){const details=[dr.error?"Drivers: "+dr.error.message:"",lr.error?"Locations: "+lr.error.message:""].filter(Boolean).join(" · ");msg("Could not load driver/location lists. "+details,"error")}renderOptions();renderBoard()}
 
 /* Apply live row changes locally; keep full loads for initial load/recovery. */
 let liveLaneTimer=null,liveFullRender=false;
