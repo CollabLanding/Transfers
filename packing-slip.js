@@ -39,7 +39,7 @@
   const part=line.parts?.[0]||{};
   group.innerHTML='<tr class="packing-part"><td>'+valueInput("packing-count",line.pallets||"","No. packages",'type="number" min="1" max="999" step="1"')+'</td>'+
    '<td><input type="checkbox" class="packing-hm" aria-label="Hazardous material" '+(line.parts?.some(p=>p.hm)?'checked':'')+'></td>'+
-   '<td><textarea class="packing-number" aria-label="Description of Articles, Special Marks and Exceptions" maxlength="2000" rows="2">'+esc(description)+'</textarea></td>'+
+   '<td><textarea class="packing-number" aria-label="Description of Articles, Special Marks and Exceptions" maxlength="2000" rows="1">'+esc(description)+'</textarea></td>'+
    '<td>'+valueInput("packing-un",part.un,"UN Number",'maxlength="80"')+'</td>'+
    '<td>'+valueInput("packing-weight",part.weight,"Weight",'maxlength="80"')+'</td>'+
    '<td>'+valueInput("packing-rate",part.rate,"Class or Rate",'maxlength="80"')+'</td></tr>';
@@ -70,7 +70,7 @@
    for(const group of section.querySelectorAll(".packing-line")){
     if([...group.querySelectorAll(".packing-number")].some(input=>input.value.trim()))n+=Number(group.querySelector(".packing-count")?.value)||0;
    }
-   sum+=n;section.querySelector(".packing-stop-total").textContent=n+" pallets";
+   sum+=n;if(section.querySelector(".packing-stop-total"))section.querySelector(".packing-stop-total").textContent=n+" pallets";
    section.querySelector(".bol-total").textContent=String(n);
   }
   $("packingDraftTotal").textContent="Total: "+(sum||(!saved?legacy:0))+" pallets";error.textContent="";
@@ -192,10 +192,8 @@
    if(stop&&!stopLocation(stop)&&!existing.length)continue;
    const section=document.createElement("section");section.className="packing-stop";section.dataset.stop=String(stop);
    const head=document.createElement("div");head.className="packing-line-head";
-   const title=document.createElement("h3");title.textContent=stopTitle(stop);
-   const subtotal=document.createElement("strong");subtotal.className="packing-stop-total";
    const print=document.createElement("button");print.type="button";print.textContent="Print / Save PDF";print.onclick=()=>printSlip(stop);
-   head.append(title,subtotal,print);
+
    const paper=document.createElement("div");paper.className="bol-paper";
    paper.innerHTML=printBolHeader(stop,route())+printFreightLines([])+printFooter;
    const table=paper.querySelector(".packing-freight-table");table.querySelector("tbody").remove();
@@ -207,9 +205,17 @@
    for(const line of content)addLine(line,table);
    while(table.querySelectorAll(".packing-line").length<14)addLine({},table);
    addPasteImporter(section,table,head);
+   const actions=document.createElement("div");actions.className="bol-form-actions";
+   const clear=document.createElement("button");clear.type="button";clear.textContent="Clear Form";
+   clear.onclick=()=>{
+    table.querySelectorAll(".packing-line").forEach(group=>group.remove());
+    for(let i=0;i<14;i++)addLine({},table);
+    refresh();resizeDescriptions();
+   };
+   actions.append(clear,print);section.append(actions);
 
   }
-  refresh();modal.showModal();if(addressError)error.textContent=addressError;
+  refresh();modal.showModal();resizeDescriptions();if(addressError)error.textContent=addressError;
  };
  function apply(lines){
   const previous=partNotes(saved||[]),notes=$("job"),next=partNotes(lines);
@@ -221,7 +227,13 @@
  }
  $("packingDone").onclick=()=>finish(true);$("packingClose").onclick=()=>finish();
  $("packingCancel").onclick=()=>modal.close();modal.addEventListener("cancel",e=>{e.preventDefault();finish()});
+ function resizeDescription(field){
+  field.style.height="0px";field.style.height=Math.max(16,field.scrollHeight)+"px";
+ }
+ function resizeDescriptions(){for(const field of list.querySelectorAll("textarea.packing-number"))resizeDescription(field)}
+ window.addEventListener("resize",()=>{if(modal.open)resizeDescriptions()});
  list.addEventListener("input",event=>{
+  if(event.target.matches("textarea.packing-number"))resizeDescription(event.target);
   const table=event.target.closest(".packing-freight-table");
   if(table&&event.target.closest(".packing-line")===table.querySelector(".packing-line:last-of-type")){
    if(table.querySelectorAll(".packing-line").length<100)addLine({},table);
