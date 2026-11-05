@@ -94,7 +94,7 @@
     const count=group.querySelector(".packing-count"),hm=group.querySelector(".packing-hm").checked;
     const un=group.querySelector(".packing-un").value.trim(),weight=group.querySelector(".packing-weight").value.trim(),rate=group.querySelector(".packing-rate").value.trim();
     if(!description&&!count.value&&!hm&&!un&&!weight&&!rate)continue;
-    if(!description)throw Error("Enter a description for each filled BOL row.");
+    if(!description&&!un)throw Error("Enter a description or part number for each filled BOL row.");
     if(!count.value||!count.checkValidity())throw Error("Enter 1 to 999 pallets for each filled BOL row.");
     const original=JSON.parse(group.dataset.original),unchanged=description===group.dataset.description;
     const parts=unchanged&&original.parts?.length?copy(original.parts):[{number:description.slice(0,120),pieces:null,description}];
@@ -114,24 +114,46 @@
 
  function parsePastedLoad(text){
   if(text.length>20000)throw Error("Paste no more than 20,000 characters at a time.");
-  const rows=[],warnings=[];let current=null,headings=0;
+  const rows=[],warnings=[];let current=null,headings=0,pendingPallets=null;
+  const checkedCount=value=>{
+   const count=Number(value.replace(/,/g,""));
+   if(!Number.isInteger(count)||count<1||count>999)throw Error("Pallet/skid counts must be whole numbers from 1 to 999.");
+   return count;
+  };
   const flush=()=>{if(current){rows.push(current);current=null}};
+  const attach=(row,count)=>{
+   if(count==null)return;
+   if(row.pallets!=null&&row.pallets!==count)throw Error("More than one pallet/skid count was found for "+row.un+". Review that row before importing.");
+   row.pallets=count;
+  };
   for(let raw of text.split(/\r?\n/)){
-   const line=raw.trim();if(!line||/^\++$/.test(line))continue;
+   let line=raw.trim();if(!line||/^\++$/.test(line))continue;
    if(/^(?:\d+(?:st|nd|rd|th)?\s+load|load\s*#?\s*\d+)\s*:?$/i.test(line)){
     headings++;if(headings>1)throw Error("Paste one load at a time into its matching stop.");continue;
    }
+   let pallets=null;
+   line=line.replace(/\b(\d[\d,]*(?:\.\d+)?)\s*(?:pallets?|skids?)\b|\b(?:pallets?|skids?)\b\s*[:=#]?\s*(\d[\d,]*(?:\.\d+)?)\b/gi,(_match,after,before)=>{
+    const count=checkedCount(after||before);
+    if(pallets!=null&&pallets!==count)throw Error("Conflicting pallet/skid counts were found on one line.");
+    pallets=count;return "";
+   }).replace(/^[\s,;:|+–—-]+|[\s,;:|+–—-]+$/g,"").trim();
+   if(!line){
+    if(current)attach(current,pallets);
+    else if(pallets!=null){if(pendingPallets!=null&&pendingPallets!==pallets)throw Error("Conflicting pallet/skid counts before a part number.");pendingPallets=pallets}
+    continue;
+   }
    const fill=line.match(/^fill\s+(?:remaining\s+space\s+)?with\s+([A-Z0-9]+(?:-[A-Z0-9]+)+)\s*$/i);
-   if(fill){flush();rows.push({un:fill[1],description:"Fill remaining space"});continue}
+   if(fill){flush();const row={un:fill[1],description:"Fill remaining space"};attach(row,pendingPallets);attach(row,pallets);pendingPallets=null;rows.push(row);continue}
    if(current&&/^[\d,.]+(?:\s*[-–]\s*[\d,.]+)?\s+(?:sheets?|pieces?|pcs|units?|cases?)$/i.test(line)){
-    current.description+=(current.description?"\n":"")+line;continue;
+    current.description+=(current.description?"\n":"")+line;attach(current,pallets);continue;
    }
    const part=line.match(/^([A-Z0-9]+(?:-[A-Z0-9]+)+)(?:\s*[:|,\t]\s*|\s+)?(.*)$/i);
-   if(part){flush();current={un:part[1],description:part[2].trim()};continue}
-   if(current)current.description+=(current.description?"\n":"")+line;
-   else warnings.push(line);
+   if(part){flush();current={un:part[1],description:part[2].trim()};attach(current,pendingPallets);attach(current,pallets);pendingPallets=null;continue}
+   if(current){current.description+=(current.description?"\n":"")+line;attach(current,pallets)}
+   else{warnings.push(raw.trim());if(pallets!=null)pendingPallets=pallets}
   }
   flush();
+  if(pendingPallets!=null)warnings.push(pendingPallets+" pallets without a part number");
   if(!rows.length)throw Error("No part numbers were found. Paste part numbers with their quantities below or beside them.");
   if(rows.length>100)throw Error("Import no more than 100 rows at a time.");
   for(const row of rows)if(row.un.length>80||row.description.length>2000)throw Error("A pasted row is too long for the BOL.");
@@ -150,8 +172,8 @@
   panel.querySelector(".bol-import-preview").onclick=()=>{
    try{
     parsed=parsePastedLoad(source.value);
-    results.innerHTML='<table><thead><tr><th>UN Number / Part number</th><th>Description</th><th>No. Pallets</th></tr></thead><tbody>'+parsed.rows.map(row=>'<tr><td>'+esc(row.un)+'</td><td>'+esc(row.description).replace(/\n/g,"<br>")+'</td><td>1 when description is filled</td></tr>').join("")+'</tbody></table>';
-    message.textContent=parsed.rows.length+" rows found. Each description defaults to 1 pallet. Pallet counts can be edited in the BOL."+(parsed.warnings.length?" Unmatched text: "+parsed.warnings.join(" | "):"");
+    results.innerHTML='<table><thead><tr><th>UN Number / Part number</th><th>Description</th><th>No. Pallets</th></tr></thead><tbody>'+parsed.rows.map(row=>'<tr><td>'+esc(row.un)+'</td><td>'+esc(row.description).replace(/\n/g,"<br>")+'</td><td>'+esc(row.pallets??(row.description?1:""))+'</td></tr>').join("")+'</tbody></table>';
+    message.textContent=parsed.rows.length+" rows found. Pallet and skid counts are recognized. Described rows without a count default to 1 pallet; all counts remain editable."+(parsed.warnings.length?" Unmatched text: "+parsed.warnings.join(" | "):"");
     applyButton.disabled=false;
    }catch(e){parsed=null;applyButton.disabled=true;results.replaceChildren();message.textContent=e.message}
   };
@@ -163,7 +185,7 @@
    if(otherFilled+(replace?0:existing.length)+newRows.length>100){message.textContent="Use no more than 100 filled BOL rows across all stops.";return}
    if(replace&&existing.length&&!confirm("Replace the line items for this stop? Header and signature fields will be kept."))return;
    for(const group of groups)if(replace||!rowHasData(group))group.remove();
-   for(const row of newRows)addLine({pallets:0,parts:[{number:row.un,un:row.un,description:row.description,pieces:null}]},table);
+   for(const row of newRows)addLine({pallets:row.pallets??0,parts:[{number:row.un,un:row.un,description:row.description,pieces:null}]},table);
    while(table.querySelectorAll(".packing-line").length<14)addLine({},table);
    if(table.querySelectorAll(".packing-line").length<100)addLine({},table);
    panel.hidden=true;refresh();
