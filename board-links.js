@@ -5,39 +5,44 @@ window.createBoardLinks=function({sb,grid,getDate,getUser,getJobs,getStatuses,ap
  function nodes(){return [...getJobs().map(r=>({key:'job:'+r.id,kind:'job',id:r.id,driver:r.driver,date:r.scheduled_date,start:mins(r.scheduled_time),end:mins(r.scheduled_time)+r.duration_minutes,row:r})),...getStatuses().map(r=>({key:'status:'+r.id,kind:'status',id:r.id,driver:r.driver,date:r.scheduled_date,start:r.start_minutes,end:r.end_minutes,row:r}))]}
  function keysFor(key){const ids=new Set([key]);let changed=true;while(changed){changed=false;for(const e of edges){if(ids.has(e.source_key)||ids.has(e.target_key)){for(const k of [e.source_key,e.target_key])if(!ids.has(k)){ids.add(k);changed=true}}}}return ids}
  function group(key){const ids=keysFor(key);return nodes().filter(n=>ids.has(n.key))}
- function resizeFollowers(key){
+ function resizeFollowers(key,above=false){
   const all=nodes(),anchor=all.find(n=>n.key===key);if(!anchor)return [];
   const ids=new Set([key]);let changed=true;
   while(changed){changed=false;for(const e of edges)for(const [a,b] of [[e.source_key,e.target_key],[e.target_key,e.source_key]]){
    const n=all.find(n=>n.key===b);
-   if(ids.has(a)&&!ids.has(b)&&n&&n.start>anchor.start&&n.driver===anchor.driver&&n.date===anchor.date){ids.add(b);changed=true}
+   if(ids.has(a)&&!ids.has(b)&&n&&(above?n.start<anchor.start:n.start>anchor.start)&&n.driver===anchor.driver&&n.date===anchor.date){ids.add(b);changed=true}
   }}
   return all.filter(n=>n.key!==key&&ids.has(n.key));
  }
- function resizeBounds(key){const anchor=nodes().find(n=>n.key===key);if(!anchor)return {minEnd:start,maxEnd:end};const followers=resizeFollowers(key);return {minEnd:Math.max(start,...followers.map(n=>anchor.end+start-n.start)),maxEnd:Math.min(end,...followers.map(n=>anchor.end+end-n.end))}}
+ function resizeBounds(key){
+  const anchor=nodes().find(n=>n.key===key);if(!anchor)return {minStart:start,maxStart:end,minEnd:start,maxEnd:end};
+  const below=resizeFollowers(key),above=resizeFollowers(key,true);
+  return {minStart:Math.max(start,...above.map(n=>anchor.start+start-n.start)),maxStart:Math.min(end,...above.map(n=>anchor.start+end-n.end)),
+   minEnd:Math.max(start,...below.map(n=>anchor.end+start-n.start)),maxEnd:Math.min(end,...below.map(n=>anchor.end+end-n.end))};
+ }
  let resizePreview=[];
  function clearResizePreview(){for(const {el,top}of resizePreview)if(el.isConnected)el.style.top=top;resizePreview=[];window.TransferChainVisual.renderLinks(grid,edges)}
- function previewResize(key,finish){
+ function previewResize(key,finish,begin){
   clearResizePreview();const anchor=nodes().find(n=>n.key===key);if(!anchor)return;
-  const delta=finish-anchor.end;
-  for(const n of resizeFollowers(key))for(const el of grid.querySelectorAll('[data-box-key],.slot-status-delete')){
+  const above=resizeFollowers(key,true),aboveIds=new Set(above.map(n=>n.key)),delta=finish-anchor.end,topDelta=(begin??anchor.start)-anchor.start;
+  for(const n of [...above,...resizeFollowers(key)])for(const el of grid.querySelectorAll('[data-box-key],.slot-status-delete')){
    const match=el.dataset.boxKey===n.key||(n.kind==='status'&&el.dataset.statusId===n.id);
-   if(match){resizePreview.push({el,top:el.style.top});el.style.top=(parseFloat(el.style.top)+delta/15*px)+'px'}
+   if(match){resizePreview.push({el,top:el.style.top});el.style.top=(parseFloat(el.style.top)+(aboveIds.has(n.key)?topDelta:delta)/15*px)+'px'}
   }
   window.TransferChainVisual.renderLinks(grid,edges);
  }
  async function resize(key,begin,finish){
   if(busy)return false;if(!ready){report('Links are still loading. Try again in a moment.','error');return false}
   const all=nodes(),anchor=all.find(n=>n.key===key);if(!anchor)return false;
-  const followers=resizeFollowers(key),delta=finish-anchor.end;
-  const changed=[{...anchor,start:begin,end:finish},...followers.map(n=>({...n,start:n.start+delta,end:n.end+delta}))];
+  const followers=resizeFollowers(key),above=resizeFollowers(key,true),delta=finish-anchor.end,topDelta=begin-anchor.start;
+  const changed=[{...anchor,start:begin,end:finish},...followers.map(n=>({...n,start:n.start+delta,end:n.end+delta})),...above.map(n=>({...n,start:n.start+topDelta,end:n.end+topDelta}))];
   if(changed.some(n=>n.start<start||n.end>end)){report('All linked boxes must fit within the board hours.','error');return false}
   const ids=new Set(changed.map(n=>n.key)),statuses=all.filter(n=>n.kind==='status'&&!ids.has(n.key)).concat(changed.filter(n=>n.kind==='status'));
   if(statuses.some((n,i)=>statuses.some((o,j)=>i<j&&n.driver===o.driver&&n.date===o.date&&n.start<o.end&&n.end>o.start&& (ids.has(n.key)||ids.has(o.key))))){report('A linked status would overlap another status.','error');return false}
   busy=true;
   try{let result;if(sb){const r=await sb.rpc('resize_board_link_group',{p_anchor:key,p_start:begin,p_end:finish,p_expected_start:anchor.start,p_expected_end:anchor.end});if(r.error)throw r.error;result=r.data}
    else{const jobs=[],statuses=[];for(const n of changed){const row={...n.row};if(n.kind==='job'){row.scheduled_time=String(Math.floor(n.start/60)).padStart(2,'0')+':'+String(n.start%60).padStart(2,'0');row.duration_minutes=n.end-n.start;row.updated_at=new Date().toISOString();jobs.push(row)}else{row.start_minutes=n.start;row.end_minutes=n.end;statuses.push(row)}}result={jobs,statuses}}
-   clearResizePreview();applyMove(result);report(followers.length&&delta?'Box resized; linked boxes below followed.':'Box resized.','ok');return true;
+   clearResizePreview();applyMove(result);report((followers.length&&delta)||(above.length&&topDelta)?'Box resized; linked boxes followed.':'Box resized.','ok');return true;
   }catch(e){report('Could not resize linked boxes: '+e.message,'error');return false}finally{busy=false}
  }
  function landing(key,raw){const all=nodes(),anchor=all.find(n=>n.key===key),members=group(key);if(!anchor)return raw;return Math.max(start-Math.min(...members.map(n=>n.start-anchor.start)),Math.min(end-Math.max(...members.map(n=>n.end-anchor.start)),raw))}
