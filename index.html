@@ -38,6 +38,17 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
  html[data-left-sidebar-access="false"][data-sidebar-access="false"] body main.transfer-layout{grid-template-columns:minmax(0,1fr)!important}
 }
 .packing-stop{border-bottom:1px solid var(--border);padding:12px 0 18px;margin-bottom:12px}.packing-stop h3{margin:0;font-size:16px}.packing-stop>.packing-line-head{gap:12px;flex-wrap:wrap}.packing-stop>.packing-line-head button{white-space:nowrap}
+@media print{
+ #packingPrintSheet .packing-slip-footer{margin-top:24px;padding:9px 6px 6px;border:1px solid #000;font:8pt Arial,sans-serif;line-height:1.25;break-inside:avoid;page-break-inside:avoid;color:#000}
+ .packing-declared{display:grid;grid-template-columns:1.8fr 1fr;gap:10px;align-items:end;margin-bottom:12px}
+ .packing-declared>div:last-child{display:flex;align-items:end;gap:4px}
+ .packing-blank{display:inline-block;min-height:17px;flex:1;border-bottom:1px solid #999;background:#f2f3fa;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ .packing-value{width:100px;min-height:13px;vertical-align:bottom}
+ .packing-signatures{display:grid;grid-template-columns:1.2fr 1fr;gap:12px}
+ .packing-sign-row{display:flex;align-items:end;gap:5px;min-height:22px}
+ .packing-sign-row>span:first-child{font-size:7pt;white-space:nowrap}
+ .packing-hazmat{margin-top:8px;font-size:8pt}
+}
 </style>
 <style>
 .pallet-number-field{position:relative;display:block;overflow:visible}
@@ -268,7 +279,7 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
  <div class="packing-actions"><div><button id="packingCancel" type="button">Cancel</button> <button id="packingDone" type="button" class="primary">Done</button></div></div>
 </dialog>
 <article id="packingPrintSheet"></article>
-<script src="packing-slip.js?v=20261105-part-notes"></script>
+<script src="packing-slip.js?v=20261105-print-footer"></script>
 <script src="app.js?v=20261105-linked-push"></script>
 <script src="order-status.js?v=20261009-permissions"></script>
 <script src="recent-activity.js?v=20261009-permissions"></script>
