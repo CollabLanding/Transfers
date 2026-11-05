@@ -28,35 +28,21 @@
  function valueInput(className,value,label,extra=""){
   return '<input class="'+className+'" aria-label="'+esc(label)+'" value="'+esc(value)+'" '+extra+'>';
  }
- function addPart(group,part={}){
-  const first=!group.querySelector(".packing-part");
-  const row=document.createElement("tr");row.className="packing-part";
-  row.innerHTML='<td>'+(first?valueInput("packing-count",group.dataset.pallets,"Pallets",'type="number" min="1" max="999" step="1" required'):'')+'</td>'+
-   '<td><input type="checkbox" class="packing-hm" aria-label="Hazardous material" '+(part.hm?'checked':'')+'></td>'+
-   '<td><div class="bol-description">'+valueInput("packing-number",part.number,"Part number",'maxlength="120" placeholder="Part number"')+
-   '<div class="bol-pieces"><span>Pieces per pallet:</span>'+valueInput("packing-pieces",part.pieces,"Pieces per pallet",'maxlength="20" placeholder="Count or range"')+'</div></div><button type="button" class="bol-editor-control packing-remove-part" aria-label="Remove part">×</button></td>'+
-   '<td>'+valueInput("packing-un",part.un,"UN Number",'maxlength="80"')+'</td>'+
-   '<td>'+valueInput("packing-weight",part.weight,"Weight",'maxlength="80"')+'</td>'+
-   '<td>'+valueInput("packing-rate",part.rate,"Class or Rate",'maxlength="80"')+'</td>';
-  row.querySelector(".packing-remove-part").onclick=()=>{
-   if(group.querySelectorAll(".packing-part").length>1){
-    const count=row.querySelector(".packing-count");
-    if(count){const next=row.nextElementSibling;if(next?.classList.contains("packing-part"))next.firstElementChild.append(count)}
-    row.remove();
-   }else{
-    row.querySelectorAll("input:not(.packing-count)").forEach(input=>{if(input.type==="checkbox")input.checked=false;else input.value=""});
-   }
-   refresh();
-  };
-  group.insertBefore(row,group.querySelector(".bol-line-actions"));
+ function lineDescription(line){
+  return (line.parts||[]).map(part=>part.description??(part.number+(part.pieces!=null?" — "+part.pieces+" pieces per pallet":""))).join("\n")+(line.notes?"\n"+line.notes:"");
  }
  function addLine(line={},table){
-  const group=document.createElement("tbody");group.className="packing-line";group.dataset.pallets=String(line.pallets||1);
-  group.innerHTML='<tr class="bol-line-actions"><td></td><td></td><td colspan="4"><label>Line notes '+valueInput("packing-notes",line.notes,"Line notes",'maxlength="500"')+'</label><div class="bol-editor-control bol-row-actions"><button type="button" class="packing-add-part">Add Part</button><button type="button" class="packing-remove">Remove Line</button></div></td></tr>';
-  for(const part of line.parts?.length?line.parts:[{}])addPart(group,part);
-  group.querySelector(".packing-add-part").onclick=()=>{if(group.querySelectorAll(".packing-part").length<30)addPart(group)};
-  group.querySelector(".packing-remove").onclick=()=>{group.remove();refresh()};
-  table.insertBefore(group,table.querySelector(".bol-pad")||table.querySelector("tfoot"));refresh();
+  const group=document.createElement("tbody");group.className="packing-line";
+  const description=lineDescription(line);
+  group.dataset.original=JSON.stringify(line);group.dataset.description=description;
+  const part=line.parts?.[0]||{};
+  group.innerHTML='<tr class="packing-part"><td>'+valueInput("packing-count",line.pallets||"","No. packages",'type="number" min="1" max="999" step="1"')+'</td>'+
+   '<td><input type="checkbox" class="packing-hm" aria-label="Hazardous material" '+(line.parts?.some(p=>p.hm)?'checked':'')+'></td>'+
+   '<td><textarea class="packing-number" aria-label="Description of Articles, Special Marks and Exceptions" maxlength="2000" rows="2">'+esc(description)+'</textarea></td>'+
+   '<td>'+valueInput("packing-un",part.un,"UN Number",'maxlength="80"')+'</td>'+
+   '<td>'+valueInput("packing-weight",part.weight,"Weight",'maxlength="80"')+'</td>'+
+   '<td>'+valueInput("packing-rate",part.rate,"Class or Rate",'maxlength="80"')+'</td></tr>';
+  table.insertBefore(group,table.querySelector("tfoot"));
  }
  const bolFields=section=>[...section.querySelectorAll("[data-bol-field]")];
  function readBol(section){
@@ -85,15 +71,6 @@
    }
    sum+=n;section.querySelector(".packing-stop-total").textContent=n+" pallets";
    section.querySelector(".bol-total").textContent=String(n);
-   const table=section.querySelector(".packing-freight-table");
-   table.querySelector(".bol-pad")?.remove();
-   const pad=document.createElement("tbody");pad.className="bol-pad";
-   for(let i=table.querySelectorAll(".packing-part").length;i<14;i++){
-    const row=document.createElement("tr");row.innerHTML="<td></td><td></td><td></td><td></td><td></td><td></td>";
-    row.title="Click to add a pallet line";row.onclick=()=>{if(list.querySelectorAll(".packing-line").length<100){addLine({},table);table.querySelectorAll(".packing-number").item(table.querySelectorAll(".packing-number").length-1)?.focus()}};
-    pad.append(row);
-   }
-   table.insertBefore(pad,table.querySelector("tfoot"));
   }
   $("packingDraftTotal").textContent="Total: "+(sum||(!saved?legacy:0))+" pallets";error.textContent="";
  }
@@ -103,21 +80,16 @@
    const stop=Number(section.dataset.stop),bol=readBol(section),stopLines=[];
    if(Object.values(bol).some(value=>typeof value==="string"&&value.length>2000))throw Error("Keep each BOL field under 2,000 characters.");
    for(const group of section.querySelectorAll(".packing-line")){
-    const parts=[];
-    for(const row of group.querySelectorAll(".packing-part")){
-     const number=row.querySelector(".packing-number").value.trim(),raw=row.querySelector(".packing-pieces").value.trim();
-     const pieces=raw.replace(/[–—]/g,"-").replace(/\s*-\s*/g,"-");
-     const un=row.querySelector(".packing-un").value.trim(),weight=row.querySelector(".packing-weight").value.trim(),rate=row.querySelector(".packing-rate").value.trim(),hm=row.querySelector(".packing-hm").checked;
-     if(!number&&!raw&&!un&&!weight&&!rate&&!hm)continue;
-     if(!number)throw Error("Enter a part number on each filled freight row.");
-     if(pieces&&(!/^[1-9][0-9]{0,5}(-[1-9][0-9]{0,5})?$/.test(pieces)||(pieces.includes("-")&&Number(pieces.split("-")[0])>Number(pieces.split("-")[1]))))throw Error("Pieces per pallet must be a count or range, such as 2000 or 10-20.");
-     parts.push({number,pieces:pieces?(pieces.includes("-")?pieces:Number(pieces)):null,hm,un,weight,rate});
-    }
-    const notes=group.querySelector(".packing-notes").value.trim();
-    if(!parts.length){if(notes)throw Error("Enter a part number for the line with notes.");continue}
-    const count=group.querySelector(".packing-count");
-    if(!count.checkValidity())throw Error("Enter 1 to 999 pallets for each filled line.");
-    stopLines.push({pallets:Number(count.value),parts,notes,stop});
+    const description=group.querySelector(".packing-number").value.trim();
+    const count=group.querySelector(".packing-count"),hm=group.querySelector(".packing-hm").checked;
+    const un=group.querySelector(".packing-un").value.trim(),weight=group.querySelector(".packing-weight").value.trim(),rate=group.querySelector(".packing-rate").value.trim();
+    if(!description&&!count.value&&!hm&&!un&&!weight&&!rate)continue;
+    if(!description)throw Error("Enter a description for each filled BOL row.");
+    if(!count.value||!count.checkValidity())throw Error("Enter 1 to 999 packages for each filled BOL row.");
+    const original=JSON.parse(group.dataset.original),unchanged=description===group.dataset.description;
+    const parts=unchanged&&original.parts?.length?copy(original.parts):[{number:description.slice(0,120),pieces:null,description}];
+    Object.assign(parts[0],{hm,un,weight,rate});
+    stopLines.push({pallets:Number(count.value),parts,notes:unchanged?(original.notes||""):"",stop});
    }
    if(stopLines.length){stopLines[0].bol=bol;lines.push(...stopLines)}
    else if(section.dataset.hasBol==="true"||JSON.stringify(bol)!==section.dataset.baseline){
@@ -148,10 +120,9 @@
    const form=existing.find(line=>line.bol)?.bol;
    section.dataset.hasBol=String(Boolean(form));prepareFields(section,form);
    const content=existing.filter(line=>line.parts?.length);
-   if(content.length)for(const line of content)addLine(line,table);else addLine({},table);
-   const add=document.createElement("button");add.type="button";add.className="bol-editor-control bol-add-line";add.textContent="Add Line";
-   add.onclick=()=>{if(list.querySelectorAll(".packing-line").length<100)addLine({},table)};
-   paper.querySelector(".packing-freight-layout").after(add);
+   for(const line of content)addLine(line,table);
+   while(table.querySelectorAll(".packing-line").length<14)addLine({},table);
+
   }
   refresh();modal.showModal();
  };
@@ -165,7 +136,16 @@
  }
  $("packingDone").onclick=()=>finish(true);$("packingClose").onclick=()=>finish();
  $("packingCancel").onclick=()=>modal.close();modal.addEventListener("cancel",e=>{e.preventDefault();finish()});
- list.addEventListener("input",refresh);
+ list.addEventListener("input",event=>{
+  const table=event.target.closest(".packing-freight-table");
+  if(table&&event.target.closest(".packing-line")===table.querySelector(".packing-line:last-of-type")){
+   if(table.querySelectorAll(".packing-line").length<100)addLine({},table);
+  }else if(table){
+   const groups=[...table.querySelectorAll(".packing-line")];
+   if(event.target.closest(".packing-line")===groups.at(-1)&&groups.length<100)addLine({},table);
+  }
+  refresh();
+ });
  function printSlip(stop){
   try{
    const lines=read(),selected=lines.filter(line=>(line.stop||0)===stop);
@@ -176,20 +156,19 @@
    paper.querySelector(".bol-pad")?.remove();
    for(const group of paper.querySelectorAll(".packing-line")){
     if(![...group.querySelectorAll(".packing-number")].some(input=>input.value.trim())){group.remove();continue}
-    const notes=group.querySelector(".packing-notes");
-    if(!notes.value.trim())group.querySelector(".bol-line-actions").remove();
+
    }
    const table=paper.querySelector(".packing-freight-table");
    const blanks=document.createElement("tbody");
    for(let i=paper.querySelectorAll(".packing-part").length;i<14;i++){const row=document.createElement("tr");row.className="freight-empty";row.innerHTML="<td></td><td></td><td></td><td></td><td></td><td></td>";blanks.append(row)}
    table.insertBefore(blanks,table.querySelector("tfoot"));
    paper.querySelectorAll(".bol-editor-control").forEach(el=>el.remove());
-   for(const input of paper.querySelectorAll("input")){
+   for(const input of paper.querySelectorAll("input,textarea")){
     const span=document.createElement("span");span.className="bol-printed-value";span.textContent=input.type==="checkbox"?(input.checked?"X":""):input.value;input.replaceWith(span);
    }
    paper.querySelectorAll("[contenteditable]").forEach(el=>{el.removeAttribute("contenteditable");el.removeAttribute("role")});
    // Blank freight entry rows and empty line-note labels are editing aids.
-   paper.querySelectorAll(".packing-part").forEach(row=>{if(!row.querySelector(".bol-description")?.textContent.trim())row.remove()});
+
    $("packingPrintSheet").replaceChildren(...paper.childNodes);
    document.body.classList.add("printing-packing-slip");
    try{window.print()}finally{document.body.classList.remove("printing-packing-slip")}
