@@ -382,15 +382,15 @@ function beginTransferResize(e,x,b,edge){
    b.style.top=(((nextStart-GRID_START)/15)*PX15)+"px";
    b.style.height=Math.max(22,(nextDuration/15)*PX15)+"px";
    b.dataset.resizeLabel=fmt(minToTime(nextStart))+" · "+durationLabel(nextDuration);
-   syncResizeForm(x.id,nextStart,nextDuration);window.TransferEditors?.render();boxLinks.previewResize('job:'+x.id,nextStart+nextDuration)
+   syncResizeForm(x.id,nextStart,nextDuration);window.TransferEditors?.render();boxLinks.previewResize('job:'+x.id,nextStart+nextDuration,nextStart)
  };
  const move=ev=>{
    ev.preventDefault();
    window.startTransferAutoScroll?.(ev.clientX,ev.clientY);
    const point=pointerMinutes(ev.clientY);
    if(edge==="top"){
-     const minStart=Math.max(GRID_START,originalEnd-720);
-     nextStart=Math.max(minStart,Math.min(originalEnd-15,point));
+     const bounds=boxLinks.resizeBounds('job:'+x.id),minStart=Math.max(GRID_START,originalEnd-720,bounds.minStart);
+     nextStart=Math.max(minStart,Math.min(originalEnd-15,bounds.maxStart,point));
      nextDuration=originalEnd-nextStart
    }else{
      const bounds=boxLinks.resizeBounds('job:'+x.id),maxEnd=Math.min(GRID_END,originalStart+720,bounds.maxEnd);
