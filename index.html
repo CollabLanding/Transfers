@@ -271,6 +271,21 @@ body.printing-packing-slip{height:auto!important;overflow:visible!important;back
  #packingPrintSheet .packing-freight-table td{padding:2px 4px;height:auto}
 }
 </style>
+<style>
+/* HM checkboxes must not inherit the site's large generic input minimum. */
+#packingSlip #packingLines .bol-paper .packing-freight-table input[type="checkbox"]{
+ box-sizing:border-box!important;width:12px!important;min-width:12px!important;max-width:12px!important;
+ height:12px!important;min-height:12px!important;max-height:12px!important;
+ padding:0!important;margin:4px auto!important;appearance:auto!important
+}
+#packingSlip #packingLines .bol-paper .packing-freight-table .packing-part{height:24px}
+@media print{
+ #packingPrintSheet .packing-freight-table td{padding:1px 4px;line-height:16px}
+ #packingPrintSheet .packing-freight-table .packing-part,#packingPrintSheet .packing-freight-table .freight-empty{height:24px}
+ #packingPrintSheet .packing-freight-table .freight-empty td{height:auto}
+ #packingPrintSheet .packing-freight-table .bol-printed-value{box-sizing:border-box;min-height:20px;padding:2px 4px;margin:0;font:700 12px/16px Arial,sans-serif;white-space:pre-wrap}
+}
+</style>
 </head>
 <body class="header-scroll-shell">
 <header>
