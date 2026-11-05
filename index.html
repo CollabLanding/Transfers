@@ -286,6 +286,42 @@ body.printing-packing-slip{height:auto!important;overflow:visible!important;back
  #packingPrintSheet .packing-freight-table .bol-printed-value{box-sizing:border-box;min-height:20px;padding:2px 4px;margin:0;font:700 12px/16px Arial,sans-serif;white-space:pre-wrap}
 }
 </style>
+<style>
+/* Keep BOL document styling independent of the application's sidebar and table defaults. */
+:is(#packingSlip #packingLines .bol-paper,#packingPrintSheet) .packing-freight-layout{
+ align-items:start;border:1px solid #000;border-top:0;gap:0
+}
+:is(#packingSlip #packingLines .bol-paper,#packingPrintSheet) .packing-freight-table{
+ border-collapse:collapse;border-spacing:0;align-self:start
+}
+:is(#packingSlip #packingLines .bol-paper,#packingPrintSheet) .packing-freight-table th,
+:is(#packingSlip #packingLines .bol-paper,#packingPrintSheet) .packing-freight-table td{
+ border:1px solid #000!important;vertical-align:top
+}
+:is(#packingSlip #packingLines .bol-paper,#packingPrintSheet) .packing-freight-table tbody tr{height:24px}
+:is(#packingSlip #packingLines .bol-paper,#packingPrintSheet) .packing-freight-terms{
+ display:block!important;gap:0!important;align-self:stretch;padding:5px 6px;
+ font:7pt/1.15 Arial,sans-serif;border-left:1px solid #000
+}
+:is(#packingSlip #packingLines .bol-paper,#packingPrintSheet) .packing-freight-terms p{margin:0 0 6px}
+:is(#packingSlip #packingLines .bol-paper,#packingPrintSheet) .packing-freight-terms small{display:block;font-size:6pt;line-height:1.15;margin:2px 0 6px}
+:is(#packingSlip #packingLines .bol-paper,#packingPrintSheet) .freight-signature-line{min-height:16px;margin:4px 0 0}
+:is(#packingSlip #packingLines .bol-paper,#packingPrintSheet) .freight-write-line{min-height:14px}
+:is(#packingSlip #packingLines .bol-paper,#packingPrintSheet) .packing-freight-terms .freight-cod{margin:6px 0;font-size:9pt}
+:is(#packingSlip #packingLines .bol-paper,#packingPrintSheet) .freight-address-lines{height:auto;min-height:24px}
+:is(#packingSlip #packingLines .bol-paper,#packingPrintSheet) .packing-freight-terms input[type=checkbox]{min-height:10px!important;height:10px!important;width:10px!important;margin:0 2px 0 0!important;padding:0!important;display:inline-block}
+@media print{
+ @page{size:letter;margin:.4in}
+ #packingPrintSheet{width:100%;height:auto!important;min-height:0!important}
+ #packingPrintSheet .packing-slip-footer{margin:0;break-inside:avoid}
+ #packingPrintSheet .packing-freight-table tbody tr{height:24px}
+ #packingPrintSheet .packing-freight-table td{height:auto!important;padding:1px 4px;line-height:16px}
+ #packingPrintSheet .packing-freight-table .freight-empty td{height:24px!important}
+}
+</style>
+<style>
+:is(#packingSlip #packingLines .bol-paper,#packingPrintSheet) .packing-freight-table th:first-child{font-size:7pt;white-space:nowrap;letter-spacing:0}
+</style>
 </head>
 <body class="header-scroll-shell">
 <header>
