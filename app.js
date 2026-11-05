@@ -2,7 +2,7 @@
 const C=window.TRANSFERS_CONFIG||{},live=!!(C.supabaseUrl&&C.supabaseAnonKey),sb=live?window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey):null;
 let editorPresenceReady=false;
 const editorTabId=crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random();
-let user=null,profile=null,items=[],drivers=[],locations=[],driverSchedule=[],presence=null,dataChannel=null,optionContext=null,ignoreClickUntil=0,draggedDriver=null,draggedTransferId=null,dragGrabOffsetPx=0,audioCtx=null,lastPlanningDing=0,transferInfoBaseline=null;
+let user=null,profile=null,items=[],drivers=[],locations=[],driverSchedule=[],driverDowntime=[],presence=null,dataChannel=null,optionContext=null,ignoreClickUntil=0,draggedDriver=null,draggedTransferId=null,dragGrabOffsetPx=0,audioCtx=null,lastPlanningDing=0,transferInfoBaseline=null;
 let transferAutoScrollFrame=0,transferAutoScrollX=0,transferAutoScrollY=0,transferAutoScrollUpdated=0;
 const $=id=>document.getElementById(id),E={form:$("form"),edit:$("editId"),date:$("date"),time:$("time"),duration:$("duration"),driver:$("driver"),origin:$("origin"),destination:$("destination"),dock:$("dock"),additionalStop:$("additionalStop"),additionalStop2:$("additionalStop2"),pallet:$("pallet"),job:$("job"),status:$("status"),urgent:$("urgent"),save:$("save"),del:$("delete"),cancel:$("cancel"),textDriver:$("textDriver"),msg:$("msg"),slotStatusEditor:$("slotStatusEditor"),slotStatusTitle:$("slotStatusTitle"),slotStatusMeta:$("slotStatusMeta"),slotStatusNotes:$("slotStatusNotes"),slotStatusSave:$("slotStatusSave"),slotStatusCancel:$("slotStatusCancel"),slotStatusClose:$("slotStatusClose"),slotStatusMsg:$("slotStatusMsg"),boardDate:$("boardDate"),grid:$("grid"),title:$("title"),currentTime:$("scheduleCurrentTime"),mode:$("mode"),me:$("me"),email:$("email"),active:$("active"),login:$("login"),loginForm:$("loginForm"),loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg"),signout:$("signout"),formTitle:$("formTitle"),optionModal:$("optionModal"),optionForm:$("optionForm"),optionTitle:$("optionTitle"),optionLabel:$("optionLabel"),optionName:$("optionName"),optionMsg:$("optionMsg"),optionClose:$("optionClose"),optionCancel:$("optionCancel"),statusHistory:$("statusHistory"),statusHistoryScreen:$("statusHistoryScreen"),statusHistoryBack:$("statusHistoryBack")};
 const key="transfers-demo-v2",driverKey="transfers-demo-drivers-v1",locationKey="transfers-demo-locations-v1",PX15=20,GRID_START=210,GRID_END=1320,GRID_HEIGHT=((GRID_END-GRID_START)/15)*PX15;
@@ -240,6 +240,18 @@ function applyDriverScheduleOverlay(lane,driver,date){
  for(const [a,b]of ranges){if(a>cursor)scheduleOverlay(lane,px(cursor),px(a)-px(cursor),"driver-unavailable-overlay");cursor=Math.max(cursor,b)}
  if(cursor<GRID_END)scheduleOverlay(lane,px(cursor),GRID_HEIGHT-px(cursor),"driver-unavailable-overlay");
 }
+function applyDriverDowntimeOverlay(lane,driver,date){
+ if(String(driver).trim().toLowerCase()==="planning")return;
+ const px=m=>(m-GRID_START)/15*PX15;
+ for(const gap of driverDowntime){
+  if(gap.driver_name!==driver)continue;
+  const offset=gap.schedule_date===date?0:gap.schedule_date===add(date,-1)?-1440:null;
+  if(offset===null)continue;
+  const start=Math.max(GRID_START,Number(gap.start_minute)+offset),end=Math.min(GRID_END,Number(gap.end_minute)+offset);
+  if(end<=start)continue;
+  scheduleOverlay(lane,px(start),px(end)-px(start),"driver-downtime-overlay","DOWNTIME · "+gap.reason);
+ }
+}
 function updateScheduleClock(){
   if(!E.currentTime)return;
   const now=new Date();
@@ -300,6 +312,7 @@ function renderBoard(){
    addGridLines(lane);
    lane.addEventListener("dragover",transferLaneDragOver);lane.addEventListener("dragleave",transferLaneDragLeave);lane.addEventListener("drop",dropCard);
    applyDriverScheduleOverlay(lane,d,date);
+   applyDriverDowntimeOverlay(lane,d,date);
    const laneItems=day.filter(x=>x.driver===d&&timeToMin(x.scheduled_time)>=GRID_START&&timeToMin(x.scheduled_time)<GRID_END);
    layoutLaneCards(laneItems).forEach(entry=>lane.appendChild(makeCard(entry.x,entry.top,entry.height,entry.stacked)));
    br.appendChild(lane)
@@ -430,15 +443,18 @@ async function loadLocationsWithFallback(){
 let boardScheduleRequest=0;
 async function loadBoardSchedule(){if(!window.TransfersAccess.can("view_board"))return;
   const requestedDate=E.boardDate.value,token=++boardScheduleRequest;
-  if(!live){driverSchedule=[];renderBoard();return}
-  const r=await sb.from("driver_schedules")
-    .select("driver_name,schedule_date,start_time,end_time")
-    .gte("schedule_date",add(requestedDate,-1)).lte("schedule_date",requestedDate);
+  if(!live){driverSchedule=[];driverDowntime=[];renderBoard();return}
+  const [r,dt]=await Promise.all([
+   sb.from("driver_schedules").select("driver_name,schedule_date,start_time,end_time").gte("schedule_date",add(requestedDate,-1)).lte("schedule_date",requestedDate),
+   sb.from("driver_downtime").select("id,driver_name,schedule_date,start_minute,end_minute,reason").gte("schedule_date",add(requestedDate,-1)).lte("schedule_date",requestedDate)
+  ]);
   if(token!==boardScheduleRequest||requestedDate!==E.boardDate.value)return;
   driverSchedule=r.error?[]:(r.data||[]);
+  driverDowntime=dt.error?[]:(dt.data||[]);
+  if(dt.error)msg("Could not load driver downtime: "+dt.error.message,"error");
   renderBoard();
 }
-async function loadData(){if(!window.TransfersAccess.can("view_board")){const r=await sb.rpc("get_transfer_board_options");items=[];driverSchedule=[];drivers=orderedUniq(["Planning",...(r.data?.drivers||[]).map(x=>x.name)]);locations=uniq((r.data?.locations||[]).map(x=>x.name));renderOptions();if(r.error)msg("Could not load form options: "+r.error.message,"error");return}if(!live){loadLocal();driverSchedule=[];renderOptions();renderBoard();return}const [tr,dr,lr,sc]=await Promise.all([sb.from("transfers").select("*").order("scheduled_date").order("scheduled_time"),loadDriversWithFallback(),loadLocationsWithFallback(),sb.from("driver_schedules").select("driver_name,schedule_date,start_time,end_time").gte("schedule_date",add(E.boardDate.value,-1)).lte("schedule_date",E.boardDate.value)]);if(tr.error){msg("Transfers could not load: "+tr.error.message,"error");items=[]}else items=(tr.data||[]).map(normalize);drivers=orderedUniq(["Planning",...(dr.error?[]:(dr.data||[]).map(x=>x.name)),...items.map(x=>x.driver)]);locations=uniq([...(lr.error?["Sunnyvale 100","Sunnyvale 200"]:(lr.data||[]).map(x=>x.name)),...items.flatMap(x=>[x.origin,x.destination,x.additional_stop,x.additional_stop_2]),"Sunnyvale 100","Sunnyvale 200"]);driverSchedule=sc.error?[]:(sc.data||[]);if(dr.error||lr.error){const details=[dr.error?"Drivers: "+dr.error.message:"",lr.error?"Locations: "+lr.error.message:""].filter(Boolean).join(" · ");msg("Could not load driver/location lists. "+details,"error")}renderOptions();renderBoard()}
+async function loadData(){if(!window.TransfersAccess.can("view_board")){const r=await sb.rpc("get_transfer_board_options");items=[];driverSchedule=[];drivers=orderedUniq(["Planning",...(r.data?.drivers||[]).map(x=>x.name)]);locations=uniq((r.data?.locations||[]).map(x=>x.name));renderOptions();if(r.error)msg("Could not load form options: "+r.error.message,"error");return}if(!live){loadLocal();driverSchedule=[];renderOptions();renderBoard();return}const [tr,dr,lr,sc,dt]=await Promise.all([sb.from("transfers").select("*").order("scheduled_date").order("scheduled_time"),loadDriversWithFallback(),loadLocationsWithFallback(),sb.from("driver_schedules").select("driver_name,schedule_date,start_time,end_time").gte("schedule_date",add(E.boardDate.value,-1)).lte("schedule_date",E.boardDate.value),sb.from("driver_downtime").select("id,driver_name,schedule_date,start_minute,end_minute,reason").gte("schedule_date",add(E.boardDate.value,-1)).lte("schedule_date",E.boardDate.value)]);if(tr.error){msg("Transfers could not load: "+tr.error.message,"error");items=[]}else items=(tr.data||[]).map(normalize);drivers=orderedUniq(["Planning",...(dr.error?[]:(dr.data||[]).map(x=>x.name)),...items.map(x=>x.driver)]);locations=uniq([...(lr.error?["Sunnyvale 100","Sunnyvale 200"]:(lr.data||[]).map(x=>x.name)),...items.flatMap(x=>[x.origin,x.destination,x.additional_stop,x.additional_stop_2]),"Sunnyvale 100","Sunnyvale 200"]);driverSchedule=sc.error?[]:(sc.data||[]);driverDowntime=dt.error?[]:(dt.data||[]);if(dt.error)msg("Could not load driver downtime: "+dt.error.message,"error");if(dr.error||lr.error){const details=[dr.error?"Drivers: "+dr.error.message:"",lr.error?"Locations: "+lr.error.message:""].filter(Boolean).join(" · ");msg("Could not load driver/location lists. "+details,"error")}renderOptions();renderBoard()}
 
 /* Apply live row changes locally; keep full loads for initial load/recovery. */
 let liveLaneTimer=null,liveFullRender=false;
@@ -493,7 +509,7 @@ async function refreshLiveOptions(){
  renderOptions();if(changed)queueLiveLanes([],true);
 }
 
-async function subscribe(){if(!window.TransfersAccess.can("view_board"))return;if(!live)return;editorPresenceReady=false;if(dataChannel)await sb.removeChannel(dataChannel);if(presence)await sb.removeChannel(presence);dataChannel=sb.channel("transfers-data").on("postgres_changes",{event:"INSERT",schema:"public",table:"transfers"},handleNewTransfer).on("postgres_changes",{event:"*",schema:"public",table:"transfers"},handleTransferRealtime).on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},refreshLiveOptions).on("postgres_changes",{event:"*",schema:"public",table:"transfer_locations"},refreshLiveOptions).on("postgres_changes",{event:"*",schema:"public",table:"driver_schedules"},loadBoardSchedule).on("postgres_changes",{event:"*",schema:"public",table:"transfer_slot_statuses"},payload=>slotStatuses.handleRealtime(payload)).on("postgres_changes",{event:"*",schema:"public",table:"board_box_links"},()=>boxLinks.refresh()).on("postgres_changes",{event:"UPDATE",schema:"public",table:"profiles",filter:"id=eq."+user.id},event=>{profile={...profile,...event.new};publishEditorPresence()}).subscribe();presence=sb.channel("transfers-active",{config:{presence:{key:user.id}}}).on("presence",{event:"sync"},()=>{const unique=new Map();Object.values(presence.presenceState()).forEach(v=>v.forEach(x=>{const id=x.user_id||x.email;if(id&&!unique.has(id))unique.set(id,x)}));renderUsers([...unique.values()]);window.TransferEditors?.sync(Object.values(presence.presenceState()).flat())}).subscribe(s=>{editorPresenceReady=s==="SUBSCRIBED";if(editorPresenceReady)publishEditorPresence();else window.TransferEditors?.sync([])})}
+async function subscribe(){if(!window.TransfersAccess.can("view_board"))return;if(!live)return;editorPresenceReady=false;if(dataChannel)await sb.removeChannel(dataChannel);if(presence)await sb.removeChannel(presence);dataChannel=sb.channel("transfers-data").on("postgres_changes",{event:"INSERT",schema:"public",table:"transfers"},handleNewTransfer).on("postgres_changes",{event:"*",schema:"public",table:"transfers"},handleTransferRealtime).on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},refreshLiveOptions).on("postgres_changes",{event:"*",schema:"public",table:"transfer_locations"},refreshLiveOptions).on("postgres_changes",{event:"*",schema:"public",table:"driver_schedules"},loadBoardSchedule).on("postgres_changes",{event:"*",schema:"public",table:"driver_downtime"},loadBoardSchedule).on("postgres_changes",{event:"*",schema:"public",table:"transfer_slot_statuses"},payload=>slotStatuses.handleRealtime(payload)).on("postgres_changes",{event:"*",schema:"public",table:"board_box_links"},()=>boxLinks.refresh()).on("postgres_changes",{event:"UPDATE",schema:"public",table:"profiles",filter:"id=eq."+user.id},event=>{profile={...profile,...event.new};publishEditorPresence()}).subscribe();presence=sb.channel("transfers-active",{config:{presence:{key:user.id}}}).on("presence",{event:"sync"},()=>{const unique=new Map();Object.values(presence.presenceState()).forEach(v=>v.forEach(x=>{const id=x.user_id||x.email;if(id&&!unique.has(id))unique.set(id,x)}));renderUsers([...unique.values()]);window.TransferEditors?.sync(Object.values(presence.presenceState()).flat())}).subscribe(s=>{editorPresenceReady=s==="SUBSCRIBED";if(editorPresenceReady)publishEditorPresence();else window.TransferEditors?.sync([])})}
 let statusNotesBaseline=null;
 function closeStatusEditor(showTransferForm=true){
   window.EditGuard?.unpin('transfer_slot_statuses');
