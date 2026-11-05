@@ -131,6 +131,91 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
  #packingPrintSheet .packing-freight-table tfoot td{background:#fff;border-top:1px solid #000;font-weight:bold;height:auto}
 }
 </style>
+<style>
+
+ .bol-paper .packing-slip-footer{margin-top:24px;padding:9px 6px 6px;border:1px solid #000;font:8pt Arial,sans-serif;line-height:1.25;break-inside:avoid;page-break-inside:avoid;color:#000}
+ .packing-declared{display:grid;grid-template-columns:1.8fr 1fr;gap:10px;align-items:end;margin-bottom:12px}
+ .packing-declared>div:last-child{display:flex;align-items:end;gap:4px}
+ .packing-blank{display:inline-block;min-height:17px;flex:1;border-bottom:1px solid #999;background:#f2f3fa;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ .packing-value{width:100px;min-height:13px;vertical-align:bottom}
+ .packing-signatures{display:grid;grid-template-columns:1.2fr 1fr;gap:12px}
+ .packing-sign-row{display:flex;align-items:end;gap:5px;min-height:22px}
+ .packing-sign-row>span:first-child{font-size:7pt;white-space:nowrap}
+ .packing-hazmat{margin-top:8px;font-size:8pt}
+
+body.printing-packing-slip{height:auto!important;overflow:visible!important;background:white!important;color:black!important}.bol-paper h2{font-size:14pt;break-after:avoid}.bol-paper table{width:100%;border-collapse:collapse}.bol-paper th,.bol-paper td{border:1px solid #aaa;padding:6px;text-align:left;overflow-wrap:anywhere}.bol-paper tr{break-inside:avoid}
+
+ .bol-paper .packing-freight-layout{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,1fr);align-items:stretch;margin-top:14px;border:1px solid #000}
+ .bol-paper .packing-freight-table{table-layout:fixed;width:100%;font:8pt Arial,sans-serif;border-collapse:collapse}
+ .bol-paper .packing-freight-table th,.bol-paper .packing-freight-table td{padding:3px 4px;border:0;border-right:1px solid #000;text-align:left;vertical-align:top;overflow-wrap:break-word}
+ .bol-paper .packing-freight-table th{font-weight:bold;line-height:1.1;border-bottom:1px solid #000}
+ .bol-paper .packing-freight-table td{height:21px;border-bottom:2px solid #fff;background:#f2f3fa;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ .bol-paper .packing-freight-table tr{break-inside:avoid}
+ .freight-hm-box{display:block;width:12px;height:8px;border:1px solid #c4c9d5;margin:2px auto}
+ .packing-freight-terms{padding:4px 5px;font:7pt Arial,sans-serif;line-height:1.15;color:#000;break-inside:avoid}
+ .packing-freight-terms p{margin:0 0 10px}
+ .packing-freight-terms small{font-size:6pt}
+ .freight-signature-line{border-bottom:1px solid #000;min-height:18px;margin-top:4px}
+ .packing-freight-terms small+p{margin-top:12px}
+ .freight-check{display:inline-block;width:9px;height:9px;border:1px solid #000;vertical-align:middle}
+ .freight-write-line{display:block;min-height:14px;background:#f2f3fa;border-bottom:1px solid #999}
+ .packing-freight-terms .freight-cod{display:flex;gap:3px;align-items:end;margin-top:12px;font-size:9pt}
+ .freight-cod .freight-write-line{flex:1}
+ .freight-address-lines{height:40px}
+ .bol-paper .packing-slip-footer{margin-top:0;border-top:0}
+
+
+ .bol-paper .bol-header{display:block;position:static;width:auto;height:auto;min-height:0;margin:0;padding:5px 10px 3px;border:1px solid #000;background:#fff;color:#000;font:8pt Arial,sans-serif;box-shadow:none;break-inside:avoid}
+ .bol-title{font-size:12pt;font-weight:900;line-height:1.15}
+ .bol-received{display:grid;grid-template-columns:1fr auto 100px;gap:5px;align-items:center;font-size:7pt}
+ .bol-field{display:block;min-width:0;min-height:17px;background:#f2f3fa;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ .bol-carrier{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:4px;align-items:center;margin-top:14px;font-size:11pt}
+ .bol-contract{font-size:5.5pt;line-height:1.1;margin:3px 0 0}
+ .bol-addresses{display:grid;grid-template-columns:1fr 1fr;border:1px solid #000;margin-top:2px}
+ .bol-address{padding:2px 4px}
+ .bol-address+.bol-address{border-left:1px solid #000}
+ .bol-address>div{display:flex;gap:3px;align-items:center}
+ .bol-address>div>.bol-field{flex:1}
+ .bol-address>div:not(:first-child){font-size:7pt}
+ .bol-address strong{font-size:10pt}
+ .bol-reference-row{display:grid;grid-template-columns:auto 1fr auto 1fr auto 1.5fr;gap:3px;align-items:center;font-size:7pt;margin-top:3px}
+ .bol-instructions,.bol-route{display:flex;gap:4px;align-items:start;font-size:10pt}
+ .bol-instructions{margin-top:4px}
+ .bol-instructions .bol-field{min-height:28px}
+ .bol-instructions>.bol-field,.bol-route>.bol-field{flex:1;font-size:8pt;padding:2px}
+ .bol-paper .packing-freight-layout{margin-top:0;border-top:0}
+ .bol-paper .packing-freight-table tfoot td{background:#fff;border-top:1px solid #000;font-weight:bold;height:auto}
+
+#packingSlip{width:min(1120px,calc(100vw - 32px));padding:16px}
+#packingSlip>p{display:none}
+#packingLines{overflow-x:auto}
+#packingSlip .bol-paper{background:#fff;color:#000;padding:12px;min-width:850px;font:10pt Arial,sans-serif}
+#packingSlip .bol-paper .packing-line{display:table-row-group;border:0;padding:0;margin:0;border-radius:0}
+#packingSlip .bol-paper .packing-part{display:table-row}
+#packingSlip .bol-paper .packing-freight-table input{display:block;box-sizing:border-box;width:100%;min-width:0;padding:2px;border:0;border-bottom:1px dotted #aab1bd;background:transparent;color:#000;border-radius:0;font:8pt Arial,sans-serif;margin:0}
+#packingSlip .bol-paper input[type=checkbox]{width:12px;height:12px;margin:3px auto;appearance:auto}
+#packingSlip .bol-paper [contenteditable]{cursor:text;white-space:pre-wrap;overflow-wrap:break-word}
+#packingSlip .bol-paper [contenteditable]:focus{outline:2px solid #3991c7;background:#eef8ff}
+#packingSlip .bol-paper .bol-description{display:block}
+#packingSlip .bol-paper .bol-pieces{display:flex;align-items:center;gap:5px;font-size:7pt}
+#packingSlip .bol-paper .bol-pieces input{flex:1}
+#packingSlip .bol-paper .bol-editor-control{color:#205c83;font:9px Arial,sans-serif}
+#packingSlip .bol-paper button{padding:3px 6px;min-height:0;border:1px solid #bfd5e3;border-radius:3px;background:#e9f2f8;color:#205c83;margin:2px 0}
+#packingSlip .bol-paper .packing-part button{margin:2px 0}
+#packingSlip .bol-paper .bol-line-actions label{display:flex;gap:5px;font:7pt Arial,sans-serif;color:#000;align-items:center;margin:0}
+#packingSlip .bol-paper .bol-line-actions input{flex:1}
+#packingSlip .bol-row-actions{display:flex;gap:6px}
+#packingSlip .bol-add-line{margin:6px 0!important}
+#packingSlip .packing-stop>.packing-line-head{position:sticky;left:0}
+@media print{
+ #packingPrintSheet .packing-line{display:table-row-group;border:0;padding:0;margin:0}
+ #packingPrintSheet .packing-part{display:table-row}
+ #packingPrintSheet .bol-editor-control{display:none!important}
+ #packingPrintSheet .bol-line-actions label{font-size:8pt}
+ #packingPrintSheet .bol-pieces{font-size:7pt}
+ #packingPrintSheet .bol-printed-value{white-space:pre-wrap}
+}
+</style>
 </head>
 <body class="header-scroll-shell">
 <header>
@@ -325,7 +410,7 @@ html[data-left-sidebar-access="false"] main.transfer-layout>.transfer-sidebar{di
  <div class="packing-actions"><div><button id="packingCancel" type="button">Cancel</button> <button id="packingDone" type="button" class="primary">Done</button></div></div>
 </dialog>
 <article id="packingPrintSheet"></article>
-<script src="packing-slip.js?v=20261105-bol-header"></script>
+<script src="packing-slip.js?v=20261105-editable-bol"></script>
 <script src="app.js?v=20261105-linked-push"></script>
 <script src="order-status.js?v=20261009-permissions"></script>
 <script src="recent-activity.js?v=20261009-permissions"></script>
