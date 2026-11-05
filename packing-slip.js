@@ -5,7 +5,7 @@
  const copy=v=>JSON.parse(JSON.stringify(v));
  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const total=lines=>lines.reduce((sum,line)=>sum+Number(line.pallets||0),0);
- const partNotes=lines=>lines.flatMap(line=>(line.parts||[]).map(part=>part.number)).filter(Boolean).join(" | ");
+ const partNotes=lines=>lines.flatMap(line=>(line.parts||[]).map(part=>part.un||part.number)).filter(Boolean).join(" | ");
  const stopLocation=stop=>$(["origin","additionalStop","additionalStop2"][stop])?.value||"";
  const stopTitle=stop=>(stop?"Additional Stop "+stop:"Load Origin")+(stopLocation(stop)?" — "+stopLocation(stop):"");
  const route=()=>["origin","additionalStop","additionalStop2","destination"].map(id=>$(id)?.value).filter(x=>x&&!x.startsWith("__")).join(" → ");
@@ -89,7 +89,7 @@
     if(!count.value||!count.checkValidity())throw Error("Enter 1 to 999 packages for each filled BOL row.");
     const original=JSON.parse(group.dataset.original),unchanged=description===group.dataset.description;
     const parts=unchanged&&original.parts?.length?copy(original.parts):[{number:description.slice(0,120),pieces:null,description}];
-    Object.assign(parts[0],{hm,un,weight,rate});
+    Object.assign(parts[0],{hm,un,weight,rate,...(un?{number:un}:{})});
     stopLines.push({pallets:Number(count.value),parts,notes:unchanged?(original.notes||""):"",stop});
    }
    if(stopLines.length){stopLines[0].bol=bol;lines.push(...stopLines)}
@@ -102,6 +102,67 @@
   if(total(lines)>999)throw Error("The packing slips cannot exceed 999 pallets.");
   return lines;
  }
+
+ function parsePastedLoad(text){
+  if(text.length>20000)throw Error("Paste no more than 20,000 characters at a time.");
+  const rows=[],warnings=[];let current=null,headings=0;
+  const flush=()=>{if(current){rows.push(current);current=null}};
+  for(let raw of text.split(/\r?\n/)){
+   const line=raw.trim();if(!line||/^\++$/.test(line))continue;
+   if(/^(?:\d+(?:st|nd|rd|th)?\s+load|load\s*#?\s*\d+)\s*:?$/i.test(line)){
+    headings++;if(headings>1)throw Error("Paste one load at a time into its matching stop.");continue;
+   }
+   const fill=line.match(/^fill\s+(?:remaining\s+space\s+)?with\s+([A-Z0-9]+(?:-[A-Z0-9]+)+)\s*$/i);
+   if(fill){flush();rows.push({un:fill[1],description:"Fill remaining space"});continue}
+   if(current&&/^[\d,.]+(?:\s*[-–]\s*[\d,.]+)?\s+(?:sheets?|pieces?|pcs|units?|cases?)$/i.test(line)){
+    current.description+=(current.description?"\n":"")+line;continue;
+   }
+   const part=line.match(/^([A-Z0-9]+(?:-[A-Z0-9]+)+)(?:\s*[:|,\t]\s*|\s+)?(.*)$/i);
+   if(part){flush();current={un:part[1],description:part[2].trim()};continue}
+   if(current)current.description+=(current.description?"\n":"")+line;
+   else warnings.push(line);
+  }
+  flush();
+  if(!rows.length)throw Error("No part numbers were found. Paste part numbers with their quantities below or beside them.");
+  if(rows.length>100)throw Error("Import no more than 100 rows at a time.");
+  for(const row of rows)if(row.un.length>80||row.description.length>2000)throw Error("A pasted row is too long for the BOL.");
+  return {rows,warnings};
+ }
+ const rowHasData=group=>[...group.querySelectorAll("input,textarea")].some(input=>input.type==="checkbox"?input.checked:Boolean(input.value.trim()));
+ function addPasteImporter(section,table,head){
+  const toggle=document.createElement("button");toggle.type="button";toggle.textContent="Paste Data";
+  const panel=document.createElement("div");panel.className="bol-import-panel";panel.hidden=true;
+  panel.innerHTML='<label>Paste load details<textarea class="bol-import-source" rows="7" maxlength="20000" placeholder="09-707\n602 sheets\n+\n09-640\n482 sheets"></textarea></label><div class="bol-import-actions"><button type="button" class="bol-import-preview">Preview Rows</button><label>Import mode<select class="bol-import-mode"><option value="append">Add to existing rows</option><option value="replace">Replace rows</option></select></label><button type="button" class="bol-import-apply" disabled>Use These Rows</button><button type="button" class="bol-import-cancel">Cancel</button></div><p class="bol-import-message" role="status"></p><div class="bol-import-results"></div>';
+  let parsed=null;
+  toggle.onclick=()=>{panel.hidden=!panel.hidden;if(!panel.hidden)panel.querySelector("textarea").focus()};
+  panel.querySelector(".bol-import-cancel").onclick=()=>{panel.hidden=true};
+  const source=panel.querySelector(".bol-import-source"),message=panel.querySelector(".bol-import-message"),results=panel.querySelector(".bol-import-results"),applyButton=panel.querySelector(".bol-import-apply");
+  source.addEventListener("input",()=>{parsed=null;applyButton.disabled=true;results.replaceChildren();message.textContent=""});
+  panel.querySelector(".bol-import-preview").onclick=()=>{
+   try{
+    parsed=parsePastedLoad(source.value);
+    results.innerHTML='<table><thead><tr><th>UN Number / Part number</th><th>Description</th><th>No. Pkgs.</th></tr></thead><tbody>'+parsed.rows.map(row=>'<tr><td>'+esc(row.un)+'</td><td>'+esc(row.description).replace(/\n/g,"<br>")+'</td><td>Enter in BOL</td></tr>').join("")+'</tbody></table>';
+    message.textContent=parsed.rows.length+" rows found. Package counts remain blank; enter them in the BOL before saving."+(parsed.warnings.length?" Unmatched text: "+parsed.warnings.join(" | "):"");
+    applyButton.disabled=false;
+   }catch(e){parsed=null;applyButton.disabled=true;results.replaceChildren();message.textContent=e.message}
+  };
+  applyButton.onclick=()=>{
+   if(!parsed)return;
+   const groups=[...table.querySelectorAll(".packing-line")],replace=panel.querySelector(".bol-import-mode").value==="replace";
+   const existing=groups.filter(rowHasData),newRows=parsed.rows;
+   const otherFilled=[...list.querySelectorAll(".packing-line")].filter(group=>!table.contains(group)&&rowHasData(group)).length;
+   if(otherFilled+(replace?0:existing.length)+newRows.length>100){message.textContent="Use no more than 100 filled BOL rows across all stops.";return}
+   if(replace&&existing.length&&!confirm("Replace the line items for this stop? Header and signature fields will be kept."))return;
+   for(const group of groups)if(replace||!rowHasData(group))group.remove();
+   for(const row of newRows)addLine({pallets:0,parts:[{number:row.un,un:row.un,description:row.description,pieces:null}]},table);
+   while(table.querySelectorAll(".packing-line").length<14)addLine({},table);
+   if(table.querySelectorAll(".packing-line").length<100)addLine({},table);
+   panel.hidden=true;refresh();
+   const inputs=table.querySelectorAll(".packing-count");inputs[replace?0:existing.length]?.focus();
+  };
+  head.append(toggle);section.insertBefore(panel,section.querySelector(".bol-paper"));
+ }
+
  function populateAddresses(section,stop){
   const names=[$("destination")?.value||"",stopLocation(stop)];
   section.querySelectorAll(".bol-address").forEach((block,i)=>{
@@ -145,6 +206,7 @@
    const content=existing.filter(line=>line.parts?.length);
    for(const line of content)addLine(line,table);
    while(table.querySelectorAll(".packing-line").length<14)addLine({},table);
+   addPasteImporter(section,table,head);
 
   }
   refresh();modal.showModal();if(addressError)error.textContent=addressError;
