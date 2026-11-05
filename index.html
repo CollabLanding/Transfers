@@ -224,6 +224,17 @@ body.printing-packing-slip{height:auto!important;overflow:visible!important;back
 #packingSlip .bol-paper .packing-freight-table input{border-bottom:0}
 #packingSlip .bol-paper .packing-freight-table input:focus,#packingSlip .bol-paper .packing-freight-table textarea:focus{outline:1px solid #3991c7;background:#eef8ff}
 </style>
+<style>
+#packingSlip .bol-import-panel{padding:12px;margin:8px 0 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+#packingSlip .bol-import-panel[hidden]{display:none}
+#packingSlip .bol-import-source{width:100%;box-sizing:border-box;resize:vertical;min-height:110px}
+#packingSlip .bol-import-actions{display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-top:8px}
+#packingSlip .bol-import-actions label{margin:0}
+#packingSlip .bol-import-results{max-height:260px;overflow:auto}
+#packingSlip .bol-import-results table{width:100%;border-collapse:collapse}
+#packingSlip .bol-import-results th,#packingSlip .bol-import-results td{padding:6px;border:1px solid var(--line);text-align:left;font-size:12px}
+#packingSlip .bol-import-message{font-size:12px;white-space:pre-wrap}
+</style>
 </head>
 <body class="header-scroll-shell">
 <header>
@@ -418,7 +429,7 @@ body.printing-packing-slip{height:auto!important;overflow:visible!important;back
  <div class="packing-actions"><div><button id="packingCancel" type="button">Cancel</button> <button id="packingDone" type="button" class="primary">Done</button></div></div>
 </dialog>
 <article id="packingPrintSheet"></article>
-<script src="packing-slip.js?v=20261105-location-addresses"></script>
+<script src="packing-slip.js?v=20261105-paste-data"></script>
 <script src="app.js?v=20261105-linked-push"></script>
 <script src="order-status.js?v=20261009-permissions"></script>
 <script src="recent-activity.js?v=20261009-permissions"></script>
