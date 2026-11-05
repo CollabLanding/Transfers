@@ -16,7 +16,7 @@
  function printFreightLines(lines){
   const rows=lines.flatMap(line=>line.parts.map((part,i)=>'<tr><td>'+(i===0?esc(line.pallets):'')+'</td><td><span class="freight-hm-box"></span></td><td>'+esc(part.number)+(part.pieces!=null?' — '+esc(part.pieces)+' pieces per pallet':'')+(i===0&&line.notes?'<br>'+esc(line.notes):'')+'</td><td></td><td></td><td></td></tr>'));
   while(rows.length<14)rows.push('<tr class="freight-empty"><td></td><td><span class="freight-hm-box"></span></td><td></td><td></td><td></td><td></td></tr>');
-  return '<div class="packing-freight-layout"><table class="packing-freight-table"><colgroup><col style="width:8%"><col style="width:6%"><col style="width:50%"><col style="width:12%"><col style="width:14%"><col style="width:10%"></colgroup><thead><tr><th>No.<br>Pkgs.</th><th>*<br>HM</th><th>Description of Articles, Special Marks and Exceptions</th><th>UN<br>Number</th><th>Weight<br>(* Sub. to correction)</th><th>Class or Rate</th></tr></thead><tbody>'+rows.join('')+'</tbody><tfoot><tr><td>'+total(lines)+'</td><td></td><td colspan="4">Total pallets</td></tr></tfoot></table><aside class="packing-freight-terms"><p>Subject to Section 7 of conditions of applicable bill of lading, if this shipment is to be delivered to the consignee without recourse on the consignor, the consignor shall sign the following statement.</p><p>The carrier shall not make delivery of this shipment without payment of freight and all other lawful charges.</p><div class="freight-signature-line"></div><small>(Signature of Consignor)</small><p>FREIGHT PREPAID, except when box below is checked.</p><p><span class="freight-check"></span> Check box if charges are to be collect</p><div>Received $<span class="freight-write-line"></span></div><p>To apply in prepayment of the charges on the property described hereon.</p><div class="freight-signature-line"></div><small>Agent or Cashier</small><p class="freight-cod"><strong>COD Amt: $</strong><span class="freight-write-line"></span></p><strong>COD Remit to Address:</strong><div class="freight-address-lines"></div></aside></div>';
+  return '<div class="packing-freight-layout"><table class="packing-freight-table"><colgroup><col style="width:8%"><col style="width:6%"><col style="width:50%"><col style="width:12%"><col style="width:14%"><col style="width:10%"></colgroup><thead><tr><th>No.<br>Pallets</th><th>*<br>HM</th><th>Description of Articles, Special Marks and Exceptions</th><th>UN<br>Number</th><th>Weight<br>(* Sub. to correction)</th><th>Class or Rate</th></tr></thead><tbody>'+rows.join('')+'</tbody><tfoot><tr><td>'+total(lines)+'</td><td></td><td colspan="4">Total pallets</td></tr></tfoot></table><aside class="packing-freight-terms"><p>Subject to Section 7 of conditions of applicable bill of lading, if this shipment is to be delivered to the consignee without recourse on the consignor, the consignor shall sign the following statement.</p><p>The carrier shall not make delivery of this shipment without payment of freight and all other lawful charges.</p><div class="freight-signature-line"></div><small>(Signature of Consignor)</small><p>FREIGHT PREPAID, except when box below is checked.</p><p><span class="freight-check"></span> Check box if charges are to be collect</p><div>Received $<span class="freight-write-line"></span></div><p>To apply in prepayment of the charges on the property described hereon.</p><div class="freight-signature-line"></div><small>Agent or Cashier</small><p class="freight-cod"><strong>COD Amt: $</strong><span class="freight-write-line"></span></p><strong>COD Remit to Address:</strong><div class="freight-address-lines"></div></aside></div>';
  }
 
 
@@ -37,7 +37,7 @@
   const description=lineDescription(line);
   group.dataset.original=JSON.stringify(line);group.dataset.description=description;
   const part=line.parts?.[0]||{};
-  group.innerHTML='<tr class="packing-part"><td>'+valueInput("packing-count",line.pallets||"","No. packages",'type="number" min="1" max="999" step="1"')+'</td>'+
+  group.innerHTML='<tr class="packing-part"><td>'+valueInput("packing-count",line.pallets||"","Number of pallets",'type="number" min="1" max="999" step="1"')+'</td>'+
    '<td><input type="checkbox" class="packing-hm" aria-label="Hazardous material" '+(line.parts?.some(p=>p.hm)?'checked':'')+'></td>'+
    '<td><textarea class="packing-number" aria-label="Description of Articles, Special Marks and Exceptions" maxlength="2000" rows="1">'+esc(description)+'</textarea></td>'+
    '<td>'+valueInput("packing-un",part.un,"UN Number",'maxlength="80"')+'</td>'+
@@ -63,7 +63,15 @@
   });
   section.dataset.baseline=JSON.stringify(readBol(section));
  }
+ function defaultPalletCounts(){
+  for(const group of list.querySelectorAll(".packing-line")){
+   const description=group.querySelector(".packing-number").value.trim(),count=group.querySelector(".packing-count");
+   if(description&&!count.value){count.value="1";count.dataset.autoPallet="true"}
+   else if(!description&&count.dataset.autoPallet==="true"&&count.value==="1"){count.value="";delete count.dataset.autoPallet}
+  }
+ }
  function refresh(){
+  defaultPalletCounts();
   let sum=0;
   for(const section of list.querySelectorAll(".packing-stop")){
    let n=0;
@@ -76,6 +84,7 @@
   $("packingDraftTotal").textContent="Total: "+(sum||(!saved?legacy:0))+" pallets";error.textContent="";
  }
  function read(){
+  defaultPalletCounts();
   const lines=[];
   for(const section of list.querySelectorAll(".packing-stop")){
    const stop=Number(section.dataset.stop),bol=readBol(section),stopLines=[];
@@ -86,7 +95,7 @@
     const un=group.querySelector(".packing-un").value.trim(),weight=group.querySelector(".packing-weight").value.trim(),rate=group.querySelector(".packing-rate").value.trim();
     if(!description&&!count.value&&!hm&&!un&&!weight&&!rate)continue;
     if(!description)throw Error("Enter a description for each filled BOL row.");
-    if(!count.value||!count.checkValidity())throw Error("Enter 1 to 999 packages for each filled BOL row.");
+    if(!count.value||!count.checkValidity())throw Error("Enter 1 to 999 pallets for each filled BOL row.");
     const original=JSON.parse(group.dataset.original),unchanged=description===group.dataset.description;
     const parts=unchanged&&original.parts?.length?copy(original.parts):[{number:description.slice(0,120),pieces:null,description}];
     Object.assign(parts[0],{hm,un,weight,rate,...(un?{number:un}:{})});
@@ -141,8 +150,8 @@
   panel.querySelector(".bol-import-preview").onclick=()=>{
    try{
     parsed=parsePastedLoad(source.value);
-    results.innerHTML='<table><thead><tr><th>UN Number / Part number</th><th>Description</th><th>No. Pkgs.</th></tr></thead><tbody>'+parsed.rows.map(row=>'<tr><td>'+esc(row.un)+'</td><td>'+esc(row.description).replace(/\n/g,"<br>")+'</td><td>Enter in BOL</td></tr>').join("")+'</tbody></table>';
-    message.textContent=parsed.rows.length+" rows found. Package counts remain blank; enter them in the BOL before saving."+(parsed.warnings.length?" Unmatched text: "+parsed.warnings.join(" | "):"");
+    results.innerHTML='<table><thead><tr><th>UN Number / Part number</th><th>Description</th><th>No. Pallets</th></tr></thead><tbody>'+parsed.rows.map(row=>'<tr><td>'+esc(row.un)+'</td><td>'+esc(row.description).replace(/\n/g,"<br>")+'</td><td>1 when description is filled</td></tr>').join("")+'</tbody></table>';
+    message.textContent=parsed.rows.length+" rows found. Each description defaults to 1 pallet. Pallet counts can be edited in the BOL."+(parsed.warnings.length?" Unmatched text: "+parsed.warnings.join(" | "):"");
     applyButton.disabled=false;
    }catch(e){parsed=null;applyButton.disabled=true;results.replaceChildren();message.textContent=e.message}
   };
@@ -233,6 +242,7 @@
  function resizeDescriptions(){for(const field of list.querySelectorAll("textarea.packing-number"))resizeDescription(field)}
  window.addEventListener("resize",()=>{if(modal.open)resizeDescriptions()});
  list.addEventListener("input",event=>{
+  if(event.target.matches(".packing-count"))delete event.target.dataset.autoPallet;
   if(event.target.matches("textarea.packing-number"))resizeDescription(event.target);
   const table=event.target.closest(".packing-freight-table");
   if(table&&event.target.closest(".packing-line")===table.querySelector(".packing-line:last-of-type")){
