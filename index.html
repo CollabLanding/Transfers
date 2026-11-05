@@ -235,6 +235,28 @@ body.printing-packing-slip{height:auto!important;overflow:visible!important;back
 #packingSlip .bol-import-results th,#packingSlip .bol-import-results td{padding:6px;border:1px solid var(--line);text-align:left;font-size:12px}
 #packingSlip .bol-import-message{font-size:12px;white-space:pre-wrap}
 </style>
+<style>
+#packingSlip .bol-paper .packing-freight-layout{align-items:start}
+#packingSlip .bol-paper .packing-freight-table{align-self:start}
+#packingSlip .bol-paper .packing-freight-table td{height:auto;padding:2px 4px;vertical-align:top}
+#packingSlip .bol-paper .packing-freight-table textarea.packing-number{
+ height:16px;min-height:16px;padding:1px 2px;line-height:14px;resize:none;overflow:hidden
+}
+#packingSlip .bol-paper .packing-freight-table input:not([type=checkbox]){
+ height:16px;min-height:16px;line-height:14px;padding:1px 2px
+}
+#packingSlip .bol-paper input[type=checkbox]{height:11px;width:11px;margin:2px auto}
+#packingSlip .bol-form-actions{display:flex;justify-content:space-between;gap:10px;margin-top:10px}
+#packingSlip .bol-form-actions>button:last-child{margin-left:auto}
+#packingSlip .packing-stop>.packing-line-head{justify-content:flex-start;margin-bottom:6px}
+@media print{
+ #packingPrintSheet .packing-freight-layout{align-items:start}
+ #packingPrintSheet .packing-freight-table{align-self:start}
+ #packingPrintSheet .packing-freight-table td{height:auto;min-height:0;padding:2px 4px;line-height:14px}
+ #packingPrintSheet .freight-empty td{height:14px}
+ #packingPrintSheet .bol-printed-value{display:block;white-space:pre-wrap;line-height:14px}
+}
+</style>
 </head>
 <body class="header-scroll-shell">
 <header>
@@ -429,7 +451,7 @@ body.printing-packing-slip{height:auto!important;overflow:visible!important;back
  <div class="packing-actions"><div><button id="packingCancel" type="button">Cancel</button> <button id="packingDone" type="button" class="primary">Done</button></div></div>
 </dialog>
 <article id="packingPrintSheet"></article>
-<script src="packing-slip.js?v=20261105-paste-data"></script>
+<script src="packing-slip.js?v=20261105-compact-form"></script>
 <script src="app.js?v=20261105-linked-push"></script>
 <script src="order-status.js?v=20261009-permissions"></script>
 <script src="recent-activity.js?v=20261009-permissions"></script>
