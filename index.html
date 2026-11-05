@@ -216,6 +216,14 @@ body.printing-packing-slip{height:auto!important;overflow:visible!important;back
  #packingPrintSheet .bol-printed-value{white-space:pre-wrap}
 }
 </style>
+<style>
+#packingSlip .bol-paper .packing-freight-table textarea{
+ display:block;box-sizing:border-box;width:100%;min-width:0;margin:0;padding:2px;border:0;border-radius:0;
+ background:transparent;color:#000;font:8pt Arial,sans-serif;resize:vertical;min-height:25px
+}
+#packingSlip .bol-paper .packing-freight-table input{border-bottom:0}
+#packingSlip .bol-paper .packing-freight-table input:focus,#packingSlip .bol-paper .packing-freight-table textarea:focus{outline:1px solid #3991c7;background:#eef8ff}
+</style>
 </head>
 <body class="header-scroll-shell">
 <header>
@@ -403,14 +411,14 @@ body.printing-packing-slip{height:auto!important;overflow:visible!important;back
 <script src="driver-availability.js?v=20261012-overnight"></script>
 <dialog id="packingSlip" aria-labelledby="packingTitle">
  <div class="packing-line-head"><h2 id="packingTitle">Packing Slip</h2><button id="packingClose" type="button" aria-label="Close packing slip">×</button></div>
- <p>Use Add Part for products that share the same pallets. Use Add Line for a different pallet mix.</p>
+
  <div id="packingLines"></div>
  <div class="packing-line-head"><strong id="packingDraftTotal"></strong></div>
  <p id="packingError" role="alert"></p>
  <div class="packing-actions"><div><button id="packingCancel" type="button">Cancel</button> <button id="packingDone" type="button" class="primary">Done</button></div></div>
 </dialog>
 <article id="packingPrintSheet"></article>
-<script src="packing-slip.js?v=20261105-editable-bol"></script>
+<script src="packing-slip.js?v=20261105-direct-bol-fields"></script>
 <script src="app.js?v=20261105-linked-push"></script>
 <script src="order-status.js?v=20261009-permissions"></script>
 <script src="recent-activity.js?v=20261009-permissions"></script>
