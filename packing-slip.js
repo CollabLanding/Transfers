@@ -91,7 +91,14 @@
  $("packingCancel").onclick=()=>modal.close();
 
  list.addEventListener("input",refresh);
+ const partNotes=lines=>lines.flatMap(line=>(line.parts||[]).map(part=>String(part.number||"").trim())).filter(Boolean).join(" | ");
  function apply(lines){
+  const previous=partNotes(saved||[]);
+  const notes=$("job");
+  if(lines.length||(previous&&notes.value===previous)){
+   notes.value=partNotes(lines);
+   notes.dispatchEvent(new Event("input",{bubbles:true}));
+  }
   if(!lines.length&&saved)legacy=0;
   saved=lines.length?copy(lines):null;
   updateButton();
