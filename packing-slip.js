@@ -237,7 +237,7 @@
  $("packingDone").onclick=()=>finish(true);$("packingClose").onclick=()=>finish();
  $("packingCancel").onclick=()=>modal.close();modal.addEventListener("cancel",e=>{e.preventDefault();finish()});
  function resizeDescription(field){
-  field.style.height="0px";field.style.height=Math.max(16,field.scrollHeight)+"px";
+  field.style.setProperty("height","0px","important");field.style.setProperty("height",Math.max(20,field.scrollHeight)+"px","important");
  }
  function resizeDescriptions(){for(const field of list.querySelectorAll("textarea.packing-number"))resizeDescription(field)}
  window.addEventListener("resize",()=>{if(modal.open)resizeDescriptions()});
