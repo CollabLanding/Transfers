@@ -1,6 +1,7 @@
 (()=>{
  const $=id=>document.getElementById(id),modal=$("packingSlip"),list=$("packingLines"),error=$("packingError");
- let saved=null,legacy=0;
+ let saved=null,legacy=0,locationAddresses=[];
+ const addressClient=window.supabase&&window.TRANSFERS_CONFIG?.supabaseUrl?window.supabase.createClient(window.TRANSFERS_CONFIG.supabaseUrl,window.TRANSFERS_CONFIG.supabaseAnonKey):null;
  const copy=v=>JSON.parse(JSON.stringify(v));
  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const total=lines=>lines.reduce((sum,line)=>sum+Number(line.pallets||0),0);
@@ -101,7 +102,29 @@
   if(total(lines)>999)throw Error("The packing slips cannot exceed 999 pallets.");
   return lines;
  }
- $("openPackingSlip").onclick=()=>{
+ function populateAddresses(section,stop){
+  const names=[$("destination")?.value||"",stopLocation(stop)];
+  section.querySelectorAll(".bol-address").forEach((block,i)=>{
+   const name=String(names[i]).trim().toLowerCase();
+   const location=locationAddresses.find(row=>String(row.name).trim().toLowerCase()===name);
+   if(!location)return;
+   const street=block.children[1].querySelector(".bol-field"),city=block.children[2].querySelector(".bol-field");
+   if(!street.textContent.trim())street.textContent=location.address||"";
+   if(!city.textContent.trim())city.textContent=[location.city,location.state].filter(Boolean).join(", ");
+  });
+  section.dataset.baseline=JSON.stringify(readBol(section));
+ }
+ $("openPackingSlip").onclick=async()=>{
+  const button=$("openPackingSlip");if(button.disabled)return;button.disabled=true;
+  let addressError="";
+  try{
+   if(addressClient){
+    const result=await addressClient.from("transfer_locations").select("name,address,city,state");
+    if(result.error){locationAddresses=[];addressError="Location addresses could not load. You can enter them in the BOL."}
+    else locationAddresses=result.data||[];
+   }
+  }catch(e){locationAddresses=[];addressError="Location addresses could not load. You can enter them in the BOL."}
+  finally{button.disabled=false}
   list.replaceChildren();
   for(let stop=0;stop<=2;stop++){
    const existing=saved?.filter(line=>(line.stop||0)===stop)||[];
@@ -118,13 +141,13 @@
    table.querySelector("tfoot td").className="bol-total";
    section.append(head,paper);list.append(section);
    const form=existing.find(line=>line.bol)?.bol;
-   section.dataset.hasBol=String(Boolean(form));prepareFields(section,form);
+   section.dataset.hasBol=String(Boolean(form));prepareFields(section,form);populateAddresses(section,stop);
    const content=existing.filter(line=>line.parts?.length);
    for(const line of content)addLine(line,table);
    while(table.querySelectorAll(".packing-line").length<14)addLine({},table);
 
   }
-  refresh();modal.showModal();
+  refresh();modal.showModal();if(addressError)error.textContent=addressError;
  };
  function apply(lines){
   const previous=partNotes(saved||[]),notes=$("job"),next=partNotes(lines);
