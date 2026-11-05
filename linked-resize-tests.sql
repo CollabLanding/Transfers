@@ -2,7 +2,7 @@ begin;
 select set_config('request.jwt.claim.sub',(select id::text from auth.users where lower(email)='psaverchenko@collectfanatics.com'),true);
 set local role authenticated;
 do $test$
-declare d text:='Resize verification '||gen_random_uuid()::text; a uuid;b uuid;c uuid;u uuid;s uuid;o uuid;r jsonb;
+declare d text:='Resize verification '||gen_random_uuid()::text; a uuid;b uuid;c uuid;u uuid;s uuid;o uuid;sa uuid;r jsonb;
 begin
  insert into public.transfer_drivers(name,created_by,created_by_name) values(d,auth.uid(),'Test');
  insert into public.transfers(scheduled_date,scheduled_time,driver,origin,destination,pallet_count,job_number,duration_minutes,created_by,created_by_name)
@@ -19,11 +19,19 @@ begin
  perform public.set_board_box_link('job:'||a,'job:'||b);
  perform public.set_board_box_link('status:'||s,'job:'||b);
  perform public.set_board_box_link('status:'||s,'job:'||c);
+ insert into public.transfer_slot_statuses(scheduled_date,driver,start_minutes,end_minutes,status,created_by)
+ values('2099-01-01',d,240,270,'Standby',auth.uid()) returning id into sa;
+ perform public.set_board_box_link('status:'||sa,'job:'||u);
+ perform public.resize_board_link_group('job:'||a,330,420,360,420);
+ if (select scheduled_time from public.transfers where id=u)<>time '04:30' or (select start_minutes from public.transfer_slot_statuses where id=sa)<>210 or (select scheduled_time from public.transfers where id=b)<>time '07:30' then raise exception 'Upward push failed';end if;
+ begin perform public.resize_board_link_group('job:'||a,315,420,330,420);raise exception 'Top boundary accepted';
+ exception when others then if sqlerrm<>'All linked boxes must fit within the board hours' then raise;end if;end;
+ perform public.resize_board_link_group('job:'||a,360,420,330,420);
  r:=public.resize_board_link_group('job:'||a,360,450,360,420);
  if (select scheduled_time from public.transfers where id=b)<>time '08:00' or (select scheduled_time from public.transfers where id=c)<>time '10:30'
  or (select start_minutes from public.transfer_slot_statuses where id=s)<>570 or (select scheduled_time from public.transfers where id=u)<>time '05:00' then raise exception 'Job resize following failed';end if;
  perform public.resize_board_link_group('job:'||a,375,450,360,450);
- if (select scheduled_time from public.transfers where id=b)<>time '08:00' then raise exception 'Top resize moved follower';end if;
+ if (select scheduled_time from public.transfers where id=b)<>time '08:00' or (select scheduled_time from public.transfers where id=u)<>time '05:15' or (select start_minutes from public.transfer_slot_statuses where id=sa)<>255 then raise exception 'Top resize follower movement failed';end if;
  perform public.resize_board_link_group('status:'||s,570,630,570,600);
  if (select scheduled_time from public.transfers where id=c)<>time '11:00' or (select scheduled_time from public.transfers where id=b)<>time '08:00' then raise exception 'Status resize following failed';end if;
  perform public.resize_board_link_group('status:'||s,570,600,570,630);
@@ -40,5 +48,5 @@ begin
  exception when others then if sqlerrm<>'All linked boxes must fit within the board hours' then raise;end if;end;
  if has_function_privilege('anon','public.resize_board_link_group(text,integer,integer,integer,integer)','execute') then raise exception 'Anonymous resize allowed';end if;
 end;$test$;
-select 'PASS: authenticated atomic resize, job/status downstream chain, reverse links, top edge, grow/shrink, unchanged upstream, collision rollback, stale edit, board bounds and anonymous denial' result;
+select 'PASS: authenticated atomic resize, job/status downstream chain, reverse links, top edge, grow/shrink, upward push and board bounds, collision rollback, stale edit, board bounds and anonymous denial' result;
 rollback;
