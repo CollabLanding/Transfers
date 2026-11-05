@@ -1839,3 +1839,10 @@ body.header-scroll-shell>main{flex:1 1 0;min-height:0;overflow:auto;scrollbar-gu
  left:0!important;right:0!important;width:auto!important;box-sizing:border-box;margin-left:0;margin-right:0;
  clip-path:inset(1px 0 0 0);
 }
+
+/* Recorded nonbillable driver downtime; jobs remain accessible above the shading. */
+.lane .driver-downtime-overlay{
+ background:repeating-linear-gradient(135deg,rgba(190,68,45,.3) 0,rgba(190,68,45,.3) 8px,rgba(190,68,45,.16) 8px,rgba(190,68,45,.16) 16px);
+ border-top:1px solid #b95d4e;border-bottom:1px solid #b95d4e;box-sizing:border-box;z-index:2;
+}
+.driver-downtime-overlay span{color:var(--text);font-size:10px;font-weight:800;text-align:center;padding:2px 4px;max-width:100%;line-height:1.2}
