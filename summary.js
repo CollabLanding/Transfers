@@ -10,7 +10,7 @@
   const pageSize=50;
   function message(text,error=false){el("reportMessage").textContent=text;el("reportMessage").classList.toggle("error",error);}
   function preset(){
-    const now=new Date(),end=new Date(now);end.setDate(end.getDate()-1);
+    const now=new Date(),end=new Date(now);
     const p=el("period").value,begin=new Date(end);
     if(p==="custom")return;
     if(p==="today"){el("dateFrom").value=D.dateKey(now);el("dateTo").value=D.dateKey(now);return;}
