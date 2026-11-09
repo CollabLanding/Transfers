@@ -2,7 +2,7 @@
 const C=window.TRANSFERS_CONFIG||{},live=!!(C.supabaseUrl&&C.supabaseAnonKey),sb=live?window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey):null;
 let editorPresenceReady=false;
 const editorTabId=crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random();
-let user=null,profile=null,items=[],drivers=[],locations=[],driverSchedule=[],driverDowntime=[],presence=null,dataChannel=null,optionContext=null,ignoreClickUntil=0,draggedDriver=null,draggedTransferId=null,dragGrabOffsetPx=0,audioCtx=null,lastPlanningDing=0,transferInfoBaseline=null;
+let user=null,profile=null,items=[],drivers=[],locations=[],driverSchedule=[],driverDowntime=[],driverCatalog=[],presence=null,dataChannel=null,optionContext=null,ignoreClickUntil=0,draggedDriver=null,draggedTransferId=null,dragGrabOffsetPx=0,audioCtx=null,lastPlanningDing=0,transferInfoBaseline=null;
 let transferAutoScrollFrame=0,transferAutoScrollX=0,transferAutoScrollY=0,transferAutoScrollUpdated=0;
 const $=id=>document.getElementById(id),E={form:$("form"),edit:$("editId"),date:$("date"),time:$("time"),duration:$("duration"),driver:$("driver"),origin:$("origin"),destination:$("destination"),dock:$("dock"),additionalStop:$("additionalStop"),additionalStop2:$("additionalStop2"),pallet:$("pallet"),job:$("job"),status:$("status"),urgent:$("urgent"),save:$("save"),del:$("delete"),cancel:$("cancel"),textDriver:$("textDriver"),msg:$("msg"),slotStatusEditor:$("slotStatusEditor"),slotStatusTitle:$("slotStatusTitle"),slotStatusMeta:$("slotStatusMeta"),slotStatusNotes:$("slotStatusNotes"),slotStatusSave:$("slotStatusSave"),slotStatusCancel:$("slotStatusCancel"),slotStatusClose:$("slotStatusClose"),slotStatusMsg:$("slotStatusMsg"),boardDate:$("boardDate"),grid:$("grid"),title:$("title"),currentTime:$("scheduleCurrentTime"),mode:$("mode"),me:$("me"),email:$("email"),active:$("active"),login:$("login"),loginForm:$("loginForm"),loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg"),signout:$("signout"),formTitle:$("formTitle"),optionModal:$("optionModal"),optionForm:$("optionForm"),optionTitle:$("optionTitle"),optionLabel:$("optionLabel"),optionName:$("optionName"),optionMsg:$("optionMsg"),optionClose:$("optionClose"),optionCancel:$("optionCancel"),statusHistory:$("statusHistory"),statusHistoryScreen:$("statusHistoryScreen"),statusHistoryBack:$("statusHistoryBack")};
 const key="transfers-demo-v2",driverKey="transfers-demo-drivers-v1",locationKey="transfers-demo-locations-v1",PX15=20,GRID_START=210,GRID_END=1320,GRID_HEIGHT=((GRID_END-GRID_START)/15)*PX15;
@@ -281,8 +281,12 @@ function updateCurrentTimeLine(){
     line.style.width="auto";
   }
 }
+function driverVisibleOnDate(name,date){
+ const row=driverCatalog.find(row=>row.name===name);
+ return !row||(row.inactive_periods||[]).every(period=>date<period.from||(period.to&&date>=period.to));
+}
 function renderBoard(){
- const date=E.boardDate.value,day=items.filter(x=>x.scheduled_date===date),laneDrivers=orderedUniq([...drivers,...day.map(x=>x.driver)]);
+ const date=E.boardDate.value,day=items.filter(x=>x.scheduled_date===date),laneDrivers=orderedUniq([...drivers,...day.map(x=>x.driver)]).filter(name=>driverVisibleOnDate(name,date));
  E.title.textContent=new Date(date+"T12:00:00").toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});
  const planningStart=today(),planningEnd=add(planningStart,6);
  const planningTotal=items.filter(x=>{const d=String(x.scheduled_date||"");return String(x.driver||"").trim().toLowerCase()==="planning"&&d>=planningStart&&d<=planningEnd}).length;
@@ -434,6 +438,7 @@ async function moveTransfer(x,newDriver,newTime){await boxLinks.move('job:'+x.id
 function replaceItem(row){const n=normalize(row),i=items.findIndex(x=>x.id===n.id);if(i>=0)items[i]=n;else items.push(n)}
 async function loadDriversWithFallback(){
  const r=await sb.rpc("get_transfer_board_options");
+ if(!r.error)driverCatalog=r.data?.drivers||[];
  return {data:r.data?.drivers||[],error:r.error};
 }
 async function loadLocationsWithFallback(){
@@ -506,7 +511,7 @@ async function refreshLiveOptions(){
  const nextDrivers=orderedUniq(["Planning",...(dr.data||[]).map(x=>x.name),...items.map(x=>x.driver)]);
  const changed=JSON.stringify(nextDrivers)!==JSON.stringify(drivers);
  drivers=nextDrivers;locations=uniq([...(lr.data||[]).map(x=>x.name),...items.flatMap(x=>[x.origin,x.destination,x.additional_stop,x.additional_stop_2]),"Sunnyvale 100","Sunnyvale 200"]);
- renderOptions();if(changed)queueLiveLanes([],true);
+ renderOptions();queueLiveLanes([],true);
 }
 
 async function subscribe(){if(!window.TransfersAccess.can("view_board"))return;if(!live)return;editorPresenceReady=false;if(dataChannel)await sb.removeChannel(dataChannel);if(presence)await sb.removeChannel(presence);dataChannel=sb.channel("transfers-data").on("postgres_changes",{event:"INSERT",schema:"public",table:"transfers"},handleNewTransfer).on("postgres_changes",{event:"*",schema:"public",table:"transfers"},handleTransferRealtime).on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},refreshLiveOptions).on("postgres_changes",{event:"*",schema:"public",table:"transfer_locations"},refreshLiveOptions).on("postgres_changes",{event:"*",schema:"public",table:"driver_schedules"},loadBoardSchedule).on("postgres_changes",{event:"*",schema:"public",table:"driver_downtime"},loadBoardSchedule).on("postgres_changes",{event:"*",schema:"public",table:"transfer_slot_statuses"},payload=>slotStatuses.handleRealtime(payload)).on("postgres_changes",{event:"*",schema:"public",table:"board_box_links"},()=>boxLinks.refresh()).on("postgres_changes",{event:"UPDATE",schema:"public",table:"profiles",filter:"id=eq."+user.id},event=>{profile={...profile,...event.new};publishEditorPresence()}).subscribe();presence=sb.channel("transfers-active",{config:{presence:{key:user.id}}}).on("presence",{event:"sync"},()=>{const unique=new Map();Object.values(presence.presenceState()).forEach(v=>v.forEach(x=>{const id=x.user_id||x.email;if(id&&!unique.has(id))unique.set(id,x)}));renderUsers([...unique.values()]);window.TransferEditors?.sync(Object.values(presence.presenceState()).flat())}).subscribe(s=>{editorPresenceReady=s==="SUBSCRIBED";if(editorPresenceReady)publishEditorPresence();else window.TransferEditors?.sync([])})}
