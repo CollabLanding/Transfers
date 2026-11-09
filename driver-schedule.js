@@ -15,7 +15,7 @@
     me:$("me"),email:$("email"),signout:$("signout"),login:$("login"),loginForm:$("loginForm"),
     loginEmail:$("loginEmail"),loginPassword:$("loginPassword"),loginMsg:$("loginMsg")
   };
-  let user=null,profile=null,drivers=[],scheduleRows=[],weekTransfers=[],channel=null,dirty=false,lastWeekValue="";
+  let user=null,profile=null,drivers=[],inactiveDrivers=new Set(),scheduleRows=[],weekTransfers=[],channel=null,dirty=false,lastWeekValue="";
 
   let downtimeRows=[],downtimeContext=null,downtimeEditing=null;
   let loadVersion=0,editVersion=0,refreshPending=false,refreshTimer=null;
@@ -187,7 +187,7 @@
   }
   function recordScheduleChanges(beforeRows,afterRows){
     const before=scheduleEntries(beforeRows),after=scheduleEntries(afterRows),entries=[];
-    for(const driver of drivers){
+    for(const driver of drivers.filter(driver=>!inactiveDrivers.has(driver))){
       for(const date of weekDates()){
         const key=driver+"|"+date;
         const b=before.get(key)||{start:"",end:""};
@@ -235,14 +235,14 @@
   }
   function render(){
     updateHeaders();
-    const map=scheduleMap();
+    const map=scheduleMap(),visibleDrivers=drivers.filter(driver=>!inactiveDrivers.has(driver));
     E.body.innerHTML="";
-    if(!drivers.length){
-      E.body.innerHTML='<tr><td colspan="9" class="schedule-empty">No drivers have been added yet. Use Add Driver above to set up a driver.</td></tr>';
+    if(!visibleDrivers.length){
+      E.body.innerHTML='<tr><td colspan="9" class="schedule-empty">No active drivers. Use Driver List to reactivate a driver or Add Driver to create one.</td></tr>';
       return;
     }
     const dates=weekDates();
-    drivers.forEach(driver=>{
+    visibleDrivers.forEach(driver=>{
       const tr=document.createElement("tr");
       tr.dataset.driver=driver;
       const name=document.createElement("th");
@@ -300,9 +300,9 @@
     updateOverrunWarnings();
   }
   async function loadDriverList(){
-    let r=await sb.from("transfer_drivers").select("name,sort_order").neq("name","Planning").order("sort_order",{ascending:true}).order("name",{ascending:true});
+    let r=await sb.from("transfer_drivers").select("name,sort_order,is_active").neq("name","Planning").order("sort_order",{ascending:true}).order("name",{ascending:true});
     if(r.error){
-      r=await sb.from("transfer_drivers").select("name").neq("name","Planning").order("name",{ascending:true});
+      r=await sb.from("transfer_drivers").select("name,is_active").neq("name","Planning").order("name",{ascending:true});
     }
     return r;
   }
@@ -332,6 +332,7 @@
       drivers=[];
     }else{
       drivers=(dr.data||[]).map(x=>x.name).filter(Boolean);
+      inactiveDrivers=new Set((dr.data||[]).filter(x=>x.is_active===false).map(x=>x.name));
     }
     if(sc.error){
       scheduleRows=[];
@@ -578,6 +579,7 @@
           const result=await sb.from("transfer_drivers").update({is_active:active}).eq("name",row.name).eq("is_active",previous).select("name,is_active").single();
           if(result.error)throw result.error;
           row.is_active=result.data.is_active;tr.classList.toggle("is-inactive",!row.is_active);
+          requestScheduleRefresh();
           $("driverListMessage").textContent=row.name+" marked "+(row.is_active?"active":"inactive")+".";
         }catch(error){select.value=String(previous);$("driverListMessage").textContent="Could not update driver: "+error.message}
         finally{select.disabled=!window.TransfersAccess.can("driver_profiles")}
