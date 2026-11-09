@@ -504,6 +504,72 @@
   }
 
 
+
+  let driverListRows=[],driverListVersion=0;
+  function regularShift(week){
+    if(!Array.isArray(week))return "Not set";
+    const order=[1,2,3,4,5,6,0],labels=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],groups=new Map();
+    order.forEach((day,index)=>{
+      const shift=week[day],start=String(shift?.start||"").slice(0,5),end=String(shift?.end||"").slice(0,5);
+      if(!start||!end||start===end)return;
+      const key=start+"|"+end;
+      if(!groups.has(key))groups.set(key,{start,end,indices:[]});
+      groups.get(key).indices.push(index);
+    });
+    if(!groups.size)return "No regular shift set";
+    return [...groups.values()].map(({start,end,indices})=>{
+      const runs=[];let first=indices[0],last=first;
+      for(const index of indices.slice(1)){if(index===last+1)last=index;else{runs.push(first===last?labels[first]:labels[first]+"–"+labels[last]);first=last=index}}
+      runs.push(first===last?labels[first]:labels[first]+"–"+labels[last]);
+      return runs.join(", ")+" · "+time12(start)+"–"+time12(end)+(minutes(end)<minutes(start)?" (+1 day)":"");
+    }).join("\n");
+  }
+  function renderDriverList(){
+    const body=$("driverListRows");body.replaceChildren();
+    if(!driverListRows.length){body.innerHTML='<tr><td colspan="3">No drivers added yet.</td></tr>';return}
+    for(const row of driverListRows){
+      const tr=document.createElement("tr");tr.classList.toggle("is-inactive",!row.is_active);
+      const driver=document.createElement("td");
+      if(window.TransfersAccess.can("driver_profiles")){
+        const link=document.createElement("a");link.href="driver-profile.html?driver="+encodeURIComponent(row.name);link.textContent=row.name;driver.append(link);
+      }else driver.textContent=row.name;
+      if(row.full_name&&row.full_name!==row.name){const name=document.createElement("small");name.textContent=row.full_name;driver.append(name)}
+      const status=document.createElement("td"),select=document.createElement("select");select.setAttribute("aria-label","Status for "+row.name);
+      select.innerHTML='<option value="true">Active</option><option value="false">Inactive</option>';select.value=String(row.is_active);
+      select.disabled=!window.TransfersAccess.can("driver_profiles");
+      select.onchange=async()=>{
+        const active=select.value==="true",previous=row.is_active;
+        if(active===previous)return;select.disabled=true;$("driverListMessage").textContent="Saving "+row.name+"…";
+        try{
+          const result=await sb.from("transfer_drivers").update({is_active:active}).eq("name",row.name).eq("is_active",previous).select("name,is_active").single();
+          if(result.error)throw result.error;
+          row.is_active=result.data.is_active;tr.classList.toggle("is-inactive",!row.is_active);
+          $("driverListMessage").textContent=row.name+" marked "+(row.is_active?"active":"inactive")+".";
+        }catch(error){select.value=String(previous);$("driverListMessage").textContent="Could not update driver: "+error.message}
+        finally{select.disabled=!window.TransfersAccess.can("driver_profiles")}
+      };
+      status.append(select);
+      const shift=document.createElement("td");shift.className="driver-list-shift";
+      regularShift(row.weekly_schedule).split("\n").forEach(text=>{const line=document.createElement("div");line.textContent=text;shift.append(line)});
+      tr.append(driver,status,shift);body.append(tr);
+    }
+  }
+  async function openDriverList(){
+    if(!live||!user)return;
+    $("driverListModal").classList.remove("hidden");$("driverListMessage").textContent="Loading drivers…";
+    $("driverListRows").replaceChildren();
+    const version=++driverListVersion,account=user.id;
+    const result=await sb.from("transfer_drivers").select("name,full_name,is_active,weekly_schedule").neq("name","Planning").order("name");
+    if(version!==driverListVersion||user?.id!==account)return;
+    if(result.error){$("driverListMessage").textContent="Could not load drivers: "+result.error.message;return}
+    driverListRows=(result.data||[]).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:"base"}));
+    renderDriverList();$("driverListMessage").textContent="";
+  }
+  function closeDriverList(){driverListVersion++;$("driverListModal").classList.add("hidden")}
+  $("driverList").onclick=openDriverList;$("driverListClose").onclick=closeDriverList;
+  $("driverListModal").addEventListener("click",event=>{if(event.target===$("driverListModal"))closeDriverList()});
+  document.addEventListener("keydown",event=>{if(event.key==="Escape")closeDriverList()});
+
   function renderReportDrivers(){
     E.reportDriverList.innerHTML="";
     drivers.forEach((driver,index)=>{
@@ -774,7 +840,7 @@
   }
   async function session(s){
     if(!s?.user){
-      user=null;loadVersion++;refreshPending=false;clearTimeout(refreshTimer);
+      closeDriverList();driverListRows=[];$("driverListRows").replaceChildren();user=null;loadVersion++;refreshPending=false;clearTimeout(refreshTimer);
       E.login.classList.remove("hidden");
       return;
     }
