@@ -114,7 +114,7 @@ html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .sched
       <input id="weekStart" type="date" aria-label="Week starting">
       <button id="nextWeek" type="button">→</button>
     </div>
-      <div class="schedule-heading-actions"><button id="invoicing" type="button">Invoicing</button><button id="driverList" type="button">Driver List</button><button id="addDriver" type="button">Add Driver</button><button id="saveSchedule" class="primary" type="button">Save Schedule</button><button id="runReports" type="button">Run Reports</button></div>
+      <div class="schedule-heading-actions"><button id="invoicing" type="button">Invoicing</button><button id="driverList" type="button">Driver List</button><button id="saveSchedule" class="primary" type="button">Save Schedule</button><button id="runReports" type="button">Run Reports</button></div>
       </div>
     </div>
 
@@ -175,6 +175,7 @@ html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .sched
 <div id="driverListModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="driverListTitle">
  <div class="modalbox driver-list-box">
   <div class="modalhead"><h2 id="driverListTitle">Driver List</h2><button id="driverListClose" class="iconbtn" type="button" aria-label="Close Driver List">×</button></div>
+  <div style="display:flex;justify-content:flex-end;margin:12px 0"><button id="addDriver" type="button">Add Driver</button></div>
   <p id="driverListMessage" role="status" aria-live="polite"></p>
   <div class="driver-list-scroll"><table class="driver-list-table"><thead><tr><th>Driver</th><th>Status</th><th>Regular Shift</th></tr></thead><tbody id="driverListRows"></tbody></table></div>
  </div>
