@@ -17,7 +17,7 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js?v=20261009-permissions"></script>
   <link rel="stylesheet" href="driver-profile.css?v=20261009-permissions">
   <script src="config.js?v=20261009-permissions"></script>
-  <script src="access-control.js?v=20261022-share-reset"></script>
+  <script src="access-control.js?v=20261109-invoicing"></script>
 <script src="popup-dismiss.js?v=20261016" defer></script>
 <script src="site-language.js?v=20261014" defer></script>
 <style>
@@ -62,6 +62,17 @@ html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .sched
 .driver-default-help,.driver-default-message{font-size:11px;margin:4px 0;line-height:1.4}
 .driver-default-actions{display:flex;gap:6px;margin-top:6px}
 .driver-edit-shift{margin-top:6px;padding:4px 8px;font-size:11px}
+</style><style>
+.invoice-box{width:min(1100px,calc(100vw - 32px));max-height:90vh;overflow:auto}
+.invoice-box .invoice-help{font-size:12px;color:var(--muted);line-height:1.5;margin:12px 0}
+.invoice-upload,.invoice-period,.invoice-actions{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin:12px 0}
+.invoice-upload label{flex:1;min-width:200px}.invoice-upload input{width:100%}
+.invoice-period label{width:180px}.invoice-box details{margin:12px 0}.invoice-box summary{cursor:pointer;font-size:13px}
+#invoiceText{width:100%;resize:vertical;margin:8px 0}#invoiceMsg{font-size:13px;min-height:20px;line-height:1.5}
+#invoiceDrivers{display:flex;gap:8px 18px;flex-wrap:wrap;margin-top:10px}#invoiceDrivers label{display:flex;align-items:center;gap:6px;font-size:13px}#invoiceDrivers input{width:14px;min-width:14px;height:14px;min-height:14px;margin:0}
+.invoice-scroll{overflow:auto}.invoice-table{width:100%;border-collapse:collapse;font-size:12px}.invoice-table th,.invoice-table td{padding:8px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+.invoice-table th{color:var(--muted);white-space:nowrap}.invoice-table input[type=date]{width:145px;min-width:145px}.invoice-table select{min-width:145px}.invoice-source{min-width:220px;max-width:460px;white-space:normal;overflow-wrap:normal;word-break:normal;line-height:1.5}
+#invoiceResults h3{font-size:15px;margin:20px 0 8px}#invoiceResults td:first-child{white-space:nowrap}
 </style></head>
 <body class="header-scroll-shell">
 <header>
@@ -103,7 +114,7 @@ html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .sched
       <input id="weekStart" type="date" aria-label="Week starting">
       <button id="nextWeek" type="button">→</button>
     </div>
-      <div class="schedule-heading-actions"><button id="driverList" type="button">Driver List</button><button id="addDriver" type="button">Add Driver</button><button id="saveSchedule" class="primary" type="button">Save Schedule</button><button id="runReports" type="button">Run Reports</button></div>
+      <div class="schedule-heading-actions"><button id="invoicing" type="button">Invoicing</button><button id="driverList" type="button">Driver List</button><button id="addDriver" type="button">Add Driver</button><button id="saveSchedule" class="primary" type="button">Save Schedule</button><button id="runReports" type="button">Run Reports</button></div>
       </div>
     </div>
 
@@ -166,6 +177,22 @@ html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .sched
   <div class="modalhead"><h2 id="driverListTitle">Driver List</h2><button id="driverListClose" class="iconbtn" type="button" aria-label="Close Driver List">×</button></div>
   <p id="driverListMessage" role="status" aria-live="polite"></p>
   <div class="driver-list-scroll"><table class="driver-list-table"><thead><tr><th>Driver</th><th>Status</th><th>Regular Shift</th></tr></thead><tbody id="driverListRows"></tbody></table></div>
+ </div>
+</div>
+
+
+<div id="invoiceModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="invoiceTitle">
+ <div class="modalbox invoice-box">
+  <div class="modalhead"><h2 id="invoiceTitle">Invoicing</h2><button type="button" id="invoiceClose" class="iconbtn" aria-label="Close Invoicing">×</button></div>
+  <p class="invoice-help">Compare carrier charges with saved driver schedules and nonbillable downtime. Files are read on this device.</p>
+  <div class="invoice-upload"><label>Invoice PDF or image<input id="invoiceFile" type="file" accept="application/pdf,image/png,image/jpeg,image/webp,image/bmp"></label><button id="invoiceRead" type="button">Read Invoice</button></div>
+  <details><summary>Recognized text / Paste invoice text</summary><textarea id="invoiceText" rows="6" aria-label="Invoice text"></textarea><button type="button" id="invoiceParse">Read Text</button></details>
+  <div class="invoice-period"><label>Period start<input type="date" id="invoiceStart"></label><label>Period end<input type="date" id="invoiceEnd"></label></div>
+  <details open><summary>Drivers to check for dates missing from this invoice</summary><div id="invoiceDrivers"></div></details>
+  <p class="invoice-help">Review extracted rows below. Correct unknown drivers or dates, remove invoice header dates, and add any missed charges.</p>
+  <div class="invoice-scroll"><table class="invoice-table"><thead><tr><th>Billed date</th><th>Driver</th><th>Invoice text</th><th></th></tr></thead><tbody id="invoiceRows"></tbody></table></div>
+  <div class="invoice-actions"><button type="button" id="invoiceAdd">Add Billed Date</button><button type="button" class="primary" id="invoiceCheck">Check Invoice</button><button type="button" id="invoiceExport" disabled>Export CSV</button></div>
+  <p id="invoiceMsg" role="status" aria-live="polite"></p><div id="invoiceResults"></div>
  </div>
 </div>
 
@@ -250,5 +277,6 @@ html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .sched
 <script src="theme.js?v=20261009-permissions"></script>
 <script src="user-profile.js?v=20261016-account-options"></script>
 <script src="visitor-share.js?v=20261022-simple" defer></script>
+<script src="invoicing.js?v=20261109-invoice-review"></script>
 </body>
 </html>
