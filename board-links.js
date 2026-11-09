@@ -21,7 +21,7 @@ window.createBoardLinks=function({sb,grid,getDate,getUser,getJobs,getStatuses,ap
    minEnd:Math.max(start,...below.map(n=>anchor.end+start-n.start)),maxEnd:Math.min(end,...below.map(n=>anchor.end+end-n.end))};
  }
  let resizePreview=[];
- function clearResizePreview(){for(const {el,top}of resizePreview)if(el.isConnected)el.style.top=top;resizePreview=[];window.TransferChainVisual.renderLinks(grid,edges)}
+ function clearResizePreview(){for(const {el,top}of resizePreview)if(el.isConnected)el.style.top=top;resizePreview=[];window.TransferChainVisual?.renderLinks?.(grid,edges)}
  function previewResize(key,finish,begin){
   clearResizePreview();const anchor=nodes().find(n=>n.key===key);if(!anchor)return;
   const above=resizeFollowers(key,true),aboveIds=new Set(above.map(n=>n.key)),delta=finish-anchor.end,topDelta=(begin??anchor.start)-anchor.start;
@@ -29,7 +29,7 @@ window.createBoardLinks=function({sb,grid,getDate,getUser,getJobs,getStatuses,ap
    const match=el.dataset.boxKey===n.key||(n.kind==='status'&&el.dataset.statusId===n.id);
    if(match){resizePreview.push({el,top:el.style.top});el.style.top=(parseFloat(el.style.top)+(aboveIds.has(n.key)?topDelta:delta)/15*px)+'px'}
   }
-  window.TransferChainVisual.renderLinks(grid,edges);
+  window.TransferChainVisual?.renderLinks?.(grid,edges);
  }
  async function resize(key,begin,finish){
   if(busy)return false;if(!ready){report('Links are still loading. Try again in a moment.','error');return false}
@@ -83,14 +83,19 @@ window.createBoardLinks=function({sb,grid,getDate,getUser,getJobs,getStatuses,ap
    cancelDrag?.();const pointer=e.pointerId,x=e.clientX,y=e.clientY;let dragging=false,target=null;
    handle.setPointerCapture(pointer);
    const find=ev=>{const el=document.elementFromPoint(ev.clientX,ev.clientY)?.closest('[data-box-key]');return el&&canLink(key,el.dataset.boxKey)?el:null};
-   const update=ev=>{if(ev.pointerId!==pointer)return;if(!dragging&&Math.hypot(ev.clientX-x,ev.clientY-y)<5)return;if(!dragging){dragging=true;window.TransferChainVisual.start(handle);handle.classList.add('link-dragging')}suppressClick=Date.now()+500;target?.classList.remove('link-target');target=find(ev);target?.classList.add('link-target');window.TransferChainVisual.move(ev.clientX,ev.clientY,target)};
-   const cleanup=()=>{handle.removeEventListener('pointermove',update);handle.removeEventListener('pointerup',up);handle.removeEventListener('pointercancel',cancel);handle.removeEventListener('lostpointercapture',cancel);window.removeEventListener('blur',cancel);document.removeEventListener('keydown',escape);if(handle.hasPointerCapture(pointer))handle.releasePointerCapture(pointer);target?.classList.remove('link-target');handle.classList.remove('link-dragging');cancelDrag=null;window.TransferChainVisual.stop()};
+   const update=ev=>{if(ev.pointerId!==pointer)return;if(!dragging&&Math.hypot(ev.clientX-x,ev.clientY-y)<5)return;if(!dragging){dragging=true;window.TransferChainVisual?.start?.(handle);handle.classList.add('link-dragging')}suppressClick=Date.now()+500;target?.classList.remove('link-target');target=find(ev);target?.classList.add('link-target');window.TransferChainVisual?.move?.(ev.clientX,ev.clientY,target)};
+   const cleanup=()=>{handle.removeEventListener('pointermove',update);handle.removeEventListener('pointerup',up);handle.removeEventListener('pointercancel',cancel);handle.removeEventListener('lostpointercapture',cancel);window.removeEventListener('blur',cancel);document.removeEventListener('keydown',escape);if(handle.hasPointerCapture(pointer))handle.releasePointerCapture(pointer);target?.classList.remove('link-target');handle.classList.remove('link-dragging');cancelDrag=null;window.TransferChainVisual?.stop?.()};
    const up=ev=>{if(ev.pointerId!==pointer)return;ev.preventDefault();ev.stopPropagation();const destination=dragging?find(ev):null;cleanup();if(dragging){suppressClick=Date.now()+500;if(destination)link(key,destination.dataset.boxKey)}};
    const cancel=()=>{if(dragging)suppressClick=Date.now()+500;cleanup()};const escape=ev=>{if(ev.key==='Escape')cancel()};cancelDrag=cancel;
    handle.addEventListener('pointermove',update);handle.addEventListener('pointerup',up);handle.addEventListener('pointercancel',cancel);handle.addEventListener('lostpointercapture',cancel);window.addEventListener('blur',cancel);document.addEventListener('keydown',escape);
   });box.append(handle);
  }
- function render(){cancelDrag?.();for(const box of grid.querySelectorAll('.card,.slot-status-block')){const key=box.classList.contains('card')?'job:'+box.dataset.id:'status:'+box.dataset.statusId;attach(box,key);const h=box.querySelector('.load-chain'),linked=edges.some(e=>e.source_key===key||e.target_key===key);h.classList.toggle('is-linked',linked);h.setAttribute('aria-pressed',String(linked));h.title=linked?'Click to unlink this box; drag to link a box above or below':'Drag to link a box above or below';h.setAttribute('aria-label',h.title)}window.TransferChainVisual.renderLinks(grid,edges)}
+ let visualRetry=false;
+ function ensureChainVisual(){
+  if(window.TransferChainVisual||visualRetry)return;visualRetry=true;
+  const script=document.createElement('script');script.src=new URL('chain-visual.js?v=20261109-retry',document.baseURI).href;script.onload=()=>render();script.onerror=()=>console.warn('Chain artwork could not load; board operations remain available.');document.head.append(script);
+ }
+ function render(){ensureChainVisual();cancelDrag?.();for(const box of grid.querySelectorAll('.card,.slot-status-block')){const key=box.classList.contains('card')?'job:'+box.dataset.id:'status:'+box.dataset.statusId;attach(box,key);const h=box.querySelector('.load-chain'),linked=edges.some(e=>e.source_key===key||e.target_key===key);h.classList.toggle('is-linked',linked);h.setAttribute('aria-pressed',String(linked));h.title=linked?'Click to unlink this box; drag to link a box above or below':'Drag to link a box above or below';h.setAttribute('aria-label',h.title)}window.TransferChainVisual?.renderLinks?.(grid,edges)}
  return {refresh,render,group,landing,move,resize,resizeBounds,previewResize,clearResizePreview,preview,clearPreview,forget(key){edges=edges.filter(e=>e.source_key!==key&&e.target_key!==key);if(!sb)localStorage.setItem(storageKey,JSON.stringify(edges));else refresh();render()},reset(){cancelDrag?.();loadToken++;edges=[];ready=!sb;clearPreview();clearResizePreview();render()}};
 };
 
