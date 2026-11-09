@@ -524,6 +524,40 @@
       return runs.join(", ")+" · "+time12(start)+"–"+time12(end)+(minutes(end)<minutes(start)?" (+1 day)":"");
     }).join("\n");
   }
+
+  function editDefaultShift(row,cell,summary){
+    if(cell.querySelector(".driver-default-editor"))return;
+    const editor=document.createElement("form");editor.className="driver-default-editor";
+    editor.innerHTML='<div class="driver-default-help">Weekly default from today forward. Saved daily exceptions are kept.</div><table><thead><tr><th>Day</th><th>Start</th><th>End</th></tr></thead><tbody></tbody></table><div class="driver-default-actions"><button type="submit">Save Default Shift</button><button type="button" class="cancel-default-shift">Cancel</button></div><div class="driver-default-message" role="status"></div>';
+    const body=editor.querySelector("tbody"),days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    for(const day of [1,2,3,4,5,6,0]){
+      const tr=document.createElement("tr");tr.dataset.day=day;
+      tr.innerHTML='<th>'+days[day]+'</th><td><input type="time" step="900" class="default-start" aria-label="'+days[day]+' regular shift start" value="'+esc(row.weekly_schedule?.[day]?.start||"")+'"></td><td><input type="time" step="900" class="default-end" aria-label="'+days[day]+' regular shift end" value="'+esc(row.weekly_schedule?.[day]?.end||"")+'"></td>';
+      body.append(tr);
+    }
+    const cancel=()=>editor.remove();editor.querySelector(".cancel-default-shift").onclick=cancel;
+    editor.onsubmit=async event=>{
+      event.preventDefault();const message=editor.querySelector(".driver-default-message");
+      const week=Array.from({length:7},()=>({start:null,end:null}));
+      for(const tr of body.children){
+        const start=tr.querySelector(".default-start").value,end=tr.querySelector(".default-end").value;
+        if(Boolean(start)!==Boolean(end)||start&&start===end){message.textContent="Enter both times, or leave both blank for OFF. Start and end must differ.";return}
+        week[Number(tr.dataset.day)]={start:start||null,end:end||null};
+      }
+      if(dirty){if(!await save(true)||dirty){message.textContent="Save the daily schedule changes first.";return}}
+      editor.querySelectorAll("input,button").forEach(el=>el.disabled=true);message.textContent="Saving default shift…";
+      try{
+        const result=await sb.rpc("save_driver_default_week",{p_driver:row.name,p_week:week,p_expected:row.weekly_schedule});
+        if(result.error)throw result.error;
+        row.weekly_schedule=result.data.weekly_schedule;
+        summary.replaceChildren();regularShift(row.weekly_schedule).split("\n").forEach(text=>{const line=document.createElement("div");line.textContent=text;summary.append(line)});
+        editor.remove();$("driverListMessage").textContent="Default shift saved for "+row.name+". Daily exceptions were kept.";
+        requestScheduleRefresh();
+      }catch(error){message.textContent="Could not save default shift: "+error.message;editor.querySelectorAll("input,button").forEach(el=>el.disabled=false)}
+    };
+    cell.append(editor);
+  }
+
   function renderDriverList(){
     const body=$("driverListRows");body.replaceChildren();
     if(!driverListRows.length){body.innerHTML='<tr><td colspan="3">No drivers added yet.</td></tr>';return}
@@ -550,7 +584,13 @@
       };
       status.append(select);
       const shift=document.createElement("td");shift.className="driver-list-shift";
-      regularShift(row.weekly_schedule).split("\n").forEach(text=>{const line=document.createElement("div");line.textContent=text;shift.append(line)});
+      const summary=document.createElement("div");
+      regularShift(row.weekly_schedule).split("\n").forEach(text=>{const line=document.createElement("div");line.textContent=text;summary.append(line)});
+      shift.append(summary);
+      if(window.TransfersAccess.can("repeat_schedules")){
+        const edit=document.createElement("button");edit.type="button";edit.textContent="Edit Shift";edit.className="driver-edit-shift";
+        edit.onclick=()=>editDefaultShift(row,shift,summary);shift.append(edit);
+      }
       tr.append(driver,status,shift);body.append(tr);
     }
   }
