@@ -88,7 +88,14 @@ if(typeof document==='undefined')return;
  }catch(e){message('Could not read invoice: '+e.message);}finally{if(worker)await worker.terminate().catch(()=>{});if(pdf)await pdf.destroy().catch(()=>{});setBusy(false);}
  };
  async function allRows(table,columns,start,end){let out=[];for(let offset=0;;offset+=1000){const r=await sb.from(table).select(columns).gte('schedule_date',start).lte('schedule_date',end).order('schedule_date').order('driver_name').range(offset,offset+999);if(r.error)throw r.error;out.push(...r.data);if(r.data.length<1000)return out;}}
- function resultTable(title,list){return `<h3>${escape(title)} (${list.length})</h3>`+(list.length?`<div class="invoice-scroll"><table class="invoice-table"><thead><tr><th>Date</th><th>Driver</th><th>Scheduled hrs</th><th>Downtime hrs</th><th>Billable hrs</th><th>Result</th></tr></thead><tbody>${list.map(r=>`<tr><td>${escape(r.date||'Unknown')}</td><td>${escape(r.driver||'Unknown')}</td><td>${r.scheduled.toFixed(2)}</td><td>${r.down.toFixed(2)}</td><td>${r.billable.toFixed(2)}</td><td>${escape(r.reason)}</td></tr>`).join('')}</tbody></table></div>`:'<p>None</p>');}
+ function resultIcon(r){
+ const noMatch=r.status==='Unverified',attention=!noMatch&&(r.status!=='Verified'||r.down>0);
+ const label=noMatch?'No match found':attention?'Needs attention':'Verified match';
+ const color=noMatch?'#dc3545':attention?'#eab308':'#22c55e';
+ const symbol=noMatch?'✕':attention?'●':'✓';
+ return '<span role="img" aria-label="'+label+'" title="'+escape(r.reason)+'" style="display:inline-block;color:'+color+';font-size:22px;font-weight:700;line-height:1;vertical-align:middle">'+symbol+'</span>';
+ }
+ function resultTable(title,list){return `<h3>${escape(title)} (${list.length})</h3>`+(list.length?`<div class="invoice-scroll"><table class="invoice-table"><thead><tr><th>Date</th><th>Driver</th><th>Scheduled hrs</th><th>Downtime hrs</th><th>Billable hrs</th><th>Result</th></tr></thead><tbody>${list.map(r=>`<tr><td>${escape(r.date||'Unknown')}</td><td>${escape(r.driver||'Unknown')}</td><td>${r.scheduled.toFixed(2)}</td><td>${r.down.toFixed(2)}</td><td>${r.billable.toFixed(2)}</td><td>${resultIcon(r)}</td></tr>`).join('')}</tbody></table></div>`:'<p>None</p>');}
  $('invoiceCheck').onclick=async()=>{
  const start=$('invoiceStart').value,end=$('invoiceEnd').value,selected=[...$('invoiceDrivers').querySelectorAll('input:checked')].map(el=>el.value);
  if(!rows.length){message('Read an invoice or add billed dates first.');return;}if(!start||!end||end<start){message('Choose a valid invoice period.');return;}if((new Date(end)-new Date(start))/86400000>366){message('Check up to one year at a time.');return;}
