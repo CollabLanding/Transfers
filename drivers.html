@@ -41,7 +41,20 @@ html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .sched
 .downtime-fields label{flex:1;min-width:140px}
 #downtimeMsg{color:#dc3545}
 </style>
-</head>
+<style>
+.driver-list-box{width:min(920px,calc(100vw - 32px));max-height:85vh;overflow:auto}
+.driver-list-scroll{overflow-x:auto}
+.driver-list-table{width:100%;border-collapse:collapse}
+.driver-list-table th,.driver-list-table td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid var(--line)}
+.driver-list-table th{color:var(--muted);font-size:12px}
+.driver-list-table td{font-size:13px}
+.driver-list-table td:first-child{min-width:150px}
+.driver-list-table select{width:115px;min-width:115px}
+.driver-list-table small{display:block;color:var(--muted);margin-top:3px}
+.driver-list-shift{white-space:nowrap;line-height:1.6}
+.driver-list-table tr.is-inactive td:first-child{color:var(--muted)}
+#driverListMessage{min-height:18px;font-size:12px}
+</style></head>
 <body class="header-scroll-shell">
 <header>
   <div class="brand-cluster"><img class="company-logo" src="/Transfers/site-logo.png?v=2" alt="Fanatics Collectibles"><div class="app-brand">
@@ -82,7 +95,7 @@ html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .sched
       <input id="weekStart" type="date" aria-label="Week starting">
       <button id="nextWeek" type="button">→</button>
     </div>
-      <div class="schedule-heading-actions"><button id="addDriver" type="button">Add Driver</button><button id="saveSchedule" class="primary" type="button">Save Schedule</button><button id="runReports" type="button">Run Reports</button></div>
+      <div class="schedule-heading-actions"><button id="driverList" type="button">Driver List</button><button id="addDriver" type="button">Add Driver</button><button id="saveSchedule" class="primary" type="button">Save Schedule</button><button id="runReports" type="button">Run Reports</button></div>
       </div>
     </div>
 
@@ -138,6 +151,14 @@ html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .sched
   <p id="downtimeMsg" role="status"></p>
   <div class="modalactions"><button type="button" id="downtimeCancel">Clear Fields</button><button type="submit" id="downtimeSave" class="primary">Add Gap</button></div>
  </form>
+</div>
+
+<div id="driverListModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="driverListTitle">
+ <div class="modalbox driver-list-box">
+  <div class="modalhead"><h2 id="driverListTitle">Driver List</h2><button id="driverListClose" class="iconbtn" type="button" aria-label="Close Driver List">×</button></div>
+  <p id="driverListMessage" role="status" aria-live="polite"></p>
+  <div class="driver-list-scroll"><table class="driver-list-table"><thead><tr><th>Driver</th><th>Status</th><th>Regular Shift</th></tr></thead><tbody id="driverListRows"></tbody></table></div>
+ </div>
 </div>
 
 <div id="reportModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
@@ -216,7 +237,7 @@ html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .sched
 </div>
 
 <script src="driver-availability.js?v=20261012-overnight"></script>
-<script src="driver-schedule.js?v=20261104-compact-downtime"></script>
+<script src="driver-schedule.js?v=20261109-driver-list"></script>
 <script src="driver-history.js?v=20261009-permissions"></script>
 <script src="theme.js?v=20261009-permissions"></script>
 <script src="user-profile.js?v=20261016-account-options"></script>
