@@ -17,6 +17,7 @@ function parse(text,drivers){
  const lines=String(text).replace(/\r/g,'').split('\n');const rows=[];let current=null;
  for(const raw of lines){const line=raw.trim();if(!line)continue;const ds=dates(line);
   if(ds.length){for(let i=0;i<ds.length;i++){const source=line.slice(ds[i].index,i+1<ds.length?ds[i+1].index:undefined);current={date:ds[i].date,driver:'',source};rows.push(current);}}
+  else if((/\b\d{1,2}[/.\-][a-z0-9]{1,2}[/.\-]\d{2,4}\b/i.test(line)||(/(?:DAILY\s+(?:SHUTTLE|YARD)|TRANSPORTATION SERVICE)/i.test(line)&&(!current||matchDriver(current.source,drivers))))){current={date:'',driver:'',source:line};rows.push(current);}
   else if(current&&!/^(?:subtotal|total|balance|amount due|invoice|page \d|terms|payment)/i.test(line)&&current.source.length<1500){current.source+=' '+line;}
  }
  for(const r of rows)r.driver=matchDriver(r.source,drivers);
@@ -73,7 +74,7 @@ if(typeof document==='undefined')return;
  function pageText(items){const lines=[];for(const item of items){if(!item.str?.trim())continue;const y=item.transform[5];let line=lines.find(l=>Math.abs(l.y-y)<3);if(!line){line={y,items:[]};lines.push(line);}line.items.push(item);}return lines.sort((a,b)=>b.y-a.y).map(l=>l.items.sort((a,b)=>a.transform[4]-b.transform[4]).map(i=>i.str).join(' ')).join('\n');}
  $('invoiceRead').onclick=async()=>{
  const file=$('invoiceFile').files[0];if(!file){message('Choose a PDF or image first.');return;}if(file.size>25*1024*1024){message('Choose a file smaller than 25 MB.');return;}
- setBusy(true);invalidate();message('Reading invoice…');let worker=null,pdf=null;
+ setBusy(true);invalidate();const token=revision;message('Reading invoice…');let worker=null,pdf=null;
  try{
  const ocr=async image=>{if(!worker){await script('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',()=>!!window.Tesseract);worker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status)message('Reading invoice: '+m.status+(m.progress?' '+Math.round(m.progress*100)+'%':''));}});}return (await worker.recognize(image)).data.text;};
  let text='';if(file.type==='application/pdf'||/\.pdf$/i.test(file.name)){
@@ -83,7 +84,7 @@ if(typeof document==='undefined')return;
  if(!dates(txt).length||!parse(txt,drivers).some(r=>r.driver)){const v=page.getViewport({scale:2}),canvas=document.createElement('canvas');if(v.width*v.height>20000000)throw new Error('PDF page is too large. Upload a smaller copy.');canvas.width=v.width;canvas.height=v.height;await page.render({canvasContext:canvas.getContext('2d'),viewport:v}).promise;txt=await ocr(canvas);canvas.width=canvas.height=0;}
  text+=txt+'\n';page.cleanup();}
  }else if(file.type.startsWith('image/'))text=await ocr(file);else throw new Error('Upload a PDF, PNG, JPEG, or WebP image.');
- if(!text.trim())throw new Error('No text was recognized. Try a clearer image or paste invoice text below.');acceptText(text);
+ if(!text.trim())throw new Error('No text was recognized. Try a clearer image or paste invoice text below.');if(token===revision)acceptText(text);
  }catch(e){message('Could not read invoice: '+e.message);}finally{if(worker)await worker.terminate().catch(()=>{});if(pdf)await pdf.destroy().catch(()=>{});setBusy(false);}
  };
  async function allRows(table,columns,start,end){let out=[];for(let offset=0;;offset+=1000){const r=await sb.from(table).select(columns).gte('schedule_date',start).lte('schedule_date',end).order('schedule_date').order('driver_name').range(offset,offset+999);if(r.error)throw r.error;out.push(...r.data);if(r.data.length<1000)return out;}}
