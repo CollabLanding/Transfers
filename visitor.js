@@ -78,7 +78,7 @@ function makeCard(x,top,height,stacked){
 function render(data){
  const scroll={x:wrap.scrollLeft,y:wrap.scrollTop};driverSchedule=data.schedules||[];grid.replaceChildren();
  $("visitorDate").textContent=new Date(data.date+"T12:00:00").toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});
- const drivers=[...new Set(["Planning",...(data.drivers||[]),...(data.transfers||[]).map(x=>x.driver),...(data.statuses||[]).map(x=>x.driver)])];
+ const drivers=[...new Set(["Planning",...(data.drivers||[]),...(data.transfers||[]).map(x=>x.driver),...(data.statuses||[]).map(x=>x.driver)])].filter(name=>!(data.inactive_drivers||[]).includes(name));
  const hr=document.createElement("div");hr.className="headrow";const corner=document.createElement("div");corner.className="corner";hr.append(corner);
  drivers.forEach(driver=>{const h=document.createElement("div");h.className="driverhead";h.textContent=driver;hr.append(h)});grid.append(hr);
  const br=document.createElement("div");br.className="bodyrow";const rail=document.createElement("div");rail.className="times";rail.style.height=GRID_HEIGHT+"px";
