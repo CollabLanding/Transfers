@@ -51,9 +51,19 @@ window.createBoardLinks=function({sb,grid,getDate,getUser,getJobs,getStatuses,ap
  async function link(source,target){if(!window.TransfersAccess.can('link_boxes'))return;
   if(busy||!ready)return;busy=true;
   try{if(sb){const r=await sb.rpc('set_board_box_link',{p_source:source,p_target:target});if(r.error)throw r.error}
-   else{edges=target?[...edges,{source_key:source,target_key:target}]:edges.filter(e=>e.source_key!==source&&e.target_key!==source);localStorage.setItem(storageKey,JSON.stringify(edges))}
+   else{edges=target?[...edges,{source_key:source,target_key:target}]:edges.filter(e=>e.source_key!==source);localStorage.setItem(storageKey,JSON.stringify(edges))}
    await refresh();report(target?'Boxes linked':'Box unlinked.','ok');
   }catch(e){report('Could not change link: '+e.message,'error')}finally{busy=false}
+ }
+ async function unlinkEdge(key){
+  if(!window.TransfersAccess.can('link_boxes')||busy||!ready)return;
+  const edge=edges.find(e=>e.source_key===key)||edges.find(e=>e.target_key===key);if(!edge)return;
+  busy=true;
+  try{
+   if(sb){const r=await sb.rpc('unlink_board_box_connection',{p_source:edge.source_key,p_target:edge.target_key});if(r.error)throw r.error;}
+   else{edges=edges.filter(e=>!(e.source_key===edge.source_key&&e.target_key===edge.target_key));localStorage.setItem(storageKey,JSON.stringify(edges));}
+   await refresh();report('Boxes unlinked','ok');
+  }catch(e){report('Could not unlink boxes: '+e.message,'error')}finally{busy=false}
  }
  function canLink(source,target){if(!ready||source===target||keysFor(source).has(target))return false;const all=nodes(),s=all.find(n=>n.key===source),t=all.find(n=>n.key===target);return !!(s&&t&&s.driver===t.driver&&s.date===t.date)}
  async function move(key,driver,minute){if(!window.TransfersAccess.can(key.startsWith('job:')?'move_load':'manage_status'))return;
@@ -81,7 +91,7 @@ window.createBoardLinks=function({sb,grid,getDate,getUser,getJobs,getStatuses,ap
   handle.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>';
   centerChainHandle(box,handle);
   let suppressClick=0;
-  handle.addEventListener('click',e=>{e.stopPropagation();if(Date.now()<suppressClick||busy)return;if(edges.some(l=>l.source_key===key||l.target_key===key))link(key,null)});
+  handle.addEventListener('click',e=>{e.stopPropagation();if(Date.now()<suppressClick||busy)return;unlinkEdge(key)});
   handle.addEventListener('dragstart',e=>{e.preventDefault();e.stopPropagation()});
   handle.addEventListener('pointerdown',e=>{
    if(e.button!==0)return;e.preventDefault();e.stopPropagation();if(busy||!ready||!getUser())return;
@@ -100,7 +110,7 @@ window.createBoardLinks=function({sb,grid,getDate,getUser,getJobs,getStatuses,ap
   if(window.TransferChainVisual||visualRetry)return;visualRetry=true;
   const script=document.createElement('script');script.src=new URL('chain-visual.js?v=20261110-linked-only',document.baseURI).href;script.onload=()=>render();script.onerror=()=>console.warn('Chain artwork could not load; board operations remain available.');document.head.append(script);
  }
- function render(){ensureChainVisual();cancelDrag?.();for(const box of grid.querySelectorAll('.card,.slot-status-block')){const key=box.classList.contains('card')?'job:'+box.dataset.id:'status:'+box.dataset.statusId;attach(box,key);const h=box.querySelector('.load-chain'),linked=edges.some(e=>e.source_key===key||e.target_key===key);h.classList.toggle('is-linked',linked);h.setAttribute('aria-pressed',String(linked));h.title=linked?'Click to unlink this box; drag to link a box above or below':'Drag to link a box above or below';h.setAttribute('aria-label',h.title)}window.TransferChainVisual?.renderLinks?.(grid,edges)}
+ function render(){ensureChainVisual();cancelDrag?.();for(const box of grid.querySelectorAll('.card,.slot-status-block')){const key=box.classList.contains('card')?'job:'+box.dataset.id:'status:'+box.dataset.statusId;attach(box,key);const h=box.querySelector('.load-chain'),linked=edges.some(e=>e.source_key===key||e.target_key===key);h.classList.toggle('is-linked',linked);h.setAttribute('aria-pressed',String(linked));h.title=linked?'Click to remove this chain connection; drag to link a box above or below':'Drag to link a box above or below';h.setAttribute('aria-label',h.title)}window.TransferChainVisual?.renderLinks?.(grid,edges)}
  return {refresh,render,group,landing,move,resize,resizeBounds,previewResize,clearResizePreview,preview,clearPreview,forget(key){edges=edges.filter(e=>e.source_key!==key&&e.target_key!==key);if(!sb)localStorage.setItem(storageKey,JSON.stringify(edges));else refresh();render()},reset(){cancelDrag?.();loadToken++;edges=[];ready=!sb;clearPreview();clearResizePreview();render()}};
 };
 
