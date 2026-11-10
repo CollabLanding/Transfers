@@ -83,10 +83,9 @@ window.TransferChainVisual = (() => {
   }
   function move(x,y,target) {
     if(!drag)return;
-    const r=drag.handle.getBoundingClientRect();
-    const b=target?endpoint(target,{y:r.top+r.height/2}):{x,y};
+    const b={x,y};
     const a=orient(drag.handle,b);
-    draw(drag.svg,a,b,!!target);
+    draw(drag.svg,a,b,false);
   }
   function stop() {
     if(!drag)return;
