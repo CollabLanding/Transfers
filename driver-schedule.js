@@ -258,8 +258,8 @@
         td.className="schedule-day-cell";
         td.dataset.date=date;
         td.innerHTML=
-          '<label><span>Start</span><input class="shift-start" type="time" step="900" value="'+esc(row?.start_time?String(row.start_time).slice(0,5):"")+'" aria-label="'+esc(driver)+" "+esc(date)+' start"></label>'+
-          '<label><span>End</span><input class="shift-end" type="time" step="900" value="'+esc(row?.end_time?String(row.end_time).slice(0,5):"")+'" aria-label="'+esc(driver)+" "+esc(date)+' end"></label>'+
+          '<div class="shift-time-row"><label><span>Start</span><input class="shift-start" type="time" step="900" value="'+esc(row?.start_time?String(row.start_time).slice(0,5):"")+'" aria-label="'+esc(driver)+" "+esc(date)+' start"></label>'+
+          '<label><span>End</span><input class="shift-end" type="time" step="900" value="'+esc(row?.end_time?String(row.end_time).slice(0,5):"")+'" aria-label="'+esc(driver)+" "+esc(date)+' end"></label></div>'+
           '<label class="invoiced-option"><input type="checkbox" class="invoiced-check" aria-label="'+esc(driver+' '+date+' invoiced')+'" '+(invoiceMarks.get(driver+'|'+date)?'checked ':'')+(!window.TransfersAccess.any(['driver_schedules','driver_reports'])||invoicePending.has(driver+'|'+date)?'disabled':'')+'><span>Invoiced</span></label><div class="downtime-summary"></div><div class="shift-actions"><button class="clear-shift" type="button" title="Clear shift">Off</button><button class="copy-day" type="button" title="Copy this day to the next day">Day →</button><button type="button" class="open-downtime">Downtime</button></div>';
         tr.appendChild(td);
       });
