@@ -17,7 +17,7 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js?v=20261009-permissions"></script>
   <link rel="stylesheet" href="driver-profile.css?v=20261009-permissions">
   <script src="config.js?v=20261009-permissions"></script>
-  <script src="access-control.js?v=20261109-invoicing"></script>
+  <script src="access-control.js?v=20261110-invoiced"></script>
 <script src="popup-dismiss.js?v=20261016" defer></script>
 <script src="site-language.js?v=20261014" defer></script>
 <style>
@@ -73,6 +73,14 @@ html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .sched
 .invoice-scroll{overflow:auto}.invoice-table{width:100%;border-collapse:collapse;font-size:12px}.invoice-table th,.invoice-table td{padding:8px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
 .invoice-table th{color:var(--muted);white-space:nowrap}.invoice-table input[type=date]{width:145px;min-width:145px}.invoice-table select{min-width:145px}.invoice-source{min-width:220px;max-width:460px;white-space:normal;overflow-wrap:normal;word-break:normal;line-height:1.5}
 #invoiceResults h3{font-size:15px;margin:20px 0 8px}#invoiceResults td:first-child{white-space:nowrap}
+</style><style>
+.schedule-day-cell input[type="time"]{width:50%;min-width:0;max-width:50%;padding:0 2px;font-size:10px;box-sizing:border-box}
+.schedule-day-cell input[type="time"]::-webkit-calendar-picker-indicator{width:10px;margin:0;padding:0}
+.schedule-day-cell .invoiced-option{display:flex;align-items:center;gap:6px;margin:6px 0;font-size:10px}
+.schedule-day-cell input.invoiced-check{appearance:none;-webkit-appearance:none;display:inline-grid;place-content:center;width:17px;height:17px;min-width:17px;min-height:17px;padding:0;margin:0;border:1px solid var(--muted);border-radius:3px;background:transparent;cursor:pointer}
+.schedule-day-cell input.invoiced-check:checked::after{content:"✓";color:#22c55e;font-size:17px;font-weight:900;line-height:1}
+.schedule-day-cell input.invoiced-check:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
+.schedule-day-cell input.invoiced-check:disabled{opacity:.6;cursor:default}
 </style></head>
 <body class="header-scroll-shell">
 <header>
@@ -273,11 +281,12 @@ html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .sched
 </div>
 
 <script src="driver-availability.js?v=20261012-overnight"></script>
-<script src="driver-schedule.js?v=20261109-active-only-schedule"></script>
+<script src="driver-schedule.js?v=20261110-invoiced"></script>
 <script src="driver-history.js?v=20261009-permissions"></script>
 <script src="theme.js?v=20261009-permissions"></script>
 <script src="user-profile.js?v=20261016-account-options"></script>
 <script src="visitor-share.js?v=20261022-simple" defer></script>
-<script src="invoicing.js?v=20261109-inactive-drivers"></script>
+<script src="invoicing.js?v=20261110-invoiced"></script>
 </body>
 </html>
+
