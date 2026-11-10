@@ -1,6 +1,6 @@
 /* One shared link graph for job and status boxes. */
 window.createBoardLinks=function({sb,grid,getDate,getUser,getJobs,getStatuses,applyMove,report,start,end,px}){
- const storageKey='transfers-board-links-v1';let edges=[],busy=false,ready=!sb,loadToken=0,cancelDrag=null;
+ const storageKey='transfers-board-links-v1';let edges=[],busy=false,ready=!sb,loadToken=0,cancelDrag=null,pendingLink=null;
  const mins=t=>{const [h,m]=t.split(':').map(Number);return h*60+m};
  function nodes(){return [...getJobs().map(r=>({key:'job:'+r.id,kind:'job',id:r.id,driver:r.driver,date:r.scheduled_date,start:mins(r.scheduled_time),end:mins(r.scheduled_time)+r.duration_minutes,row:r})),...getStatuses().map(r=>({key:'status:'+r.id,kind:'status',id:r.id,driver:r.driver,date:r.scheduled_date,start:r.start_minutes,end:r.end_minutes,row:r}))]}
  function keysFor(key){const ids=new Set([key]);let changed=true;while(changed){changed=false;for(const e of edges){if(ids.has(e.source_key)||ids.has(e.target_key)){for(const k of [e.source_key,e.target_key])if(!ids.has(k)){ids.add(k);changed=true}}}}return ids}
@@ -47,13 +47,15 @@ window.createBoardLinks=function({sb,grid,getDate,getUser,getJobs,getStatuses,ap
  }
  function landing(key,raw){const all=nodes(),anchor=all.find(n=>n.key===key),members=group(key);if(!anchor)return raw;return Math.max(start-Math.min(...members.map(n=>n.start-anchor.start)),Math.min(end-Math.max(...members.map(n=>n.end-anchor.start)),raw))}
  function localEdges(){try{return JSON.parse(localStorage.getItem(storageKey)||'null')}catch{return null}}
- async function refresh(){const token=++loadToken;try{if(sb){const r=await sb.from('board_box_links').select('id,source_key,target_key');if(r.error)throw r.error;if(token!==loadToken)return;edges=r.data||[]}else{edges=localEdges()||getJobs().filter(r=>r.linked_next_id).map(r=>({source_key:'job:'+r.id,target_key:'job:'+r.linked_next_id}));localStorage.setItem(storageKey,JSON.stringify(edges))}ready=true;render()}catch(e){report('Could not load box links: '+e.message,'error')}}
+ async function refresh(){const token=++loadToken;try{if(sb){const r=await sb.from('board_box_links').select('id,source_key,target_key');if(r.error)throw r.error;if(token!==loadToken)return;edges=r.data||[];if(pendingLink&&!edges.some(e=>e.source_key===pendingLink.source_key&&e.target_key===pendingLink.target_key))edges.push(pendingLink)}else{edges=localEdges()||getJobs().filter(r=>r.linked_next_id).map(r=>({source_key:'job:'+r.id,target_key:'job:'+r.linked_next_id}));localStorage.setItem(storageKey,JSON.stringify(edges))}ready=true;render()}catch(e){report('Could not load box links: '+e.message,'error')}}
  async function link(source,target){if(!window.TransfersAccess.can('link_boxes'))return;
   if(busy||!ready)return;busy=true;
+  const previous=edges.slice();
+  if(target){pendingLink={source_key:source,target_key:target};edges=[...edges,pendingLink];render()}
   try{if(sb){const r=await sb.rpc('set_board_box_link',{p_source:source,p_target:target});if(r.error)throw r.error}
-   else{edges=target?[...edges,{source_key:source,target_key:target}]:edges.filter(e=>e.source_key!==source);localStorage.setItem(storageKey,JSON.stringify(edges))}
-   await refresh();report(target?'Boxes linked':'Box unlinked.','ok');
-  }catch(e){report('Could not change link: '+e.message,'error')}finally{busy=false}
+   else{if(!target)edges=edges.filter(e=>e.source_key!==source);localStorage.setItem(storageKey,JSON.stringify(edges))}
+   pendingLink=null;await refresh();report(target?'Boxes linked':'Box unlinked.','ok');
+  }catch(e){pendingLink=null;edges=previous;render();report('Could not change link: '+e.message,'error')}finally{busy=false}
  }
  async function unlinkEdge(key){
   if(!window.TransfersAccess.can('link_boxes')||busy||!ready)return;
