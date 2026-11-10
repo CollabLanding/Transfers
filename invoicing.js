@@ -87,6 +87,14 @@ if(typeof document==='undefined')return;
  if(!text.trim())throw new Error('No text was recognized. Try a clearer image or paste invoice text below.');if(token===revision)acceptText(text);
  }catch(e){message('Could not read invoice: '+e.message);}finally{if(worker)await worker.terminate().catch(()=>{});if(pdf)await pdf.destroy().catch(()=>{});setBusy(false);}
  };
+ async function markVerifiedInvoiced(comparison){
+ const matches=[...new Map(comparison.billed.filter(r=>r.status==='Verified').map(r=>[r.driver+'|'+r.date,{driver_name:r.driver,schedule_date:r.date,is_invoiced:true,source:'Invoice'}])).values()];
+ if(!matches.length)return 0;
+ const response=await sb.from('driver_invoice_marks').upsert(matches,{onConflict:'driver_name,schedule_date'}).select('driver_name,schedule_date');
+ if(response.error)throw new Error('Dates checked, but invoice marks could not be saved: '+response.error.message);
+ window.dispatchEvent(new Event('invoice-marks-changed'));
+ return response.data.length;
+ }
  async function allRows(table,columns,start,end){let out=[];for(let offset=0;;offset+=1000){const r=await sb.from(table).select(columns).gte('schedule_date',start).lte('schedule_date',end).order('schedule_date').order('driver_name').range(offset,offset+999);if(r.error)throw r.error;out.push(...r.data);if(r.data.length<1000)return out;}}
  function resultIcon(r){
  const noMatch=r.status==='Unverified',attention=!noMatch&&(r.status!=='Verified'||r.down>0);
@@ -100,9 +108,10 @@ if(typeof document==='undefined')return;
  const start=$('invoiceStart').value,end=$('invoiceEnd').value,selected=[...$('invoiceDrivers').querySelectorAll('input:checked')].map(el=>el.value);
  if(!rows.length){message('Read an invoice or add billed dates first.');return;}if(!start||!end||end<start){message('Choose a valid invoice period.');return;}if((new Date(end)-new Date(start))/86400000>366){message('Check up to one year at a time.');return;}
  invalidate();const token=revision;setBusy(true);message('Checking saved schedules and downtime…');
- try{const [schedules,gaps]=await Promise.all([allRows('driver_schedules','driver_name,schedule_date,start_time,end_time',start,end),allRows('driver_downtime','driver_name,schedule_date,start_minute,end_minute',start,end)]);if(token!==revision)return;result=compare(rows,schedules,gaps,selected,start,end);$('invoiceResults').innerHTML=resultTable('Verified dates',result.billed.filter(r=>r.status==='Verified'))+resultTable('Unverified dates',result.billed.filter(r=>r.status==='Unverified'))+resultTable('Needs review',result.billed.filter(r=>r.status==='Needs review'))+resultTable('Scheduled dates not billed',result.missing);$('invoiceExport').disabled=false;message('Comparison complete. Verified means a saved working shift exists; review downtime before approving payment.');}catch(e){message('Could not verify invoice: '+e.message);}finally{setBusy(false);}
+ try{const [schedules,gaps]=await Promise.all([allRows('driver_schedules','driver_name,schedule_date,start_time,end_time',start,end),allRows('driver_downtime','driver_name,schedule_date,start_minute,end_minute',start,end)]);if(token!==revision)return;result=compare(rows,schedules,gaps,selected,start,end);$('invoiceResults').innerHTML=resultTable('Verified dates',result.billed.filter(r=>r.status==='Verified'))+resultTable('Unverified dates',result.billed.filter(r=>r.status==='Unverified'))+resultTable('Needs review',result.billed.filter(r=>r.status==='Needs review'))+resultTable('Scheduled dates not billed',result.missing);$('invoiceExport').disabled=false;const marked=await markVerifiedInvoiced(result);message('Comparison complete. '+marked+' matched dates marked Invoiced. Review downtime before approving payment.');}catch(e){message('Could not verify invoice: '+e.message);}finally{setBusy(false);}
  };
  $('invoiceExport').onclick=()=>{if(!result)return;const cell=v=>'"'+String(v??'').replace(/^[=+@\-]/,"'"+'$&').replace(/"/g,'""')+'"';const header=['Result','Date','Driver','Scheduled hours','Downtime hours','Billable hours','Details'];const lines=[header,...[...result.billed,...result.missing].map(r=>[r.status,r.date,r.driver,r.scheduled.toFixed(2),r.down.toFixed(2),r.billable.toFixed(2),r.reason])];const url=URL.createObjectURL(new Blob(['\ufeff'+lines.map(r=>r.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download='invoice-review.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
  sb.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT'){rows=[];result=null;invalidate();$('invoiceText').value='';$('invoiceFile').value='';renderRows();$('invoiceModal').classList.add('hidden');}});
 })();
 })();
+
