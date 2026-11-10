@@ -28,3 +28,5 @@ begin
 end $$;
 create trigger audit_driver_invoice_mark after insert or update on public.driver_invoice_marks for each row execute function transfers_private.audit_driver_invoice_mark();
 alter publication supabase_realtime add table public.driver_invoice_marks;
+
+revoke all on public.driver_invoice_marks from anon, public, authenticated; grant select,insert,update on public.driver_invoice_marks to authenticated;
