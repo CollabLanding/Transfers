@@ -42,7 +42,7 @@ window.createBoardLinks=function({sb,grid,getDate,getUser,getJobs,getStatuses,ap
   busy=true;
   try{let result;if(sb){const r=await sb.rpc('resize_board_link_group',{p_anchor:key,p_start:begin,p_end:finish,p_expected_start:anchor.start,p_expected_end:anchor.end});if(r.error)throw r.error;result=r.data}
    else{const jobs=[],statuses=[];for(const n of changed){const row={...n.row};if(n.kind==='job'){row.scheduled_time=String(Math.floor(n.start/60)).padStart(2,'0')+':'+String(n.start%60).padStart(2,'0');row.duration_minutes=n.end-n.start;row.updated_at=new Date().toISOString();jobs.push(row)}else{row.start_minutes=n.start;row.end_minutes=n.end;statuses.push(row)}}result={jobs,statuses}}
-   clearResizePreview();applyMove(result);report((followers.length&&delta)||(above.length&&topDelta)?'Box resized; linked boxes followed.':'Box resized.','ok');return true;
+   clearResizePreview();applyMove(result);report('Box resized','ok');return true;
   }catch(e){report('Could not resize linked boxes: '+e.message,'error');return false}finally{busy=false}
  }
  function landing(key,raw){const all=nodes(),anchor=all.find(n=>n.key===key),members=group(key);if(!anchor)return raw;return Math.max(start-Math.min(...members.map(n=>n.start-anchor.start)),Math.min(end-Math.max(...members.map(n=>n.end-anchor.start)),raw))}
@@ -52,7 +52,7 @@ window.createBoardLinks=function({sb,grid,getDate,getUser,getJobs,getStatuses,ap
   if(busy||!ready)return;busy=true;
   try{if(sb){const r=await sb.rpc('set_board_box_link',{p_source:source,p_target:target});if(r.error)throw r.error}
    else{edges=target?[...edges,{source_key:source,target_key:target}]:edges.filter(e=>e.source_key!==source&&e.target_key!==source);localStorage.setItem(storageKey,JSON.stringify(edges))}
-   await refresh();report(target?'Boxes linked. Drag either box to move the group.':'Box unlinked.','ok');
+   await refresh();report(target?'Boxes linked':'Box unlinked.','ok');
   }catch(e){report('Could not change link: '+e.message,'error')}finally{busy=false}
  }
  function canLink(source,target){if(!ready||source===target||keysFor(source).has(target))return false;const all=nodes(),s=all.find(n=>n.key===source),t=all.find(n=>n.key===target);return !!(s&&t&&s.driver===t.driver&&s.date===t.date)}
