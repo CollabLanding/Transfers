@@ -44,7 +44,7 @@
   document.querySelectorAll(".driverhead").forEach(node=>{node.draggable=can("reorder_drivers")});
   document.querySelectorAll("#driverPhone").forEach(node=>{if(!can("driver_phones"))node.disabled=true});
   document.querySelectorAll("#weeklyTemplate input,#weeklyTemplate button,#autoRepeat").forEach(node=>{if(!can("repeat_schedules"))node.disabled=true});
-  document.querySelectorAll(".schedule-day-cell input").forEach(node=>{if(!can("driver_schedules"))node.disabled=true});
+  document.querySelectorAll('.schedule-day-cell input[type="time"]').forEach(node=>{if(!can("driver_schedules"))node.disabled=true});
   document.querySelectorAll("#period,#dateFrom,#dateTo,#driverSlot,#recordType,#recordStatus,#recordLocation,#recordSearch").forEach(node=>{if(page==="summary.html"&&!can("summary_filters"))node.disabled=true});
   const driver=document.getElementById("driver");if(driver){driver.disabled=role==="Vendor";if(role==="Vendor")driver.value="Planning";}
   const save=document.getElementById("save");if(save)save.dataset.accessDenied=String(!(editing?can("edit_load"):can("create_load")));
