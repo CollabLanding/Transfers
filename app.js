@@ -631,7 +631,7 @@ async function submit(ev){
       if(r.error){msg("Could not add transfer: "+r.error.message,"error");return}
       E.boardDate.value=p.scheduled_date;
       reset();
-      msg("Transfer added successfully."+ (r.data?.move_number!=null?" Move #"+r.data.move_number+".":""),"ok");
+      msg("Job added","ok");
     }catch(error){msg("Could not confirm the transfer. Contact an administrator before trying again.","error")}
     finally{E.save.disabled=false}
     return;
@@ -693,9 +693,9 @@ async function submit(ev){
   reset();
   if(changedDay)await loadBoardSchedule();else renderBoard();
   if(urgentFallback)msg("Transfer saved. Run migration-v12.sql to enable the Urgent flag.","error");
-  else msg(id?"Transfer updated.":"Transfer added.","ok")
+  else msg(id?"Job edited":"Job added","ok")
 }
-async function remove(){if(!window.TransfersAccess.can("delete_load"))return;let id=E.edit.value;if(!id||!confirm("Delete this transfer load?"))return;if(live){let r=await sb.from("transfers").delete().eq("id",id);if(r.error){msg(r.error.message,"error");return}}items=items.filter(x=>x.id!==id);boxLinks.forget('job:'+id);if(!live)saveLocal();renderBoard();reset();msg("Transfer deleted.","ok")}
+async function remove(){if(!window.TransfersAccess.can("delete_load"))return;let id=E.edit.value;if(!id||!confirm("Delete this transfer load?"))return;if(live){let r=await sb.from("transfers").delete().eq("id",id);if(r.error){msg(r.error.message,"error");return}}items=items.filter(x=>x.id!==id);boxLinks.forget('job:'+id);if(!live)saveLocal();renderBoard();reset();msg("Job deleted","ok")}
 function managedChange(kind,select){if(select.value==="__add_driver__")openOption("driver",select);else if(select.value==="__add_location__")openOption("location",select)}
 function openOption(kind,select){if(!window.TransfersAccess.can(kind==="driver"?"driver_profiles":"locations")){select.value="";return}optionContext={kind,select};E.optionTitle.textContent=kind==="driver"?"Add a Driver":"Add a Location";E.optionLabel.firstChild.textContent=kind==="driver"?"Driver Name":"Building / Location Name";E.optionName.value="";optionMsg("");E.optionModal.classList.remove("hidden");setTimeout(()=>E.optionName.focus(),0)}
 function closeOption(){if(optionContext?.select&&optionContext.select.value.startsWith("__"))optionContext.select.value="";optionContext=null;E.optionModal.classList.add("hidden");optionMsg("")}
