@@ -1429,7 +1429,7 @@ body.dark-theme .schedule-overrun-warning{
 html[data-theme="dark"] .activity-item.activity-focus,body.dark-theme .activity-item.activity-focus{background:#20384a}
 
 /* The chain sits above the resize strip and never starts a load drag. */
-:is(.card,.slot-status-block) .load-chain{position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:26px!important;height:19px!important;min-width:26px!important;min-height:19px!important;padding:0!important;margin:0;border:0!important;border-radius:0!important;background:none!important;background-color:transparent!important;box-shadow:none!important;-webkit-appearance:none!important;appearance:none!important;color:#8b969f;cursor:grab;z-index:12;line-height:1;display:flex;align-items:center;justify-content:center;overflow:visible}
+:is(.card,.slot-status-block) .load-chain{position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:26px!important;height:27px!important;min-width:26px!important;min-height:27px!important;padding:0!important;margin:0;border:0!important;border-radius:0!important;background:none!important;background-color:transparent!important;box-shadow:none!important;-webkit-appearance:none!important;appearance:none!important;color:#8b969f;cursor:grab;z-index:12;line-height:1;display:flex;align-items:center;justify-content:center;overflow:visible}
 :is(.card,.slot-status-block) .load-chain.is-linked{background:transparent;color:#8b969f}
 :is(.card,.slot-status-block) .load-chain:focus-visible{outline:2px solid #ec9800;outline-offset:1px}
 :is(.card,.slot-status-block).link-target{outline:3px solid #159969!important;outline-offset:-3px}
@@ -1447,8 +1447,8 @@ html[data-theme="dark"] .activity-item.activity-focus,body.dark-theme .activity-
 html[data-theme="dark"] .load-chain,body.dark-theme .load-chain{color:#8b969f}
 html[data-theme="dark"] .chain-saved-art,body.dark-theme .chain-saved-art{color:#8b969f}
 
-:is(.card,.slot-status-block) .load-chain svg{transition:transform .15s ease}
-:is(.card,.slot-status-block) .load-chain.link-dragging svg,:is(.card,.slot-status-block) .load-chain.chain-connected svg{transform:rotate(-45deg)}
+:is(.card,.slot-status-block) .load-chain svg{flex:none;transform:rotate(90deg);transition:none}
+:is(.card,.slot-status-block) .load-chain.link-dragging svg,:is(.card,.slot-status-block) .load-chain.chain-connected svg{transform:rotate(90deg)}
 
 .linked-box-preview{position:absolute;left:2px;right:2px;z-index:21;pointer-events:none;background:#b8dff4c9;border:2px dashed #2476a5;border-radius:5px;color:#173650;padding:4px;font-size:12px}
 .linked-box-dragging{opacity:.4}
@@ -1846,3 +1846,4 @@ body.header-scroll-shell>main{flex:1 1 0;min-height:0;overflow:auto;scrollbar-gu
  border-top:1px solid #b95d4e;border-bottom:1px solid #b95d4e;box-sizing:border-box;z-index:2;
 }
 .driver-downtime-overlay span{color:var(--text);font-size:10px;font-weight:800;text-align:center;padding:2px 4px;max-width:100%;line-height:1.2}
+
