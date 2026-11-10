@@ -31,7 +31,7 @@
 .schedule-day-cell .shift-actions button{width:100%;min-width:0;padding-left:2px;padding-right:2px}
 .schedule-day-cell .open-downtime{background:#f4f6f8;color:var(--muted);min-width:0}
 html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .schedule-day-cell .open-downtime{background:#202a34;color:#aab7c3;border-color:#46525e}
-.downtime-summary{font-size:11px;color:var(--muted);margin:6px 0}
+.shift-billing-row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:6px 0}.shift-billing-row .downtime-summary{display:flex;flex-direction:column;gap:3px;font-size:10px;color:var(--muted);margin:0}.shift-billing-row .downtime-summary span{white-space:nowrap}
 .driver-week-total{white-space:normal;max-width:130px}
 #downtimeList{max-height:240px;overflow:auto;margin:16px 0}
 .downtime-entry{padding:10px 0;border-bottom:1px solid var(--border)}
@@ -77,7 +77,7 @@ html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .sched
 .schedule-day-cell .shift-time-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}.schedule-day-cell .shift-time-row label{min-width:0}
 .schedule-day-cell input[type="time"]{width:100%;min-width:0;max-width:100%;padding:0 2px;font-size:10px;box-sizing:border-box}
 .schedule-day-cell input[type="time"]::-webkit-calendar-picker-indicator{width:10px;margin:0;padding:0}
-.schedule-day-cell .invoiced-option{display:flex;align-items:center;gap:6px;margin:6px 0;font-size:10px}
+.schedule-day-cell .invoiced-option{display:flex;flex-direction:row;align-items:center;gap:4px;margin:0;font-size:10px;white-space:nowrap}
 .schedule-day-cell input.invoiced-check{appearance:none;-webkit-appearance:none;display:inline-grid;place-content:center;width:17px;height:17px;min-width:17px;min-height:17px;padding:0;margin:0;border:1px solid var(--muted);border-radius:3px;background:transparent;cursor:pointer}
 .schedule-day-cell input.invoiced-check:checked::after{content:"✓";color:#22c55e;font-size:17px;font-weight:900;line-height:1}
 .schedule-day-cell input.invoiced-check:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
@@ -282,7 +282,7 @@ html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .sched
 </div>
 
 <script src="driver-availability.js?v=20261012-overnight"></script>
-<script src="driver-schedule.js?v=20261110-side-by-side"></script>
+<script src="driver-schedule.js?v=20261110-billing-stack"></script>
 <script src="driver-history.js?v=20261009-permissions"></script>
 <script src="theme.js?v=20261009-permissions"></script>
 <script src="user-profile.js?v=20261016-account-options"></script>
