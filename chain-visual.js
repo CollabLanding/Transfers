@@ -21,18 +21,17 @@ window.TransferChainVisual = (() => {
     const r = handle.getBoundingClientRect();
     const c = {x:r.left+r.width/2, y:r.top+r.height/2};
     const angle = Math.atan2(b.y-c.y,b.x-c.x);
-    const rotation = angle;
-    const scale = (icon?.clientWidth || 26)/40;
+    const rotation = angle - Math.atan2(4,-3);
+    const scale = (icon?.clientWidth || 16)/24;
     if (icon) {
       if (!turned.has(icon)) turned.set(icon,{transform:icon.style.transform,transition:icon.style.transition});
       icon.style.transition='none';
       icon.style.transform=`rotate(${rotation}rad)`;
     }
-    // The third link is centered ten artwork units beyond the icon center.
-    return {x:c.x+10*Math.cos(rotation)*scale,
-      y:c.y+10*Math.sin(rotation)*scale, scale};
+    // The lower-left link center rotates with the actual icon.
+    return {x:c.x+(-3*Math.cos(rotation)-4*Math.sin(rotation))*scale,
+      y:c.y+(-3*Math.sin(rotation)+4*Math.cos(rotation))*scale, scale};
   }
-
   function restore(icon) {
     const old=turned.get(icon);
     if (!old) return;
@@ -72,11 +71,6 @@ window.TransferChainVisual = (() => {
       link.setAttribute('data-chain-link',String(i));group.append(link);
     }
   }
-  function createIcon() {
-    const svg=node('svg',{'aria-hidden':'true',viewBox:'0 -10 40 20',width:26,height:13});
-    draw(svg,{x:0,y:0,scale:1},{x:30,y:0},false);
-    return svg;
-  }
   function endpoint(target,from) {
     const r=target.getBoundingClientRect();
     return {x:r.left+r.width/2,y:r.top+r.height/2<from.y?r.bottom-5:r.top+5};
@@ -90,7 +84,7 @@ window.TransferChainVisual = (() => {
   function move(x,y,target) {
     if(!drag)return;
     const r=drag.handle.getBoundingClientRect();
-    const b=target?{...endpoint(target,{y:r.top+r.height/2}),x:r.left+r.width/2}:{x,y};
+    const b=target?endpoint(target,{y:r.top+r.height/2}):{x,y};
     const a=orient(drag.handle,b);
     draw(drag.svg,a,b,!!target);
   }
@@ -112,13 +106,12 @@ window.TransferChainVisual = (() => {
       const handle=from?.querySelector('.load-chain');if(!handle||!to)continue;
       handle.classList.add('chain-connected');
       const r=handle.getBoundingClientRect();
-      const b={...endpoint(to,{y:r.top+r.height/2}),x:r.left+r.width/2},a=orient(handle,b);
+      const b=endpoint(to,{y:r.top+r.height/2}),a=orient(handle,b);
       const svg=node('svg',{'aria-hidden':'true',class:'chain-saved-art',width:body.scrollWidth,height:body.scrollHeight});
       svg.style.color=getComputedStyle(handle).color;body.append(svg);
       draw(svg,{x:a.x-origin.left,y:a.y-origin.top,scale:a.scale},
         {x:b.x-origin.left,y:b.y-origin.top},true);
     }
   }
-  return {start,move,stop,renderLinks,createIcon};
+  return {start,move,stop,renderLinks};
 })();
-
