@@ -16,7 +16,7 @@ window.TransferChainVisual = (() => {
       'stroke-linecap':'round', 'stroke-linejoin':'round',
       transform:`translate(${x} 0) rotate(45) translate(-15 -8)`});
   }
-  function orient(handle, b) {
+  function orient(handle, b, vertical=false) {
     const icon = handle.querySelector('svg');
     const r = handle.getBoundingClientRect();
     const c = {x:r.left+r.width/2, y:r.top+r.height/2};
@@ -29,7 +29,7 @@ window.TransferChainVisual = (() => {
       icon.style.transform=`rotate(${rotation}rad)`;
     }
     // The lower-left link center rotates with the actual icon.
-    return {x:c.x+(-3*Math.cos(rotation)-4*Math.sin(rotation))*scale,
+    return {x:vertical?c.x:c.x+(-3*Math.cos(rotation)-4*Math.sin(rotation))*scale,
       y:c.y+(-3*Math.sin(rotation)+4*Math.cos(rotation))*scale, scale};
   }
   function restore(icon) {
@@ -39,11 +39,11 @@ window.TransferChainVisual = (() => {
     icon.style.transition=old.transition;
     turned.delete(icon);
   }
-  function draw(svg,a,b,hooked) {
+  function draw(svg,a,b,hooked,extraLink=false) {
     svg.replaceChildren();
     svg.classList.toggle('chain-hooked',hooked);
     const length=Math.hypot(b.x-a.x,b.y-a.y);
-    const count=Math.floor(length/(pitch*a.scale));
+    const count=Math.floor(length/(pitch*a.scale))+(extraLink?1:0);
     if (!count) return;
     const id=`transfer-chain-${++serial}`;
     const defs=node('defs');
@@ -106,12 +106,13 @@ window.TransferChainVisual = (() => {
       const handle=from?.querySelector('.load-chain');if(!handle||!to)continue;
       handle.classList.add('chain-connected');
       const r=handle.getBoundingClientRect();
-      const b=endpoint(to,{y:r.top+r.height/2}),a=orient(handle,b);
+      const b={...endpoint(to,{y:r.top+r.height/2}),x:r.left+r.width/2},a=orient(handle,b,true);
       const svg=node('svg',{'aria-hidden':'true',class:'chain-saved-art',width:body.scrollWidth,height:body.scrollHeight});
       svg.style.color=getComputedStyle(handle).color;body.append(svg);
       draw(svg,{x:a.x-origin.left,y:a.y-origin.top,scale:a.scale},
-        {x:b.x-origin.left,y:b.y-origin.top},true);
+        {x:b.x-origin.left,y:b.y-origin.top},true,true);
     }
   }
   return {start,move,stop,renderLinks};
 })();
+
