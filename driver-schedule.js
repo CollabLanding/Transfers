@@ -18,6 +18,7 @@
   let user=null,profile=null,drivers=[],inactiveDrivers=new Set(),scheduleRows=[],weekTransfers=[],channel=null,dirty=false,lastWeekValue="";
 
   let downtimeRows=[],downtimeContext=null,downtimeEditing=null;
+  let invoiceMarks=new Map();const invoicePending=new Set();
   let loadVersion=0,editVersion=0,refreshPending=false,refreshTimer=null;
   function scheduleFocused(){return E.body.contains(document.activeElement)&&document.activeElement?.matches('input[type="time"]')}
   function requestScheduleRefresh(){
@@ -259,7 +260,7 @@
         td.innerHTML=
           '<label><span>Start</span><input class="shift-start" type="time" step="900" value="'+esc(row?.start_time?String(row.start_time).slice(0,5):"")+'" aria-label="'+esc(driver)+" "+esc(date)+' start"></label>'+
           '<label><span>End</span><input class="shift-end" type="time" step="900" value="'+esc(row?.end_time?String(row.end_time).slice(0,5):"")+'" aria-label="'+esc(driver)+" "+esc(date)+' end"></label>'+
-          '<div class="downtime-summary"></div><div class="shift-actions"><button class="clear-shift" type="button" title="Clear shift">Off</button><button class="copy-day" type="button" title="Copy this day to the next day">Day →</button><button type="button" class="open-downtime">Downtime</button></div>';
+          '<label class="invoiced-option"><input type="checkbox" class="invoiced-check" aria-label="'+esc(driver+' '+date+' invoiced')+'" '+(invoiceMarks.get(driver+'|'+date)?'checked ':'')+(!window.TransfersAccess.any(['driver_schedules','driver_reports'])||invoicePending.has(driver+'|'+date)?'disabled':'')+'><span>Invoiced</span></label><div class="downtime-summary"></div><div class="shift-actions"><button class="clear-shift" type="button" title="Clear shift">Off</button><button class="copy-day" type="button" title="Copy this day to the next day">Day →</button><button type="button" class="open-downtime">Downtime</button></div>';
         tr.appendChild(td);
       });
 
@@ -299,6 +300,30 @@
     E.body.querySelectorAll(".open-downtime").forEach(btn=>btn.onclick=()=>dtOpen(btn.closest("tr").dataset.driver,btn.closest("td").dataset.date));
     updateOverrunWarnings();
   }
+  async function refreshInvoiceMarks(){
+    if(!live||!user)return;
+    const date=E.week.value,account=user.id;
+    const r=await sb.from("driver_invoice_marks").select("driver_name,schedule_date,is_invoiced").gte("schedule_date",date).lte("schedule_date",addDays(date,6));
+    if(r.error){show("Could not load invoice marks: "+r.error.message,"error");return}
+    if(date!==E.week.value||user?.id!==account)return;
+    invoiceMarks=new Map((r.data||[]).map(r=>[r.driver_name+"|"+r.schedule_date,r.is_invoiced]));
+    E.body.querySelectorAll(".invoiced-check").forEach(input=>{const key=input.closest("tr").dataset.driver+"|"+input.closest("td").dataset.date;if(!invoicePending.has(key))input.checked=!!invoiceMarks.get(key)});
+  }
+  E.body.addEventListener("change",async event=>{
+    const input=event.target;if(!input.matches(".invoiced-check"))return;
+    if(!window.TransfersAccess.any(["driver_schedules","driver_reports"]))return;
+    const driver=input.closest("tr").dataset.driver,date=input.closest("td").dataset.date,key=driver+"|"+date,checked=input.checked;
+    if(invoicePending.has(key))return;
+    invoicePending.add(key);input.disabled=true;
+    try{
+      const r=await sb.from("driver_invoice_marks").upsert({driver_name:driver,schedule_date:date,is_invoiced:checked,source:"Manual"},{onConflict:"driver_name,schedule_date"}).select("is_invoiced").single();
+      if(r.error)throw r.error;
+      invoiceMarks.set(key,r.data.is_invoiced);input.checked=r.data.is_invoiced;
+      show(checked?"Marked invoiced.":"Invoice mark cleared.","ok");
+    }catch(e){input.checked=!!invoiceMarks.get(key);show("Could not save invoice mark: "+e.message,"error")}
+    finally{invoicePending.delete(key);input.disabled=false;await refreshInvoiceMarks()}
+  });
+  window.addEventListener("invoice-marks-changed",refreshInvoiceMarks);
   async function loadDriverList(){
     let r=await sb.from("transfer_drivers").select("name,sort_order,is_active").neq("name","Planning").order("sort_order",{ascending:true}).order("name",{ascending:true});
     if(r.error){
@@ -314,11 +339,12 @@
     if(!background)show("Loading schedule…");
     updateHeaders();
     const start=E.week.value,end=addDays(start,6);
-    const [dr,sc,tr,dt]=await Promise.all([
+    const [dr,sc,tr,dt,im]=await Promise.all([
       loadDriverList(),
       sb.from("driver_schedules").select("*").gte("schedule_date",addDays(start,-1)).lte("schedule_date",addDays(end,1)),
       sb.from("transfers").select("driver,scheduled_date,scheduled_time,duration_minutes").gte("scheduled_date",start).lte("scheduled_date",end),
-      sb.from("driver_downtime").select("*").gte("schedule_date",start).lte("schedule_date",end)
+      sb.from("driver_downtime").select("*").gte("schedule_date",start).lte("schedule_date",end),
+      sb.from("driver_invoice_marks").select("driver_name,schedule_date,is_invoiced").gte("schedule_date",start).lte("schedule_date",end)
     ]);
     if(request!==loadVersion||start!==E.week.value||user?.id!==account)return;
     if(editVersion!==revision||dirty||scheduleFocused()){
@@ -345,6 +371,7 @@
       return;
     }
     if(dt.error){show("Could not load downtime: "+dt.error.message,"error");return}
+    invoiceMarks=new Map((im.data||[]).map(r=>[r.driver_name+"|"+r.schedule_date,r.is_invoiced]));
     downtimeRows=dt.data||[];
     scheduleRows=sc.data||[];
     if(tr.error){
@@ -355,7 +382,7 @@
     }
     weekTransfers=tr.data||[];
     render();
-    show("");
+    show(im.error?"Could not load invoice marks: "+im.error.message:"");
   }
   async function refreshTransferWarnings(){
     if(!live||!user)return;
@@ -874,6 +901,7 @@
     if(!live)return;
     if(channel)await sb.removeChannel(channel);
     channel=sb.channel("driver-schedule-data")
+      .on("postgres_changes",{event:"*",schema:"public",table:"driver_invoice_marks"},()=>refreshInvoiceMarks())
       .on("postgres_changes",{event:"*",schema:"public",table:"driver_schedules"},()=>requestScheduleRefresh())
       .on("postgres_changes",{event:"*",schema:"public",table:"driver_downtime"},()=>requestScheduleRefresh())
       .on("postgres_changes",{event:"*",schema:"public",table:"transfer_drivers"},()=>requestScheduleRefresh())
@@ -940,4 +968,5 @@
   sb.auth.onAuthStateChange((_event,s)=>{setTimeout(()=>session(s),0)});
 })();
 })();
+
 
