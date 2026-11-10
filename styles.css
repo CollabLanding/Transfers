@@ -1846,3 +1846,7 @@ body.header-scroll-shell>main{flex:1 1 0;min-height:0;overflow:auto;scrollbar-gu
  border-top:1px solid #b95d4e;border-bottom:1px solid #b95d4e;box-sizing:border-box;z-index:2;
 }
 .driver-downtime-overlay span{color:var(--text);font-size:10px;font-weight:800;text-align:center;padding:2px 4px;max-width:100%;line-height:1.2}
+
+
+/* Only saved links turn vertical; unlinked icons retain the original angle. */
+:is(.card,.slot-status-block) .load-chain.is-linked svg{transform:rotate(-36.86989764584402deg)}
