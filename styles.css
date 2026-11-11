@@ -1854,3 +1854,7 @@ body.header-scroll-shell>main{flex:1 1 0;min-height:0;overflow:auto;scrollbar-gu
 /* Center job resize grips despite the heavier left border. */
 .card .resize-handle{left:0;right:0}
 .card .resize-handle::after{left:calc(50% - 2px)}
+
+/* Align sticky board and right sidebar with the Transfer Info panel. */
+main.transfer-layout > .board,
+main.transfer-layout > .right-sidebar{top:0}
