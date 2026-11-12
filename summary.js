@@ -6,7 +6,7 @@
   const hours=m=>(m/60).toLocaleString(undefined,{maximumFractionDigits:1});
   const count=n=>n.toLocaleString();
   const date=d=>new Date(d+"T12:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
-  let sb=null,userId=null,generation=0,rows=[],visible=[],page=0,scope=null;
+  let sb=null,userId=null,generation=0,rows=[],visible=[],page=0,scope=null,locationCatalog=[];
   const pageSize=50;
   function message(text,error=false){el("reportMessage").textContent=text;el("reportMessage").classList.toggle("error",error);}
   function preset(){
@@ -94,7 +94,7 @@
     el("reportScope").textContent=(scope.from?date(scope.from):"All history")+" — "+date(scope.to)+" · "+(scope.driver||"All driver slots");
     el("reportUpdated").textContent="Run "+new Date().toLocaleString();
     const statuses=[...new Set(rows.filter(r=>!r.deleted).map(r=>r.status))].sort();if(window.TransfersAccess.can("deleted_records"))statuses.push("Deleted");el("recordStatus").innerHTML='<option value="">All statuses</option>'+statuses.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join("");
-    const locations=[...new Set(rows.filter(r=>r.type==="Job").flatMap(r=>[r.origin,r.destination]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    const locations=[...new Set([...locationCatalog,...rows.filter(r=>r.type==="Job").flatMap(r=>[r.origin,r.additional_stop,r.additional_stop_2,r.destination])].filter(Boolean))].sort((a,b)=>a.localeCompare(b));
     el("recordLocation").innerHTML='<option value="">All locations</option>'+locations.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join("");
     el("recordLocation").value="";
     el("recordType").value="";el("recordSearch").value="";el("reportResults").classList.remove("hidden");details();
@@ -112,12 +112,14 @@
       return q.order("scheduled_date").order(timeColumn).order("id");
     };
     try{
-      const [jobs,slots,deleted]=await Promise.all([
-        D.fetchAll(query("transfers","id,scheduled_date,scheduled_time,driver,job_number,move_number,origin,destination,order_status,pallet_count,duration_minutes","scheduled_time"),()=>token===generation),
+      const [jobs,slots,deleted,locations]=await Promise.all([
+        D.fetchAll(query("transfers","id,scheduled_date,scheduled_time,driver,job_number,move_number,origin,additional_stop,additional_stop_2,destination,order_status,pallet_count,duration_minutes","scheduled_time"),()=>token===generation),
         D.fetchAll(query("transfer_slot_statuses","id,scheduled_date,start_minutes,end_minutes,driver,status,custom_title,notes","start_minutes"),()=>token===generation),
-        D.fetchAll(query("summary_deleted_records","*","deleted_at"),()=>token===generation)
+        D.fetchAll(query("summary_deleted_records","*","deleted_at"),()=>token===generation),
+        D.fetchAll(()=>sb.from("transfer_locations").select("name").order("name"),()=>token===generation)
       ]);
       if(token!==generation)return;
+      locationCatalog=locations.map(r=>r.name);
       rows=[...D.records(jobs,slots),...D.archivedRecords(deleted)].sort((a,b)=>b.date.localeCompare(a.date)||(b.start||0)-(a.start||0));scope={from,to,driver};render();message(rows.length?count(rows.length)+" past records loaded.":"No past records found. Try another date range or driver slot.");
     }catch(error){
       if(token!==generation)return;
@@ -178,3 +180,4 @@
 })();
 
 })();
+
