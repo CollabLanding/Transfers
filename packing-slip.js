@@ -256,7 +256,7 @@
  function finish(saveTransfer=false){
   try{apply(read());modal.close();if(saveTransfer&&$("editId").value)$("form").requestSubmit($("save"))}catch(e){error.textContent=e.message}
  }
- $("packingDone").onclick=()=>finish(true);$("packingClose").onclick=()=>finish();
+ $("packingDone").onclick=()=>finish(true);$("packingDoneTop").onclick=()=>finish(true);$("packingClose").onclick=()=>finish();
  $("packingCancel").onclick=()=>modal.close();modal.addEventListener("cancel",e=>{e.preventDefault();finish()});
  function resizeDescription(field){
   field.style.setProperty("height","0px","important");field.style.setProperty("height",Math.max(20,field.scrollHeight)+"px","important");
