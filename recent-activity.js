@@ -53,6 +53,7 @@
   function actionText(row){
     const currentMove=transferMoves.get(String(row.transfer_id));
     const move=currentMove!=null?("Move #"+currentMove):(row.move_number!=null?("Move #"+row.move_number):"Move #—");
+    if(String(row.action||"").toLowerCase()==="created")return "<strong>"+esc(move)+"</strong>";
     const driver=row.driver?(" · "+row.driver):"";
     const details=row.details?(" · "+row.details):"";
     return "<strong>"+esc(move)+"</strong>: "+esc(row.action||"Updated")+esc(driver)+esc(details);
