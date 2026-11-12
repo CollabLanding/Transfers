@@ -7,7 +7,7 @@
   function records(jobs,slots,now=new Date()){
     const today=dateKey(now),time=now.getHours()*60+now.getMinutes();
     return [
-      ...jobs.map(j=>({id:j.id,rawStatus:j.order_status||"Planned",date:j.scheduled_date,start:minutes(j.scheduled_time),driver:j.driver||"Unassigned",type:"Job",job:j.job_number||"",move:j.move_number??"",origin:j.origin||"",destination:j.destination||"",route:[j.origin,j.destination].filter(Boolean).join(" → "),notes:"",status:j.order_status||"Planned",pallets:number(j.pallet_count),duration:number(j.duration_minutes)})),
+      ...jobs.map(j=>({id:j.id,rawStatus:j.order_status||"Planned",date:j.scheduled_date,start:minutes(j.scheduled_time),driver:j.driver||"Unassigned",type:"Job",job:j.job_number||"",move:j.move_number??"",origin:j.origin||"",additional_stop:j.additional_stop||"",additional_stop_2:j.additional_stop_2||"",destination:j.destination||"",route:[j.origin,j.additional_stop,j.additional_stop_2,j.destination].filter(Boolean).join(" → "),notes:"",status:j.order_status||"Planned",pallets:number(j.pallet_count),duration:number(j.duration_minutes)})),
       ...slots.map(s=>({id:s.id,rawStatus:s.status||"Unknown",customTitle:s.custom_title||"",date:s.scheduled_date,start:number(s.start_minutes),driver:s.driver||"Unassigned",type:"Time-slot status",job:"",move:"",route:"",notes:s.notes||"",status:s.status==="Custom"?(s.custom_title||"Custom"):(s.status||"Unknown"),pallets:0,duration:Math.max(0,number(s.end_minutes)-number(s.start_minutes))}))
     ].filter(r=>r.date&&(r.date<today||(r.date===today&&r.start<=time)))
       .sort((a,b)=>b.date.localeCompare(a.date)||b.start-a.start||a.driver.localeCompare(b.driver)||String(a.id).localeCompare(String(b.id)));
@@ -19,15 +19,15 @@
       return {id:e.record_id,date:e.scheduled_date,driver:e.driver||"Unassigned",type:e.record_type,
         deleted:true,partial:!!e.partial_history,inferredDate:!!x.schedule_date_inferred,deletedAt:e.deleted_at,
         start:job?(x.scheduled_time?minutes(x.scheduled_time):null):(x.start_minutes??null),
-        job:x.job_number||"",move:x.move_number??"",origin:x.origin||"",destination:x.destination||"",
-        route:[x.origin,x.destination].filter(Boolean).join(" → "),notes:x.notes||"",
+        job:x.job_number||"",move:x.move_number??"",origin:x.origin||"",additional_stop:x.additional_stop||"",additional_stop_2:x.additional_stop_2||"",destination:x.destination||"",
+        route:[x.origin,x.additional_stop,x.additional_stop_2,x.destination].filter(Boolean).join(" → "),notes:x.notes||"",
         rawStatus:status,status:status==="Custom"?(x.custom_title||"Custom"):(status||"Unknown"),customTitle:x.custom_title||"",
         pallets:job?(x.pallet_count??null):0,duration:job?(x.duration_minutes??null):(x.end_minutes!=null&&x.start_minutes!=null?x.end_minutes-x.start_minutes:null)};
     });
   }
   function filter(rows,{from="",to="",driver="",type="",status="",location="",search=""}={}){
     const term=search.trim().toLowerCase();
-    return rows.filter(r=>(!from||r.date>=from)&&(!to||r.date<=to)&&(!driver||r.driver===driver)&&(!type||r.type===type)&&(status==="Deleted"?!!r.deleted:(!r.deleted&&(!status||r.status===status)))&&(!location||(r.type==="Job"&&(r.origin===location||r.destination===location)))&&(!term||[r.driver,r.job,r.move,r.route,r.notes,r.status].join(" ").toLowerCase().includes(term)));
+    return rows.filter(r=>(!from||r.date>=from)&&(!to||r.date<=to)&&(!driver||r.driver===driver)&&(!type||r.type===type)&&(status==="Deleted"?!!r.deleted:(!r.deleted&&(!status||r.status===status)))&&(!location||(r.type==="Job"&&[r.origin,r.additional_stop,r.additional_stop_2,r.destination].includes(location)))&&(!term||[r.driver,r.job,r.move,r.route,r.notes,r.status].join(" ").toLowerCase().includes(term)));
   }
   function totals(rows){
     const out={jobs:0,delivered:0,pallets:0,jobMinutes:0,slots:0,slotMinutes:0,drivers:new Map(),jobStatuses:new Map(),slotStatuses:new Map()};
@@ -66,3 +66,4 @@
   if(typeof module!=="undefined"&&module.exports)module.exports=api;
   else root.SummaryData=api;
 })(typeof window!=="undefined"?window:globalThis);
+
