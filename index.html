@@ -513,15 +513,15 @@ body.printing-packing-slip{height:auto!important;overflow:visible!important;back
 <script src="editor-bubbles.js?v=20261009-vertical-bubbles"></script>
 <script src="driver-availability.js?v=20261012-overnight"></script>
 <dialog id="packingSlip" aria-labelledby="packingTitle">
- <div class="packing-line-head"><h2 id="packingTitle">Packing Slip</h2><button id="packingClose" type="button" aria-label="Close packing slip">×</button></div>
+ <div class="packing-line-head"><h2 id="packingTitle">Packing Slip</h2><div style="display:flex;align-items:center;gap:8px;margin-left:auto"><button id="packingDoneTop" type="button" class="primary">Done</button><button id="packingClose" type="button" aria-label="Close packing slip">×</button></div></div>
 
  <div id="packingLines"></div>
  <div class="packing-line-head"><strong id="packingDraftTotal"></strong></div>
  <p id="packingError" role="alert"></p>
- <div class="packing-actions"><div><button id="packingCancel" type="button">Cancel</button> <button id="packingDone" type="button" class="primary">Done</button></div></div>
+ <div class="packing-actions"><button id="packingCancel" type="button">Cancel</button><button id="packingDone" type="button" class="primary" style="margin-left:auto">Done</button></div>
 </dialog>
 <article id="packingPrintSheet"></article>
-<script src="packing-slip.js?v=20261105-skid-counts"></script>
+<script src="packing-slip.js?v=20261112-done-buttons"></script>
 <script src="app.js?v=20261110-brief-confirmations"></script>
 <script src="order-status.js?v=20261009-permissions"></script>
 <script src="recent-activity.js?v=20261112-created-label"></script>
