@@ -112,8 +112,59 @@
   return lines;
  }
 
+ function applySheetPalletCounts(rows,warnings){
+  for(const row of rows){
+   if(row.pallets!=null)continue;
+   if(/\d[\d,]*\s*[-–]\s*\d[\d,]*\s*sheets?\b/i.test(row.description||''))throw Error('Confirm the exact sheet quantity for '+row.un+' before importing.');
+   const total=String(row.description||'').match(/(?:=|total\s*[:=]?)\s*([\d,]+)\s*sheets?\b/i);
+   const quantities=[...String(row.description||'').matchAll(/\b(\d[\d,]*)\s*sheets?\b/gi)].map(m=>Number(m[1].replace(/,/g,'')));
+   const unique=[...new Set(quantities)];
+   if(!unique.length)continue;
+   if(!total&&unique.length>1)throw Error('More than one sheet quantity was found for '+row.un+'. Confirm its total sheets before importing.');
+   const sheets=total?Number(total[1].replace(/,/g,'')):unique[0],pallets=Math.ceil(sheets/2000);
+   if(!Number.isSafeInteger(sheets)||sheets<1||pallets>999)throw Error('Sheet quantity for '+row.un+' must calculate to 1–999 pallets.');
+   row.pallets=pallets;
+  }
+ }
+ function parseConversationLoad(text){
+  if(!/\b(?:hello|please|good morning|can you|send|sending|work number|part number|from number|thank|need|actually|instead|correction)\b/i.test(text))return null;
+  const part='(?=[A-Z0-9-]*\\d)[A-Z0-9]+(?:-[A-Z0-9]+)+';
+  const amount='(\\d[\\d,]*(?:\\.\\d+)?)\\s*(pallets?|skids?|sheets?)\\b';
+  const bridge='(?:\\s+(?:of|from|for|work|job|part|number|no\\.?|paper|the|#|:)){0,10}\\s*';
+  const before=new RegExp('\\b'+amount+bridge+'('+part+')\\b','gi');
+  const after=new RegExp('\\b('+part+')\\b(?:\\s|[:,|]|\\b(?:is|are|needs?|requires?|qty|quantity|with)\\b){1,40}'+amount,'gi');
+  const matches=[];
+  for(const m of text.matchAll(before))matches.push({index:m.index,un:m[3],quantity:m[1],unit:m[2]});
+  for(const m of text.matchAll(after))matches.push({index:m.index,un:m[1],quantity:m[2],unit:m[3]});
+  if(!matches.length)return null;
+  const warnings=[],byPart=new Map();
+  for(const match of matches.sort((a,b)=>a.index-b.index)){
+   const key=match.un.toUpperCase(),quantity=Number(match.quantity.replace(/,/g,'')),unit=/^sheet/i.test(match.unit)?'sheets':'pallets';
+   if(!Number.isSafeInteger(quantity)||quantity<1||(unit==='pallets'&&quantity>999))throw Error('Enter a valid whole-number quantity for '+match.un+'.');
+   let entry=byPart.get(key);if(!entry){entry={un:match.un,description:'',quantities:{}};byPart.set(key,entry);}
+   const previous=entry.quantities[unit];
+   if(previous!=null&&previous!==quantity){
+    const context=text.slice(Math.max(0,match.index-65),match.index);
+    if(!/\b(?:actually|instead|correction|change|make that|update)\b/i.test(context))throw Error('Different '+unit+' quantities were found for '+match.un+'. Confirm the intended quantity before importing.');
+    warnings.push('Used the corrected quantity for '+match.un);
+   }
+   entry.quantities[unit]=quantity;
+   if(unit==='pallets')entry.pallets=quantity;else entry.description=quantity.toLocaleString('en-US')+' sheets';
+  }
+  // Keep referenced parts without a clear quantity visible for manual review.
+  for(const m of text.matchAll(new RegExp('\\b('+part+')\\b','gi'))){
+   if(/^\d{4}-\d{2}-\d{2}$/.test(m[1])||/^\d{3}-\d{3}-\d{4}$/.test(m[1]))continue;
+   if(!byPart.has(m[1].toUpperCase())){byPart.set(m[1].toUpperCase(),{un:m[1],description:'',quantities:{}});warnings.push('Confirm quantity for '+m[1]);}
+  }
+  const rows=[...byPart.values()].map(({quantities,...row})=>row);
+  if(rows.length>100)throw Error('Import no more than 100 rows at a time.');
+  applySheetPalletCounts(rows,warnings);
+  return {rows,warnings};
+ }
  function parsePastedLoad(text){
   if(text.length>20000)throw Error("Paste no more than 20,000 characters at a time.");
+  if([...text.matchAll(/^(?:\d+(?:st|nd|rd|th)?\s+load|load\s*#?\s*\d+)\s*:?$/gim)].length>1)throw Error("Paste one load at a time into its matching stop.");
+  const conversation=parseConversationLoad(text);if(conversation)return conversation;
   const rows=[],warnings=[];let current=null,headings=0,pendingPallets=null;
   const checkedCount=value=>{
    const count=Number(value.replace(/,/g,""));
@@ -158,6 +209,7 @@
   if(!rows.length)throw Error("No part numbers were found. Paste part numbers with their quantities below or beside them.");
   if(rows.length>100)throw Error("Import no more than 100 rows at a time.");
   for(const row of rows)if(row.un.length>80||row.description.length>2000)throw Error("A pasted row is too long for the BOL.");
+  applySheetPalletCounts(rows,warnings);
   return {rows,warnings};
  }
  const rowHasData=group=>[...group.querySelectorAll("input,textarea")].some(input=>input.type==="checkbox"?input.checked:Boolean(input.value.trim()));
@@ -174,7 +226,7 @@
    try{
     parsed=parsePastedLoad(source.value);
     results.innerHTML='<table><thead><tr><th>UN Number / Part number</th><th>Description</th><th>No. Pallets</th></tr></thead><tbody>'+parsed.rows.map(row=>'<tr><td>'+esc(row.un)+'</td><td>'+esc(row.description).replace(/\n/g,"<br>")+'</td><td>'+esc(row.pallets??(row.description?1:""))+'</td></tr>').join("")+'</tbody></table>';
-    message.textContent=parsed.rows.length+" rows found. Pallet and skid counts are recognized. Described rows without a count default to 1 pallet; all counts remain editable."+(parsed.warnings.length?" Unmatched text: "+parsed.warnings.join(" | "):"");
+    message.textContent=parsed.rows.length+" rows found. Sheets use 2,000 per pallet, rounded up. Pallet/skid counts are preserved; counts remain editable."+(parsed.warnings.length?" Unmatched text: "+parsed.warnings.join(" | "):"");
     applyButton.disabled=false;
    }catch(e){parsed=null;applyButton.disabled=true;results.replaceChildren();message.textContent=e.message}
   };
@@ -306,3 +358,4 @@
  }
  updateButton();
 })();
+
