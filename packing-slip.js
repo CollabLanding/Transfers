@@ -126,7 +126,7 @@
    if(row.pallets!=null&&row.pallets!==count)throw Error("More than one pallet/skid count was found for "+row.un+". Review that row before importing.");
    row.pallets=count;
   };
-  for(let raw of text.split(/\r?\n/)){
+  for(let raw of text.replace(/\s+and\s+(?=\d[\d,]*(?:\.\d+)?\s*(?:pallets?|skids?)\b)/gi,"\n").split(/\r?\n/)){
    let line=raw.trim();if(!line||/^\++$/.test(line))continue;
    if(/^(?:\d+(?:st|nd|rd|th)?\s+load|load\s*#?\s*\d+)\s*:?$/i.test(line)){
     headings++;if(headings>1)throw Error("Paste one load at a time into its matching stop.");continue;
@@ -137,6 +137,7 @@
     if(pallets!=null&&pallets!==count)throw Error("Conflicting pallet/skid counts were found on one line.");
     pallets=count;return "";
    }).replace(/^[\s,;:|+–—-]+|[\s,;:|+–—-]+$/g,"").trim();
+   if(pallets!=null)line=line.replace(/^of\s+(?=[A-Z0-9]+(?:-[A-Z0-9]+)+\b)/i,"").replace(/\s+and\s*$/i,"").trim();
    if(!line){
     if(current)attach(current,pallets);
     else if(pallets!=null){if(pendingPallets!=null&&pendingPallets!==pallets)throw Error("Conflicting pallet/skid counts before a part number.");pendingPallets=pallets}
