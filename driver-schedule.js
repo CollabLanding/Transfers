@@ -18,7 +18,7 @@
   let user=null,profile=null,drivers=[],inactiveDrivers=new Set(),scheduleRows=[],weekTransfers=[],channel=null,dirty=false,lastWeekValue="";
 
   let downtimeRows=[],downtimeContext=null,downtimeEditing=null;
-  let invoiceMarks=new Map();const invoicePending=new Set();
+  let invoiceMarks=new Map(),invoiceNumbers=new Map();const invoicePending=new Set();
   let loadVersion=0,editVersion=0,refreshPending=false,refreshTimer=null;
   function scheduleFocused(){return E.body.contains(document.activeElement)&&document.activeElement?.matches('input[type="time"]')}
   function requestScheduleRefresh(){
@@ -260,7 +260,7 @@
         td.innerHTML=
           '<div class="shift-time-row"><label><span>Start</span><input class="shift-start" type="time" step="900" value="'+esc(row?.start_time?String(row.start_time).slice(0,5):"")+'" aria-label="'+esc(driver)+" "+esc(date)+' start"></label>'+
           '<label><span>End</span><input class="shift-end" type="time" step="900" value="'+esc(row?.end_time?String(row.end_time).slice(0,5):"")+'" aria-label="'+esc(driver)+" "+esc(date)+' end"></label></div>'+
-          '<div class="shift-billing-row"><div class="downtime-summary"></div><label class="invoiced-option"><input type="checkbox" class="invoiced-check" aria-label="'+esc(driver+' '+date+' invoiced')+'" '+(invoiceMarks.get(driver+'|'+date)?'checked ':'')+(!window.TransfersAccess.any(['driver_schedules','driver_reports'])||invoicePending.has(driver+'|'+date)?'disabled':'')+'><span>Invoiced</span></label></div><div class="shift-actions"><button class="clear-shift" type="button" title="Clear shift">Off</button><button class="copy-day" type="button" title="Copy this day to the next day">Day →</button><button type="button" class="open-downtime">Downtime</button></div>';
+          '<div class="shift-billing-row"><div class="downtime-summary"></div><div class="invoiced-control"><span class="invoice-reference">'+esc(invoiceNumbers.get(driver+'|'+date)||'')+'</span><label class="invoiced-option"><input type="checkbox" class="invoiced-check" aria-label="'+esc(driver+' '+date+' invoiced')+'" '+(invoiceMarks.get(driver+'|'+date)?'checked ':'')+(!window.TransfersAccess.any(['driver_schedules','driver_reports'])||invoicePending.has(driver+'|'+date)?'disabled':'')+'><span>Invoiced</span></label></div></div><div class="shift-actions"><button class="clear-shift" type="button" title="Clear shift">Off</button><button class="copy-day" type="button" title="Copy this day to the next day">Day →</button><button type="button" class="open-downtime">Downtime</button></div>';
         tr.appendChild(td);
       });
 
@@ -303,11 +303,12 @@
   async function refreshInvoiceMarks(){
     if(!live||!user)return;
     const date=E.week.value,account=user.id;
-    const r=await sb.from("driver_invoice_marks").select("driver_name,schedule_date,is_invoiced").gte("schedule_date",date).lte("schedule_date",addDays(date,6));
+    const r=await sb.from("driver_invoice_marks").select("driver_name,schedule_date,is_invoiced,invoice_number").gte("schedule_date",date).lte("schedule_date",addDays(date,6));
     if(r.error){show("Could not load invoice marks: "+r.error.message,"error");return}
     if(date!==E.week.value||user?.id!==account)return;
     invoiceMarks=new Map((r.data||[]).map(r=>[r.driver_name+"|"+r.schedule_date,r.is_invoiced]));
-    E.body.querySelectorAll(".invoiced-check").forEach(input=>{const key=input.closest("tr").dataset.driver+"|"+input.closest("td").dataset.date;if(!invoicePending.has(key))input.checked=!!invoiceMarks.get(key)});
+    invoiceNumbers=new Map((r.data||[]).map(r=>[r.driver_name+"|"+r.schedule_date,r.is_invoiced?r.invoice_number:""]));
+    E.body.querySelectorAll(".invoiced-check").forEach(input=>{const key=input.closest("tr").dataset.driver+"|"+input.closest("td").dataset.date;if(!invoicePending.has(key)){input.checked=!!invoiceMarks.get(key);const ref=input.closest(".invoiced-control").querySelector(".invoice-reference");ref.textContent=invoiceNumbers.get(key)||"";ref.title=ref.textContent?"Invoice "+ref.textContent:"";}});
   }
   E.body.addEventListener("change",async event=>{
     const input=event.target;if(!input.matches(".invoiced-check"))return;
@@ -344,7 +345,7 @@
       sb.from("driver_schedules").select("*").gte("schedule_date",addDays(start,-1)).lte("schedule_date",addDays(end,1)),
       sb.from("transfers").select("driver,scheduled_date,scheduled_time,duration_minutes").gte("scheduled_date",start).lte("scheduled_date",end),
       sb.from("driver_downtime").select("*").gte("schedule_date",start).lte("schedule_date",end),
-      sb.from("driver_invoice_marks").select("driver_name,schedule_date,is_invoiced").gte("schedule_date",start).lte("schedule_date",end)
+      sb.from("driver_invoice_marks").select("driver_name,schedule_date,is_invoiced,invoice_number").gte("schedule_date",start).lte("schedule_date",end)
     ]);
     if(request!==loadVersion||start!==E.week.value||user?.id!==account)return;
     if(editVersion!==revision||dirty||scheduleFocused()){
@@ -372,6 +373,7 @@
     }
     if(dt.error){show("Could not load downtime: "+dt.error.message,"error");return}
     invoiceMarks=new Map((im.data||[]).map(r=>[r.driver_name+"|"+r.schedule_date,r.is_invoiced]));
+    invoiceNumbers=new Map((im.data||[]).map(r=>[r.driver_name+"|"+r.schedule_date,r.is_invoiced?r.invoice_number:""]));
     downtimeRows=dt.data||[];
     scheduleRows=sc.data||[];
     if(tr.error){
@@ -968,5 +970,6 @@
   sb.auth.onAuthStateChange((_event,s)=>{setTimeout(()=>session(s),0)});
 })();
 })();
+
 
 
