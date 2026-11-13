@@ -15,7 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="edit-guard.js?v=20261016-rapid-saves"></script>
   <script src="config.js?v=20261009-permissions"></script>
-  <script src="access-control.js?v=20261023-panel-layout"></script>
+  <script src="access-control.js?v=20261113-owner-recovery"></script>
 <link rel="stylesheet" href="slot-status.css?v=20261111-centered-grips">
 <link rel="stylesheet" href="status-history.css?v=20261009-permissions">
 <script src="popup-dismiss.js?v=20261016" defer></script>
@@ -331,7 +331,8 @@ body.printing-packing-slip{height:auto!important;overflow:visible!important;back
 <body class="header-scroll-shell">
 <header>
   <div class="brand-cluster"><img class="company-logo" src="/Transfers/site-logo.png?v=2" alt="Fanatics Collectibles"><div class="app-brand"><nav class="app-tabs" aria-label="Main navigation"><a class="active" href="index.html" aria-current="page">Transfers</a><a href="drivers.html">Drivers</a><a href="locations.html">Locations</a>
-        <a href="summary.html">Summary</a></nav><small><a class="live-board-link" href="/live-dock-board/">Live Trailer Board</a></small></div></div>
+        <a href="summary.html">Summary</a>
+        <a href="recovery.html" data-owner-only hidden>Recovery</a></nav><small><a class="live-board-link" href="/live-dock-board/">Live Trailer Board</a></small></div></div>
   <div class="header-right"><label class="theme-switch" for="themeToggle"><span class="theme-label light-label">Light</span><input id="themeToggle" type="checkbox" role="switch" aria-label="Toggle dark theme"><span class="switch-track"><span class="switch-thumb"></span></span><span class="theme-label dark-label">Dark</span></label><div class="user-session"><a id="me" class="account-toggle user-profile-open" href="#userProfile" aria-haspopup="dialog" aria-label="Open My Profile"></a><small id="accessRoleLabel"></small><small id="email"></small><button id="signout" class="hidden">Sign Out</button></div></div>
 </header>
 <main class="transfer-layout">

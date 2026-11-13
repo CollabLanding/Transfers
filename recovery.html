@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" data-admin-page>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <script src="password-redirect.js?v=20261009-password"></script>
+  <title>Recovery | Transfers</title>
+  <script>
+    try{
+      const saved=localStorage.getItem("transfers-theme");
+      document.documentElement.dataset.theme=saved==="dark"?"dark":"light";
+    }catch(_err){}
+  </script>
+  <link rel="stylesheet" href="styles.css?v=20261026-below-header-scroll">
+  <link rel="stylesheet" href="recovery.css?v=20261113-owner">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="edit-guard.js?v=20261016-rapid-saves"></script>
+  <script src="config.js?v=20261009-permissions"></script>
+  <script src="access-control.js?v=20261113-owner-recovery"></script>
+<script src="popup-dismiss.js?v=20261016" defer></script>
+<script src="site-language.js?v=20261014" defer></script>
+</head>
+<body class="header-scroll-shell">
+<header>
+  <div class="brand-cluster">
+    <img class="company-logo" src="/Transfers/site-logo.png?v=2" alt="Fanatics Collectibles">
+    <div class="app-brand">
+      <nav class="app-tabs" aria-label="Main navigation">
+        <a href="index.html">Transfers</a>
+        <a href="drivers.html">Drivers</a>
+        <a href="locations.html">Locations</a>
+        <a href="summary.html">Summary</a>
+        <a class="active" href="recovery.html" data-owner-only hidden aria-current="page">Recovery</a>
+      </nav>
+      <small><a class="live-board-link" href="/live-dock-board/">Live Trailer Board</a></small>
+    </div>
+  </div>
+  <div class="header-right">
+    <label class="theme-switch" for="themeToggle">
+      <span class="theme-label light-label">Light</span>
+      <input id="themeToggle" type="checkbox" role="switch" aria-label="Toggle dark theme">
+      <span class="switch-track"><span class="switch-thumb"></span></span>
+      <span class="theme-label dark-label">Dark</span>
+    </label>
+    <div class="user-session">
+      <a id="me" class="account-toggle user-profile-open" href="#userProfile" aria-haspopup="dialog" aria-label="Open My Profile"></a>
+      <small id="email"></small>
+      <button id="signout" class="hidden" type="button">Sign Out</button>
+    </div>
+  </div>
+</header>
+
+<main id="recoveryMain" class="recovery-main" hidden>
+ <section class="panel"><div class="recovery-heading"><h1>Recovery</h1><label>Site<select id="recoverySite"><option value="transfers">Transfers</option><option value="dock">Live Trailer Board</option></select></label></div><p id="recoveryStatus" role="status" aria-live="polite"></p><p id="coverage" class="recovery-help"></p></section>
+ <section id="dockSignIn" class="panel" hidden><h2>Sign in to LTB</h2><form id="dockSignInForm" class="recovery-tools"><label>Email<input id="dockRecoveryEmail" type="email" autocomplete="username" required></label><label>Password<input id="dockRecoveryPassword" type="password" autocomplete="current-password" required></label><button class="primary" type="submit">Sign In</button></form></section>
+ <div id="recoveryControls" hidden>
+ <section class="panel"><h2>Emergency edit locks</h2><div class="recovery-tools"><button id="lockSite" type="button">Lock non-Owner editing</button><label>User<select id="lockUser"></select></label><button id="lockUserButton" type="button">Lock user</button><button id="unlockUserButton" type="button">Unlock user</button></div><p id="lockState" class="recovery-help"></p></section>
+ <section class="panel"><h2>Backups</h2><div class="recovery-tools"><label>Saved backup<select id="backupList"></select></label><button id="makeBackup" type="button">Back Up Now</button><button id="downloadBackup" type="button">Download</button><button id="previewBackup" type="button">Preview Restore</button></div></section>
+ <section class="panel"><h2>Change history</h2><form id="recoveryFilters" class="recovery-tools"><label>From<input id="recoveryFrom" type="datetime-local" required></label><label>Through<input id="recoveryTo" type="datetime-local" required></label><label>Changed by<select id="recoveryActor"><option value="">All users</option></select></label><label class="recovery-check"><input id="deletedOnly" type="checkbox">Deleted records only</label><button type="submit">Search</button></form><div class="recovery-tools"><button id="selectPage" type="button">Select Page</button><button id="selectMatching" type="button">Select All Results</button><button id="clearSelection" type="button">Clear Selection</button><button id="previewChanges" type="button" class="primary">Preview Undo</button><span id="selectedCount"></span></div><div class="recovery-scroll"><table><thead><tr><th>Select</th><th>When / Who</th><th>Record</th><th>Change</th><th>Details</th></tr></thead><tbody id="recoveryRows"></tbody></table></div><div class="recovery-tools"><button id="changesPrev" type="button">←</button><span id="changesPage"></span><button id="changesNext" type="button">→</button></div></section>
+ </div>
+</main>
+<dialog id="recoveryPreview" aria-labelledby="recoveryPreviewTitle"><div class="recovery-heading"><h2 id="recoveryPreviewTitle">Review Recovery</h2><button id="closeRecoveryPreview" type="button" aria-label="Close preview">×</button></div><p id="previewCount"></p><p class="recovery-help">A backup is saved before recovery. Flagged records are skipped. If any eligible record changes after this preview, recovery stops without applying changes.</p><div class="recovery-scroll"><table><thead><tr><th>Record</th><th>Action</th><th>Before → After</th></tr></thead><tbody id="previewRows"></tbody></table></div><div class="recovery-tools"><button id="previewPrev" type="button">←</button><span id="previewPage"></span><button id="previewNext" type="button">→</button></div><label class="recovery-check"><input id="reviewConfirmed" type="checkbox">I reviewed these changes</label><p id="applyMessage" role="status"></p><div class="recovery-tools"><button id="cancelRecovery" type="button">Cancel</button><button id="applyRecovery" type="button" class="primary" disabled>Apply Recovery</button></div></dialog>
+
+<script src="recovery.js?v=20261113-owner"></script><script src="theme.js?v=20261009-permissions"></script><script src="user-profile.js?v=20261016-account-options"></script></body></html>

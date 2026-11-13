@@ -6,7 +6,7 @@
  const can=key=>role==="Owner"||permissions[key]===true;
  const any=keys=>keys.some(can);
  const isAdmin=()=>role==="Owner"||role==="Admin";
- const pageAllowed=()=>page==="drivers.html"?any(driverFeatures):page==="driver-profile.html"?can("driver_profiles"):page==="locations.html"?can("locations"):page==="summary.html"?can("summary_reports"):page==="users.html"?isAdmin()&&any(["manage_users","view_permissions"]):true;
+ const pageAllowed=()=>page==="recovery.html"?role==="Owner":page==="drivers.html"?any(driverFeatures):page==="driver-profile.html"?can("driver_profiles"):page==="locations.html"?can("locations"):page==="summary.html"?can("summary_reports"):page==="users.html"?isAdmin()&&any(["manage_users","view_permissions"]):true;
  const controlPermissions={
   "#duplicateDay":"duplicate_day","#textDriver":"send_sms","#statusHistory,#statusHistoryScreen":"status_history",
   ".created-by-link":"recent_activity","#delete":"delete_load","#duplicate":"duplicate_load",
@@ -33,6 +33,7 @@
   if(page==="index.html")map[".header-right .nav,.schedule-current-time,.schedule-date,.planning-month-total"]="board_navigation";
   for(const [selector,key] of Object.entries(map))document.querySelectorAll(selector).forEach(node=>{node.dataset.accessDenied=String(!can(key))});
   document.querySelectorAll("[data-permission]").forEach(node=>{node.dataset.accessDenied=String(!any(node.dataset.permission.split(" ")))});
+  document.querySelectorAll("[data-owner-only]").forEach(node=>{node.hidden=role!=="Owner";node.dataset.accessDenied=String(role!=="Owner")});
   document.querySelectorAll("[data-admin-only]").forEach(node=>{if(!isAdmin())node.dataset.accessDenied="true";node.hidden=!isAdmin()});
   document.querySelectorAll('a[href^="drivers.html"]').forEach(node=>{node.dataset.accessDenied=String(!any(driverFeatures))});
   document.querySelectorAll('a[href^="locations.html"]').forEach(node=>{node.dataset.accessDenied=String(!can("locations"))});
