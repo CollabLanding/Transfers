@@ -67,8 +67,12 @@ html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .sched
 .invoice-box .invoice-help{font-size:12px;color:var(--muted);line-height:1.5;margin:12px 0}
 .invoice-upload,.invoice-period,.invoice-actions{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin:12px 0}
 .invoice-upload label{flex:1;min-width:200px}.invoice-upload input{width:100%}
-#invoiceFile{height:30px!important;min-height:30px!important;padding:3px 7px!important;line-height:22px!important;box-sizing:border-box!important}
-#invoiceFile::file-selector-button{height:22px;box-sizing:border-box;padding:0 8px;line-height:20px;vertical-align:top;margin:0 7px 0 0}
+#invoiceFileGroup{flex:0 1 auto;min-width:0;max-width:100%}
+#invoiceFileGroup>label{margin:0 0 6px}
+.invoice-file-row{display:flex;align-items:center;gap:8px}
+#invoiceChoose{flex:none;height:30px;min-height:30px;padding:4px 8px;font-size:12px;white-space:nowrap}
+#invoiceFilename{display:flex;align-items:center;width:240px;max-width:calc(100vw - 180px);height:30px;box-sizing:border-box;padding:0 7px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font:700 12px/16px Arial,sans-serif;overflow:hidden}
+#invoiceFilename span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .invoice-period label{width:180px}.invoice-box details{margin:12px 0}.invoice-box summary{cursor:pointer;font-size:13px}
 #invoiceText{width:100%;resize:vertical;margin:8px 0}#invoiceMsg{font-size:13px;min-height:20px;line-height:1.5}
 #invoiceDrivers{display:flex;gap:8px 18px;flex-wrap:wrap;margin-top:10px}#invoiceDrivers label{display:flex;align-items:center;gap:6px;font-size:13px}#invoiceDrivers input{width:14px;min-width:14px;height:14px;min-height:14px;margin:0}
@@ -197,7 +201,7 @@ html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .sched
  <div class="modalbox invoice-box">
   <div class="modalhead"><h2 id="invoiceTitle">Invoicing</h2><button type="button" id="invoiceClose" class="iconbtn" aria-label="Close Invoicing">×</button></div>
   <p class="invoice-help">Compare carrier charges with saved driver schedules and nonbillable downtime. Files are read on this device.</p>
-  <div class="invoice-upload"><label>Invoice PDF or image<input id="invoiceFile" type="file" accept="application/pdf,image/png,image/jpeg,image/webp,image/bmp"></label><button id="invoiceRead" type="button">Read Invoice</button></div>
+  <div class="invoice-upload"><div id="invoiceFileGroup"><label for="invoiceChoose">Invoice PDF or image</label><div class="invoice-file-row"><button id="invoiceChoose" type="button">Choose File</button><div id="invoiceFilename" role="status" aria-label="Selected invoice file"><span>No file chosen</span></div><input id="invoiceFile" class="hidden" type="file" tabindex="-1" accept="application/pdf,image/png,image/jpeg,image/webp,image/bmp"></div></div><button id="invoiceRead" type="button">Read Invoice</button></div>
   <details><summary>Recognized text / Paste invoice text</summary><textarea id="invoiceText" rows="6" aria-label="Invoice text"></textarea><button type="button" id="invoiceParse">Read Text</button></details>
   <div class="invoice-period"><label>Invoice number<input type="text" id="invoiceNumber" maxlength="120" autocomplete="off"></label><label>Period start<input type="date" id="invoiceStart"></label><label>Period end<input type="date" id="invoiceEnd"></label></div>
   <details open><summary>Drivers to check for dates missing from this invoice</summary><div id="invoiceDrivers"></div></details>
@@ -289,7 +293,7 @@ html[data-theme="dark"] .schedule-day-cell .open-downtime,body.dark-theme .sched
 <script src="theme.js?v=20261009-permissions"></script>
 <script src="user-profile.js?v=20261016-account-options"></script>
 <script src="visitor-share.js?v=20261022-simple" defer></script>
-<script src="invoicing.js?v=20261113-invoice-reference"></script>
+<script src="invoicing.js?v=20261113-separate-file-button"></script>
 </body>
 </html>
 
