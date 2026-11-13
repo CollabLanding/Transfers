@@ -43,9 +43,18 @@ function compare(rows,schedules,gaps,selected,start,end){
  return {billed,missing};
 }
 function invoiceNumber(text){
- const match=String(text).match(/\binvoice\s*(?:(?:number|no\.?)\s*[:#]?\s*|[#:]\s*)([A-Z0-9][A-Z0-9._\/-]{0,119})/i);
- return match&&/\d/.test(match[1])&&!/^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/.test(match[1])?match[1]:'';
+ const source=String(text).replace(/\u00a0/g,' ');
+ // Prefer explicit number labels over a bare document heading.
+ const patterns=[/\b(?:invoice|estimate)\s*(?:number|no\.?|num\.?|#|№)\s*[:#]?\s*([A-Z0-9][A-Z0-9._\/-]{0,119})/gi,/\b(?:invoice|estimate)(?:\s*:\s*|\s+)([A-Z0-9][A-Z0-9._\/-]{0,119})/gi];
+ for(let i=0;i<patterns.length;i++)for(const match of source.matchAll(patterns[i])){
+  const value=match[1].replace(/[.,:;]+$/,'');
+  if(!/\d/.test(value))continue;
+  if(i===1&&/^\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}$/.test(value))continue;
+  return value;
+ }
+ return '';
 }
+
 const core={dates,parse,matchDriver,hours,compare,invoiceNumber};if(typeof module!=='undefined'&&module.exports)module.exports=core;
 if(typeof document==='undefined')return;
 (async()=>{
@@ -88,7 +97,8 @@ if(typeof document==='undefined')return;
  const lib=await readerPdf();pdf=await lib.getDocument({data:new Uint8Array(await file.arrayBuffer()),isEvalSupported:false}).promise;
  if(pdf.numPages>30)throw new Error('Please split invoices longer than 30 pages.');
  for(let n=1;n<=pdf.numPages;n++){message(`Reading page ${n} of ${pdf.numPages}…`);const page=await pdf.getPage(n);let txt=pageText((await page.getTextContent()).items);
- if(!dates(txt).length||!parse(txt,drivers).some(r=>r.driver)){const v=page.getViewport({scale:2}),canvas=document.createElement('canvas');if(v.width*v.height>20000000)throw new Error('PDF page is too large. Upload a smaller copy.');canvas.width=v.width;canvas.height=v.height;await page.render({canvasContext:canvas.getContext('2d'),viewport:v}).promise;txt=await ocr(canvas);canvas.width=canvas.height=0;}
+ const needsBodyOCR=!dates(txt).length||!parse(txt,drivers).some(r=>r.driver);
+ if(needsBodyOCR||(n===1&&!invoiceNumber(txt))){const v=page.getViewport({scale:2}),canvas=document.createElement('canvas');if(v.width*v.height>20000000)throw new Error('PDF page is too large. Upload a smaller copy.');canvas.width=v.width;canvas.height=v.height;await page.render({canvasContext:canvas.getContext('2d'),viewport:v}).promise;const scanned=await ocr(canvas);if(needsBodyOCR){const existingNumber=invoiceNumber(txt);txt=scanned;if(existingNumber&&!invoiceNumber(scanned))txt='Invoice #: '+existingNumber+'\n'+txt;}else{const number=invoiceNumber(scanned);if(number)txt='Invoice #: '+number+'\n'+txt;}canvas.width=canvas.height=0;}
  text+=txt+'\n';page.cleanup();}
  }else if(file.type.startsWith('image/'))text=await ocr(file);else throw new Error('Upload a PDF, PNG, JPEG, or WebP image.');
  if(!text.trim())throw new Error('No text was recognized. Try a clearer image or paste invoice text below.');if(token===revision)acceptText(text);
@@ -113,7 +123,7 @@ if(typeof document==='undefined')return;
  function resultTable(title,list){return `<h3>${escape(title)} (${list.length})</h3>`+(list.length?`<div class="invoice-scroll"><table class="invoice-table"><thead><tr><th>Date</th><th>Driver</th><th>Scheduled hrs</th><th>Downtime hrs</th><th>Billable hrs</th><th>Result</th></tr></thead><tbody>${list.map(r=>`<tr><td>${escape(r.date||'Unknown')}</td><td>${escape(r.driver||'Unknown')}</td><td>${r.scheduled.toFixed(2)}</td><td>${r.down.toFixed(2)}</td><td>${r.billable.toFixed(2)}</td><td>${resultIcon(r)}</td></tr>`).join('')}</tbody></table></div>`:'<p>None</p>');}
  $('invoiceCheck').onclick=async()=>{
  const start=$('invoiceStart').value,end=$('invoiceEnd').value,selected=[...$('invoiceDrivers').querySelectorAll('input:checked')].map(el=>el.value);
- if(!$('invoiceNumber').value.trim()){message('Enter the invoice number before checking.');$('invoiceNumber').focus();return;}
+ if(!$('invoiceNumber').value.trim()){message('Enter the invoice or estimate number before checking.');$('invoiceNumber').focus();return;}
  if(!rows.length){message('Read an invoice or add billed dates first.');return;}if(!start||!end||end<start){message('Choose a valid invoice period.');return;}if((new Date(end)-new Date(start))/86400000>366){message('Check up to one year at a time.');return;}
  invalidate();const token=revision;setBusy(true);message('Checking saved schedules and downtime…');
  try{const [schedules,gaps]=await Promise.all([allRows('driver_schedules','driver_name,schedule_date,start_time,end_time',start,end),allRows('driver_downtime','driver_name,schedule_date,start_minute,end_minute',start,end)]);if(token!==revision)return;result=compare(rows,schedules,gaps,selected,start,end);$('invoiceResults').innerHTML=resultTable('Verified dates',result.billed.filter(r=>r.status==='Verified'))+resultTable('Unverified dates',result.billed.filter(r=>r.status==='Unverified'))+resultTable('Needs review',result.billed.filter(r=>r.status==='Needs review'))+resultTable('Scheduled dates not billed',result.missing);$('invoiceExport').disabled=false;const marked=await markVerifiedInvoiced(result);message('Comparison complete. '+marked+' matched dates marked Invoiced. Review downtime before approving payment.');}catch(e){message('Could not verify invoice: '+e.message);}finally{setBusy(false);}
