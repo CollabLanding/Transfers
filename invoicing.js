@@ -54,10 +54,13 @@ if(typeof document==='undefined')return;
  const C=window.TRANSFERS_CONFIG||{};if(!C.supabaseUrl||!window.supabase)return;
  const sb=window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey);
  let drivers=[],rows=[],result=null,busy=false,revision=0;
+ const updateFilename=()=>{const text=$('invoiceFile').files[0]?.name||'No file chosen';$('invoiceFilename').querySelector('span').textContent=text;$('invoiceFilename').title=text;};
+ $('invoiceChoose').onclick=()=>$('invoiceFile').click();
+ $('invoiceFile').addEventListener('change',updateFilename);
  const message=s=>{$('invoiceMsg').textContent=s;};
  const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  function invalidate(){revision++;result=null;$('invoiceResults').replaceChildren();$('invoiceExport').disabled=true;}
- function setBusy(v){busy=v;['invoiceRead','invoiceCheck','invoiceParse','invoiceAdd','invoiceFile','invoiceText','invoiceStart','invoiceEnd','invoiceNumber'].forEach(id=>$(id).disabled=v);$('invoiceRows').querySelectorAll('input,select,button').forEach(n=>n.disabled=v);$('invoiceDrivers').querySelectorAll('input').forEach(n=>n.disabled=v);}
+ function setBusy(v){busy=v;['invoiceChoose','invoiceRead','invoiceCheck','invoiceParse','invoiceAdd','invoiceFile','invoiceText','invoiceStart','invoiceEnd','invoiceNumber'].forEach(id=>$(id).disabled=v);$('invoiceRows').querySelectorAll('input,select,button').forEach(n=>n.disabled=v);$('invoiceDrivers').querySelectorAll('input').forEach(n=>n.disabled=v);}
  function renderRows(){
  $('invoiceRows').innerHTML=rows.map((r,i)=>`<tr><td><input type="date" aria-label="Billed date ${i+1}" data-row="${i}" data-field="date" value="${escape(r.date)}"></td><td><select aria-label="Driver ${i+1}" data-row="${i}" data-field="driver"><option value="">Select driver</option>${drivers.map(d=>`<option value="${escape(d.name)}" ${d.name===r.driver?'selected':''}>${escape(d.name)}${d.is_active===false?' (Inactive)':''}</option>`).join('')}</select></td><td class="invoice-source">${escape(r.source)}</td><td><button type="button" data-remove="${i}" aria-label="Remove billed row ${i+1}">×</button></td></tr>`).join('');
  }
@@ -116,7 +119,7 @@ if(typeof document==='undefined')return;
  try{const [schedules,gaps]=await Promise.all([allRows('driver_schedules','driver_name,schedule_date,start_time,end_time',start,end),allRows('driver_downtime','driver_name,schedule_date,start_minute,end_minute',start,end)]);if(token!==revision)return;result=compare(rows,schedules,gaps,selected,start,end);$('invoiceResults').innerHTML=resultTable('Verified dates',result.billed.filter(r=>r.status==='Verified'))+resultTable('Unverified dates',result.billed.filter(r=>r.status==='Unverified'))+resultTable('Needs review',result.billed.filter(r=>r.status==='Needs review'))+resultTable('Scheduled dates not billed',result.missing);$('invoiceExport').disabled=false;const marked=await markVerifiedInvoiced(result);message('Comparison complete. '+marked+' matched dates marked Invoiced. Review downtime before approving payment.');}catch(e){message('Could not verify invoice: '+e.message);}finally{setBusy(false);}
  };
  $('invoiceExport').onclick=()=>{if(!result)return;const cell=v=>'"'+String(v??'').replace(/^[=+@\-]/,"'"+'$&').replace(/"/g,'""')+'"';const header=['Result','Date','Driver','Scheduled hours','Downtime hours','Billable hours','Details'];const lines=[header,...[...result.billed,...result.missing].map(r=>[r.status,r.date,r.driver,r.scheduled.toFixed(2),r.down.toFixed(2),r.billable.toFixed(2),r.reason])];const url=URL.createObjectURL(new Blob(['\ufeff'+lines.map(r=>r.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download='invoice-review.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
- sb.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT'){rows=[];result=null;invalidate();$('invoiceText').value='';$('invoiceFile').value='';$('invoiceNumber').value='';renderRows();$('invoiceModal').classList.add('hidden');}});
+ sb.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT'){rows=[];result=null;invalidate();$('invoiceText').value='';$('invoiceFile').value='';updateFilename();$('invoiceNumber').value='';renderRows();$('invoiceModal').classList.add('hidden');}});
 })();
 })();
 
