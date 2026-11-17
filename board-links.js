@@ -78,8 +78,47 @@ window.createBoardLinks=function({sb,grid,getDate,getUser,getJobs,getStatuses,ap
    applyMove(result);report(members.length>1?'Linked boxes moved.':'Box moved.','ok');return true;
   }catch(e){report('Could not move boxes: '+e.message,'error');return false}finally{busy=false}
  }
- function clearPreview(){grid.querySelectorAll('.linked-box-preview').forEach(n=>n.remove());grid.querySelectorAll('.linked-box-dragging').forEach(n=>n.classList.remove('linked-box-dragging'))}
- function preview(key,lane,minute){clearPreview();const anchor=nodes().find(n=>n.key===key);if(!anchor)return;const delta=minute-anchor.start;for(const n of group(key)){const p=document.createElement('div');p.className='linked-box-preview';p.style.top=((n.start+delta-start)/15*px)+'px';p.style.height=((n.end-n.start)/15*px)+'px';const linked=edges.some(e=>e.source_key===n.key||e.target_key===n.key);p.textContent=n.kind==='status'?(n.row.status==='Custom'?(String(n.row.custom_title||'').trim()||'Custom'):n.row.status):(linked?'Linked Load':('Move '+(n.row.move_number??'')));lane.append(p);for(const el of grid.querySelectorAll('[data-box-key]'))if(el.dataset.boxKey===n.key)el.classList.add('linked-box-dragging')}}
+ let previewFrame=null,pendingPreview=null,previewState=null;
+ function clearPreview(lane=null){
+  // A late leave event from the previous lane must not erase the new target.
+  if(lane&&(pendingPreview?.lane||previewState?.lane)!==lane)return;
+  if(previewFrame!==null)cancelAnimationFrame(previewFrame);
+  previewFrame=null;pendingPreview=null;
+  if(previewState){for(const {el} of previewState.boxes)el.remove();previewState.lane?.classList.remove('dragover')}
+  previewState=null;
+  grid.querySelectorAll('.linked-box-dragging').forEach(n=>n.classList.remove('linked-box-dragging'));
+ }
+ function paintPreview(){
+  previewFrame=null;const target=pendingPreview;pendingPreview=null;
+  if(!target||!target.lane.isConnected)return;
+  const {key,lane}=target;
+  // Resolve pointer geometry only once per frame, for the newest pointer sample.
+  const minute=typeof target.minute==='function'?target.minute():target.minute;
+  if(!previewState||previewState.key!==key){
+   clearPreview();
+   const ids=keysFor(key),members=nodes().filter(n=>ids.has(n.key)),anchor=members.find(n=>n.key===key);if(!anchor)return;
+   const boxes=members.map(n=>{
+    const el=document.createElement('div');el.className='linked-box-preview';
+    el.style.height=((n.end-n.start)/15*px)+'px';
+    el.textContent=n.kind==='status'?(n.row.status==='Custom'?(String(n.row.custom_title||'').trim()||'Custom'):n.row.status):(members.length>1?'Linked Load':('Move '+(n.row.move_number??'')));
+    return {node:n,el};
+   });
+   for(const el of grid.querySelectorAll('[data-box-key]'))if(ids.has(el.dataset.boxKey))el.classList.add('linked-box-dragging');
+   previewState={key,anchor,boxes,lane:null};
+  }
+  if(previewState.lane!==lane){
+   previewState.lane?.classList.remove('dragover');
+   for(const {el} of previewState.boxes)lane.append(el);
+   previewState.lane=lane;lane.classList.add('dragover');
+  }
+  const delta=minute-previewState.anchor.start;
+  for(const {node,el} of previewState.boxes)el.style.top=((node.start+delta-start)/15*px)+'px';
+ }
+ function preview(key,lane,minute){
+  // This is one replaceable target, never a queue of positions or saved moves.
+  pendingPreview={key,lane,minute};
+  if(previewFrame===null)previewFrame=requestAnimationFrame(paintPreview);
+ }
  function centerChainHandle(box,handle){
   const lane=box.closest('.lane');if(!lane)return;
   handle.style.left=(lane.clientWidth/2-box.offsetLeft-box.clientLeft)+'px';

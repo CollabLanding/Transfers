@@ -336,9 +336,9 @@ function transferDragOffset(x,card,clientY){
  return Math.max(0,Math.min(rect.height,clientY-rect.top))+visualShift;
 }
 function landingMinutes(e,lane,x){const rect=lane.getBoundingClientRect(),raw=GRID_START+Math.round((e.clientY-rect.top-dragGrabOffsetPx)/PX15)*15;return boxLinks.landing('job:'+x.id,raw)}
-function transferLaneDragOver(e){if(!draggedTransferId)return;e.preventDefault();window.startTransferAutoScroll?.(e.clientX,e.clientY);const lane=e.currentTarget,x=items.find(i=>i.id===draggedTransferId);if(!x)return;clearDropPreviews();lane.classList.add('dragover');boxLinks.preview('job:'+x.id,lane,landingMinutes(e,lane,x))}
+function transferLaneDragOver(e){if(!draggedTransferId)return;e.preventDefault();window.startTransferAutoScroll?.(e.clientX,e.clientY);const lane=e.currentTarget,x=items.find(i=>i.id===draggedTransferId);if(!x)return;const point={clientY:e.clientY};boxLinks.preview('job:'+x.id,lane,()=>landingMinutes(point,lane,x))}
 
-function transferLaneDragLeave(e){const lane=e.currentTarget;if(e.relatedTarget&&lane.contains(e.relatedTarget))return;lane.classList.remove("dragover");lane.querySelectorAll(".drop-preview,.linked-box-preview").forEach(p=>p.remove());if(!draggedTransferId)window.stopTransferAutoScroll?.()}
+function transferLaneDragLeave(e){const lane=e.currentTarget;if(e.relatedTarget&&lane.contains(e.relatedTarget))return;boxLinks.clearPreview(lane);if(!draggedTransferId)window.stopTransferAutoScroll?.()}
 function statusClass(s){return "status-"+String(s||"Planned").toLowerCase().replace(/\s+/g,"-")}
 function deadlineText(date,time){
  const day=date?new Date(date+"T12:00:00").toLocaleDateString("en-US",{month:"numeric",day:"numeric"}):"";
