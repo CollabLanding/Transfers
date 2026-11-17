@@ -19,3 +19,8 @@ const multiple=parse('Please send 2 skids of 09-765 and 3 skids of 10-100');
 assert.equal(multiple.rows.length,2);assert.deepEqual(multiple.rows.map(r=>r.description),['','']);assert.deepEqual(multiple.rows.map(r=>r.pallets),[2,3]);
 assert.throws(()=>parse('09-765 2 skids\n09-765 1.5 skids'),/whole/);
 console.log('PASS: request sentences excluded; real descriptions, part numbers, pallet counts, sheet conversion, and multi-part requests preserved.');
+
+vm.runInContext(source.slice(source.indexOf(' function packingRowHasProduct'),source.indexOf(' function refresh(){')),c);
+c.group={querySelectorAll:()=>[{value:''},{value:'09-765'}]};assert(vm.runInContext('packingRowHasProduct(group)',c));
+c.group={querySelectorAll:()=>[{value:''},{value:''}]};assert.equal(vm.runInContext('packingRowHasProduct(group)',c),false);
+console.log('PASS: part-only rows remain included in pallet totals and printing.');

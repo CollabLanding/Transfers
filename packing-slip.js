@@ -70,13 +70,14 @@
    else if(!description&&count.dataset.autoPallet==="true"&&count.value==="1"){count.value="";delete count.dataset.autoPallet}
   }
  }
+ function packingRowHasProduct(group){return [...group.querySelectorAll(".packing-number,.packing-un")].some(input=>input.value.trim())}
  function refresh(){
   defaultPalletCounts();
   let sum=0;
   for(const section of list.querySelectorAll(".packing-stop")){
    let n=0;
    for(const group of section.querySelectorAll(".packing-line")){
-    if([...group.querySelectorAll(".packing-number")].some(input=>input.value.trim()))n+=Number(group.querySelector(".packing-count")?.value)||0;
+    if(packingRowHasProduct(group))n+=Number(group.querySelector(".packing-count")?.value)||0;
    }
    sum+=n;if(section.querySelector(".packing-stop-total"))section.querySelector(".packing-stop-total").textContent=n+" pallets";
    section.querySelector(".bol-total").textContent=String(n);
@@ -359,7 +360,7 @@
    const paper=original.cloneNode(true);
    paper.querySelector(".bol-pad")?.remove();
    for(const group of paper.querySelectorAll(".packing-line")){
-    if(![...group.querySelectorAll(".packing-number")].some(input=>input.value.trim())){group.remove();continue}
+    if(!packingRowHasProduct(group)){group.remove();continue}
 
    }
    const table=paper.querySelector(".packing-freight-table");
