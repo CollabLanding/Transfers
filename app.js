@@ -286,6 +286,7 @@ function driverVisibleOnDate(name,date){
  return !row||(row.inactive_periods||[]).every(period=>date<period.from||(period.to&&date>=period.to));
 }
 function renderBoard(){
+ if(window.TransferBoardInteraction?.defer("board",renderBoard))return;
  const date=E.boardDate.value,day=items.filter(x=>x.scheduled_date===date),laneDrivers=orderedUniq([...drivers,...day.map(x=>x.driver)]).filter(name=>driverVisibleOnDate(name,date));
  E.title.textContent=new Date(date+"T12:00:00").toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});
  const planningStart=today(),planningEnd=add(planningStart,6);
@@ -324,10 +325,10 @@ function renderBoard(){
  const nowLine=document.createElement("div");nowLine.className="current-time-line hidden";nowLine.setAttribute("aria-hidden","true");br.appendChild(nowLine);
  E.grid.appendChild(br);updateScheduleClock();updateCurrentTimeLine();slotStatuses.render();boxLinks.render();window.TransferEditors?.render()
 }
-function driverHeaderDragStart(e){if(!window.TransfersAccess.can("reorder_drivers")){e.preventDefault();return}draggedDriver=e.currentTarget.dataset.driver;e.currentTarget.classList.add("dragging-driver");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("application/x-transfer-driver",draggedDriver)}
-function driverHeaderDragEnd(e){draggedDriver=null;e.currentTarget.classList.remove("dragging-driver");document.querySelectorAll(".driverhead.driver-dragover").forEach(x=>x.classList.remove("driver-dragover"))}
+function driverHeaderDragStart(e){if(!window.TransfersAccess.can("reorder_drivers")){e.preventDefault();return}draggedDriver=e.currentTarget.dataset.driver;window.TransferBoardInteraction?.begin("driver-drag",()=>{driverHeaderDragEnd(e);renderBoard()});e.currentTarget.classList.add("dragging-driver");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("application/x-transfer-driver",draggedDriver)}
+function driverHeaderDragEnd(e){window.TransferBoardInteraction?.end("driver-drag");draggedDriver=null;e.currentTarget.classList.remove("dragging-driver");document.querySelectorAll(".driverhead.driver-dragover").forEach(x=>x.classList.remove("driver-dragover"))}
 function driverHeaderDragOver(e){if(!draggedDriver||draggedDriver===e.currentTarget.dataset.driver)return;e.preventDefault();e.dataTransfer.dropEffect="move";e.currentTarget.classList.add("driver-dragover")}
-async function driverHeaderDrop(e){e.preventDefault();const target=e.currentTarget.dataset.driver,source=draggedDriver||e.dataTransfer.getData("application/x-transfer-driver");e.currentTarget.classList.remove("driver-dragover");if(!source||!target||source===target)return;const old=drivers.slice(),next=drivers.filter(d=>d!==source),rect=e.currentTarget.getBoundingClientRect(),after=e.clientX>rect.left+rect.width/2;let index=next.indexOf(target);if(index<0)return;if(after)index++;next.splice(index,0,source);drivers=orderedUniq(next);renderOptions();renderBoard();if(!live){saveLocal();return}const r=await sb.rpc("reorder_transfer_drivers",{p_names:drivers});if(r.error){drivers=old;renderOptions();renderBoard();msg("Could not reorder drivers: "+r.error.message,"error");return}msg("Driver column order updated.","ok")}
+async function driverHeaderDrop(e){e.preventDefault();const target=e.currentTarget.dataset.driver,source=draggedDriver||e.dataTransfer.getData("application/x-transfer-driver");e.currentTarget.classList.remove("driver-dragover");window.TransferBoardInteraction?.end("driver-drag");draggedDriver=null;if(!source||!target||source===target)return;const old=drivers.slice(),next=drivers.filter(d=>d!==source),rect=e.currentTarget.getBoundingClientRect(),after=e.clientX>rect.left+rect.width/2;let index=next.indexOf(target);if(index<0)return;if(after)index++;next.splice(index,0,source);drivers=orderedUniq(next);renderOptions();renderBoard();if(!live){saveLocal();return}const r=await sb.rpc("reorder_transfer_drivers",{p_names:drivers});if(r.error){drivers=old;renderOptions();renderBoard();msg("Could not reorder drivers: "+r.error.message,"error");return}msg("Driver column order updated.","ok")}
 function clearDropPreviews(){boxLinks.clearPreview();document.querySelectorAll(".drop-preview").forEach(x=>x.remove());document.querySelectorAll(".lane.dragover").forEach(x=>x.classList.remove("dragover"))}
 function transferDragOffset(x,card,clientY){
  const rect=card.getBoundingClientRect();
@@ -359,8 +360,8 @@ function makeCard(x,visualTop=null,visualHeight=null,stacked=false){
  b.title=[x.origin+' → '+x.destination,x.job_number,...deadlines.map(([label,value])=>label+': '+value)].join('\n');
  ["top","bottom"].forEach(edge=>{const h=document.createElement("span");h.className="resize-handle resize-"+edge;h.dataset.edge=edge;h.title=edge==="top"?"Drag to change start time and duration":"Drag to change duration";h.addEventListener("pointerdown",e=>beginTransferResize(e,x,b,edge));b.appendChild(h)});
  b.addEventListener("keydown",e=>{if(e.target===b&&(e.key==="Enter"||e.key===" ")){e.preventDefault();edit(x.id)}});
- b.addEventListener("dragstart",e=>{if(!window.TransfersAccess.can("move_load")){e.preventDefault();return}if(e.target.closest?.(".resize-handle,.load-chain")){e.preventDefault();return}ignoreClickUntil=Date.now()+500;draggedTransferId=x.id;dragGrabOffsetPx=transferDragOffset(x,b,e.clientY);b.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",x.id)});
- b.addEventListener("dragend",()=>{stopTransferAutoScroll();draggedTransferId=null;dragGrabOffsetPx=0;E.grid.querySelectorAll(".card.dragging").forEach(card=>card.classList.remove("dragging"));clearDropPreviews()});
+ b.addEventListener("dragstart",e=>{if(!window.TransfersAccess.can("move_load")){e.preventDefault();return}if(e.target.closest?.(".resize-handle,.load-chain")){e.preventDefault();return}ignoreClickUntil=Date.now()+500;draggedTransferId=x.id;window.TransferBoardInteraction?.begin("job-drag",()=>{draggedTransferId=null;dragGrabOffsetPx=0;b.classList.remove("dragging");clearDropPreviews();window.TransferBoardInteraction?.end("job-drag");renderBoard()});dragGrabOffsetPx=transferDragOffset(x,b,e.clientY);b.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",x.id)});
+ b.addEventListener("dragend",()=>{window.TransferBoardInteraction?.end("job-drag");stopTransferAutoScroll();draggedTransferId=null;dragGrabOffsetPx=0;E.grid.querySelectorAll(".card.dragging").forEach(card=>card.classList.remove("dragging"));clearDropPreviews()});
  b.onclick=()=>{if(Date.now()<ignoreClickUntil)return;edit(x.id)};
  return b
 }
@@ -396,9 +397,10 @@ function beginTransferResize(e,x,b,edge){
  b.draggable=false;b.classList.add("resizing");
  handle.setPointerCapture?.(e.pointerId);
 
+ const initialPointer=e.clientY-lane.getBoundingClientRect().top;
  const pointerMinutes=clientY=>{
    const rect=lane.getBoundingClientRect();
-   const raw=GRID_START+((clientY-rect.top)/PX15)*15;
+   const raw=(edge==="top"?originalStart:originalEnd)+((clientY-rect.top-initialPointer)/PX15)*15;
    return Math.round(raw/15)*15
  };
  const paint=()=>{
@@ -408,6 +410,7 @@ function beginTransferResize(e,x,b,edge){
    syncResizeForm(x.id,nextStart,nextDuration);window.TransferEditors?.render();boxLinks.previewResize('job:'+x.id,nextStart+nextDuration,nextStart)
  };
  const move=ev=>{
+   if(ev.pointerId!==e.pointerId)return;
    ev.preventDefault();
    window.startTransferAutoScroll?.(ev.clientX,ev.clientY);
    const point=pointerMinutes(ev.clientY);
@@ -428,30 +431,34 @@ function beginTransferResize(e,x,b,edge){
    handle.removeEventListener("pointermove",move);
    handle.removeEventListener("pointerup",finish);
    handle.removeEventListener("pointercancel",cancel);
+   handle.removeEventListener("lostpointercapture",cancel);
+   window.TransferBoardInteraction?.end("job-resize");
    try{handle.releasePointerCapture?.(e.pointerId)}catch(_err){}
    b.draggable=true;b.classList.remove("resizing");delete b.dataset.resizeLabel
  };
  const finish=ev=>{
-   if(finished)return;finished=true;ev.preventDefault();ev.stopPropagation();cleanup();
+   if(finished||ev.pointerId!==e.pointerId)return;move(ev);finished=true;ev.preventDefault();ev.stopPropagation();cleanup();
    if(nextStart===originalStart&&nextDuration===originalDuration){renderBoard();return}
-   resizeTransfer(x,nextStart,nextDuration)
+   resizeTransfer(x,nextStart,nextDuration,formBefore)
  };
  const cancel=ev=>{
-   if(finished)return;finished=true;ev.preventDefault();cleanup();if(formBefore)syncResizeForm(x.id,timeToMin(formBefore.time),Number(formBefore.duration));renderBoard()
+   if(finished)return;finished=true;ev?.preventDefault?.();cleanup();if(formBefore)syncResizeForm(x.id,timeToMin(formBefore.time),Number(formBefore.duration));renderBoard()
  };
  handle.addEventListener("pointermove",move);
  handle.addEventListener("pointerup",finish);
- handle.addEventListener("pointercancel",cancel)
+ handle.addEventListener("pointercancel",cancel);
+ handle.addEventListener("lostpointercapture",cancel);
+ window.TransferBoardInteraction?.begin("job-resize",cancel);
 }
-async function resizeTransfer(x,newStartMinutes,newDuration){
+async function resizeTransfer(x,newStartMinutes,newDuration,formBefore=null){
  if(!window.TransfersAccess.can("resize_load"))return;
  const resized=await boxLinks.resize('job:'+x.id,newStartMinutes,newStartMinutes+newDuration);
- if(!resized){syncResizeForm(x.id,timeToMin(x.scheduled_time),Number(x.duration_minutes),true);renderBoard();return}
+ if(!resized){if(formBefore)syncResizeForm(x.id,timeToMin(formBefore.time),Number(formBefore.duration));else syncResizeForm(x.id,timeToMin(x.scheduled_time),Number(x.duration_minutes));renderBoard();return}
  syncResizeForm(x.id,newStartMinutes,newDuration,true);return;
 }
 
 function durationLabel(n){if(n<60)return n+" min";let h=Math.floor(n/60),m=n%60;return h+" hr"+(h!==1?"s":"")+(m?" "+m+" min":"")}
-async function dropCard(e){e.preventDefault();const lane=e.currentTarget,id=e.dataTransfer.getData("text/plain")||draggedTransferId,x=items.find(i=>i.id===id);if(!x){clearDropPreviews();return}const minutes=landingMinutes(e,lane,x),newTime=minToTime(minutes),newDriver=lane.dataset.driver;draggedTransferId=null;dragGrabOffsetPx=0;clearDropPreviews();await moveTransfer(x,newDriver,newTime)}
+async function dropCard(e){e.preventDefault();const lane=e.currentTarget,id=e.dataTransfer.getData("text/plain")||draggedTransferId,x=items.find(i=>i.id===id);if(!x){clearDropPreviews();return}const minutes=landingMinutes(e,lane,x),newTime=minToTime(minutes),newDriver=lane.dataset.driver;draggedTransferId=null;dragGrabOffsetPx=0;clearDropPreviews();window.TransferBoardInteraction?.end("job-drag");await moveTransfer(x,newDriver,newTime)}
 async function moveTransfer(x,newDriver,newTime){await boxLinks.move('job:'+x.id,newDriver,timeToMin(newTime))}
 
 function replaceItem(row){const n=normalize(row),i=items.findIndex(x=>x.id===n.id);if(i>=0)items[i]=n;else items.push(n)}
@@ -491,7 +498,7 @@ function queueLiveLanes(names,full=false){
 function flushLiveLanes(){
  liveLaneTimer=null;
  if(!user||!window.TransfersAccess.can("view_board")){liveDirtyDrivers.clear();liveFullRender=false;return}
- if(draggedTransferId||draggedDriver||E.grid.querySelector(".resizing,.dragging,.slot-selection")){
+ if(window.TransferBoardInteraction?.active||draggedTransferId||draggedDriver||E.grid.querySelector(".resizing,.dragging,.slot-status-resizing,.slot-status-dragging,.slot-selection")){
   liveLaneTimer=setTimeout(flushLiveLanes,100);return;
  }
  const names=[...liveDirtyDrivers];liveDirtyDrivers.clear();
@@ -600,6 +607,7 @@ async function openTransferEditor(id){
   }
   if(!x)return;
   if(!confirmEditorTransition())return;
+  window.TransferBoardInteraction?.cancel();
   const changedDay=E.boardDate.value!==x.scheduled_date;
   E.boardDate.value=x.scheduled_date;
   renderOptions();
@@ -735,7 +743,7 @@ document.addEventListener("edit-load-latest",event=>{
  if(event.detail.table==="transfers"){
   event.detail.handled=true;
   for(const row of event.detail.rows)replaceItem(row);
-  const id=E.edit.value;renderBoard();if(id)edit(id);
+  const id=E.edit.value;renderBoard();if(id)edit(id,true);
  }else if(event.detail.table==="transfer_slot_statuses"){
   event.detail.handled=true;
   slotStatuses.applyRows(event.detail.rows);
@@ -801,6 +809,7 @@ E.title.addEventListener("click",()=>{
 });
 E.boardDate.addEventListener("change",()=>E.boardDate.classList.remove("date-fallback"));
 function navigateBoardDay(date){
+ window.TransferBoardInteraction?.cancel();
  E.boardDate.value=date;
  // Navigation cancels the current edit before initializing the new day's form.
  reset();

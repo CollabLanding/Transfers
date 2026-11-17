@@ -51,3 +51,28 @@ async function checkLinkedTies(){
  console.log('PASS 4: same-start links and their downstream jobs follow grow/shrink.');
 }
 checkLinkedTies().catch(error=>{console.error(error);process.exitCode=1});
+{
+ const window={addEventListener(){}},document={addEventListener(){}};const queue=[];
+ const c=context({window,document,queueMicrotask:fn=>queue.push(fn)});
+ vm.runInContext(fs.readFileSync(__dirname+'/board-interaction.js','utf8'),c);
+ const api=window.TransferBoardInteraction;let renders=0,cancels=0;
+ api.begin('resize',()=>{cancels++;api.end('resize')});
+ assert(api.defer('board',()=>renders++));assert(api.defer('board',()=>renders++));
+ assert.equal(renders,0);api.cancel();while(queue.length)queue.shift()();
+ assert.equal(cancels,1);assert.equal(renders,1);assert.equal(api.active,false);
+ assert.equal(api.defer('board',()=>renders++),false);
+ console.log('PASS 5: captured gestures defer and coalesce refreshes, then cancel and flush cleanly.');
+}
+{
+ function target(){const events=new Map();return {addEventListener:(name,fn)=>events.set(name,fn),removeEventListener:(name)=>events.delete(name),fire:(name,event)=>events.get(name)?.(event),setPointerCapture(){},releasePointerCapture(){},events};}
+ const handle=target(),classes=new Set(),card={parentElement:{classList:{contains:()=>true},getBoundingClientRect:()=>({top:0})},classList:{add:n=>classes.add(n),remove:n=>classes.delete(n)},style:{},dataset:{}};
+ const E={edit:field('a'),time:field('08:15'),duration:field('75')};let cancelGesture,released=0,renders=0;
+ const window={TransfersAccess:{can:()=>true},TransferBoardInteraction:{begin:(_k,fn)=>cancelGesture=fn,end:()=>released++}};
+ const c=context({E,window,transferInfoBaseline:{time:'08:00',duration:'60'},GRID_START:210,GRID_END:1320,PX15:20,ignoreClickUntil:0,timeToMin:t=>Number(t.slice(0,2))*60+Number(t.slice(3)),minToTime:m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'),fmt:t=>t,durationLabel:String,stopTransferAutoScroll(){},renderBoard:()=>renders++,boxLinks:{clearResizePreview(){},previewResize(){},resizeBounds:()=>({minEnd:210,maxEnd:1320})}});
+ load(c,'function syncResizeForm','function syncBoardActionForm');load(c,'function beginTransferResize','async function resizeTransfer');
+ c.ev={button:0,pointerId:1,currentTarget:handle,clientY:440,preventDefault(){},stopPropagation(){}};c.job={id:'a',scheduled_time:'08:00',duration_minutes:60};c.card=card;
+ vm.runInContext("beginTransferResize(ev,job,card,'bottom')",c);
+ handle.fire('pointermove',{pointerId:1,clientY:460,preventDefault(){}});assert.equal(E.duration.value,'75');
+ cancelGesture();assert.equal(E.time.value,'08:15');assert.equal(E.duration.value,'75');assert.equal(c.transferInfoBaseline.time,'08:00');assert.equal(classes.has('resizing'),false);assert.equal(handle.events.size,0);assert.equal(released,1);assert.equal(renders,1);
+ console.log('PASS 5b: interrupted job resize restores the prior draft without advancing its saved baseline.');
+}
