@@ -15,6 +15,19 @@
  if(window.SiteLanguage)mountLanguage();else document.addEventListener("site-language-ready",mountLanguage,{once:true});
  const $=id=>dialog.querySelector("#"+id),form=$("userProfileForm"),message=$("userProfileMessage"),save=$("saveUserProfile"),picker=$("profileBubbleColor"),preview=$("profileBubblePreview");
  let account=null,displayName="",working=false,version=0;
+ let scrollPicker=null;
+ if(document.getElementById("gridWrap")&&window.BoardScroll){
+  const field=document.createElement("label");field.textContent="Scroll size";
+  scrollPicker=document.createElement("select");scrollPicker.id="profileScrollSize";scrollPicker.setAttribute("aria-label","Scroll size");scrollPicker.disabled=true;
+  for(const minutes of window.BoardScroll.sizes){const option=document.createElement("option");option.value=String(minutes);option.textContent=minutes+" min";scrollPicker.append(option)}
+  const help=document.createElement("small");help.textContent="Applies immediately. Saved for your account on this browser.";
+  field.append(scrollPicker,help);form.querySelector(".profile-language-heading").before(field);
+  scrollPicker.addEventListener("change",()=>{
+   if(!account)return;
+   if(!window.BoardScroll.set(account.id,Number(scrollPicker.value))){message.textContent="Could not save scroll size on this browser.";scrollPicker.value=String(window.BoardScroll.get(account.id))}
+  });
+ }
+
  const color=value=>/^#[0-9a-f]{6}$/i.test(value||"")?value:"#1d5c8f";
  function updatePreview(){
   const hex=color(picker.value);preview.textContent=Array.from(displayName||"User").slice(0,2).join("").toUpperCase();preview.style.backgroundColor=hex;
@@ -23,11 +36,12 @@
  }
  async function open(){
   updateRole();
+  if(scrollPicker)scrollPicker.disabled=true;
   const token=++version;account=null;displayName="";message.textContent="Loading profile…";save.disabled=true;picker.disabled=true;$("profileUsername").textContent="";$("profileEmail").textContent="";dialog.showModal();
   try{
    const result=await sb.auth.getUser();if(result.error)throw result.error;if(!result.data.user)throw new Error("Sign in to edit your profile.");
    const user=result.data.user,r=await sb.from("profiles").select("display_name,bubble_color").eq("id",user.id).maybeSingle();if(r.error)throw r.error;if(token!==version)return;
-   account=user;displayName=r.data?.display_name||user.user_metadata?.display_name||user.email?.split("@")[0]||"User";
+   account=user;if(scrollPicker){scrollPicker.value=String(window.BoardScroll.get(user.id));scrollPicker.disabled=false;}displayName=r.data?.display_name||user.user_metadata?.display_name||user.email?.split("@")[0]||"User";
    $("profileUsername").textContent=displayName;$("profileEmail").textContent=user.email||"";picker.value=color(r.data?.bubble_color);updatePreview();message.textContent="";save.disabled=false;picker.disabled=false;
   }catch(error){if(token===version)message.textContent=error.message||"Could not load your profile."}
  }
