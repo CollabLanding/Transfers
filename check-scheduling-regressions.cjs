@@ -17,3 +17,13 @@ function field(value){return {value};}
  E.driver.value='C';assert.equal(vm.runInContext("changedTransferPayload({driver:'C'}).driver",c),'C');
  console.log('PASS 1: board actions reconcile schedule fields, preserve notes, and saves omit unchanged fields.');
 }
+{
+ let answers=[],prompts=0;const E={edit:field('a'),save:{disabled:false},slotStatusSave:{disabled:false},slotStatusNotes:field('draft status')};
+ const c=context({E,statusNotesBaseline:'saved status',transferInfoBaseline:{job:'old'},transferInfoValues:()=>({job:'draft'}),confirm:()=>{prompts++;return answers.shift();},window:{}});
+ load(c,'function transferInfoChanged','document.addEventListener("click",e=>{\n  const statusOpen');
+ answers=[false];assert.equal(vm.runInContext('confirmEditorTransition()',c),false);assert.equal(prompts,1);
+ answers=[true,false];assert.equal(vm.runInContext('confirmEditorTransition()',c),false);
+ answers=[true,true];assert.equal(vm.runInContext('confirmEditorTransition()',c),true);
+ E.save.disabled=true;assert.equal(vm.runInContext('confirmEditorTransition()',c),false);
+ console.log('PASS 2: switching editors respects canceled discard decisions and pending saves.');
+}
