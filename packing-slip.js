@@ -21,7 +21,7 @@
 
 
  function printBolHeader(stop,route){
-  const from=stopLocation(stop),to=$("destination")?.value||"";
+  const from=$("origin")?.value||"",to=$("destination")?.value||"";
   return '<header class="bol-header"><div class="bol-title">STRAIGHT BILL OF LADING – ORIGINAL – NOT NEGOTIABLE</div><div class="bol-received"><span>RECEIVED, subject to the classifications and tariffs in effect on the date of issue of this Original Bill of Lading.</span><strong>DATE:</strong><span class="bol-field bol-date">'+esc($("date").value)+'</span></div><div class="bol-carrier"><strong>AT:</strong><span class="bol-field">'+esc(from)+'</span><strong>Name of Carrier:</strong><span class="bol-field"></span></div><p class="bol-contract">The property described below, in apparent good order, except as noted (contents and condition of contents of packages unknown), marked, consigned, and destined as indicated below, which said carrier (the word carrier being understood throughout this contract as meaning any person or corporation in possession of the property under the contract) agrees to carry to its usual place of delivery at said destination, if on its route, otherwise to deliver to another carrier on the route to said destination. It is mutually agreed, as to each carrier of all or any of said property over all or any portion of said route to destination, and as to each party at any time interested in all or any of said property, that every service to be performed hereunder shall be subject to all the terms and conditions of the Uniform Domestic Straight Bill of Lading set forth (1) in the Uniform Freight Classification in effect on the date hereof, if this is a rail, or a rail-water shipment, or (2) in the applicable motor carrier classification or tariff if this is a motor carrier shipment. Shipper hereby certifies that he is familiar with all the terms and conditions of the said bill of lading, including those on the back thereof, set forth in the classification or tariff which governs the transportation of this shipment, and the said terms and conditions are hereby agreed to by the shipper and accepted for himself and his assigns.</p><div class="bol-addresses"><div class="bol-address"><div><strong>Consigned to:</strong><span class="bol-field">'+esc(to)+'</span></div><div><span>Street</span><span class="bol-field"></span></div><div><span>Destination</span><span class="bol-field"></span></div></div><div class="bol-address"><div><strong>From:</strong><span class="bol-field">'+esc(from)+'</span></div><div><span>Street</span><span class="bol-field"></span></div><div><span>Origin</span><span class="bol-field"></span></div></div></div><div class="bol-reference-row"><strong>Shippers Number:</strong><span class="bol-field"></span><strong>Customer Order #:</strong><span class="bol-field"></span><strong>ATC Booking #:</strong><span class="bol-field"></span></div><div class="bol-instructions"><strong>Special Instructions:</strong><span class="bol-field">'+esc($("job").value)+'</span></div><div class="bol-route"><strong>Route via:</strong><span class="bol-field">'+esc(route)+'</span></div></header>';
  }
 
@@ -271,7 +271,19 @@
  }
 
  function populateAddresses(section,stop){
-  const names=[$("destination")?.value||"",stopLocation(stop)];
+  const names=[$("destination")?.value||"",$("origin")?.value||""];
+  // Saved stop BOLs may still contain the old stop-specific sender. Correct
+  // the sender after restoring saved fields, without changing other BOL edits.
+  const sender=section.querySelectorAll(".bol-address")[1];
+  if(sender){
+   const field=sender.children[0].querySelector(".bol-field");
+   if(field.textContent.trim().toLowerCase()!==String(names[1]).trim().toLowerCase()){
+    sender.children[1].querySelector(".bol-field").textContent="";
+    sender.children[2].querySelector(".bol-field").textContent="";
+   }
+   field.textContent=names[1];
+  }
+  const at=section.querySelector(".bol-carrier .bol-field");if(at)at.textContent=names[1];
   section.querySelectorAll(".bol-address").forEach((block,i)=>{
    const name=String(names[i]).trim().toLowerCase();
    const location=locationAddresses.find(row=>String(row.name).trim().toLowerCase()===name);
