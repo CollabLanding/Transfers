@@ -34,6 +34,17 @@ function stopTransferAutoScroll(){
 }
 window.startTransferAutoScroll=startTransferAutoScroll;
 window.stopTransferAutoScroll=stopTransferAutoScroll;
+function scrollBoardQuarter(event){
+ // Use the same pixel height as a 15-minute grid block, regardless of the
+ // mouse/Windows wheel-distance setting. Keep zoom and horizontal gestures.
+ if(event.ctrlKey||event.metaKey||event.shiftKey||!event.deltaY||Math.abs(event.deltaX)>Math.abs(event.deltaY))return;
+ if(event.target?.closest?.('textarea,select,input,[contenteditable]:not([contenteditable="false"]),.transfer-editor-marker'))return;
+ const wrap=event.currentTarget,max=wrap.scrollHeight-wrap.clientHeight;
+ if(max<=0)return;
+ event.preventDefault();
+ wrap.scrollTop=Math.max(0,Math.min(max,wrap.scrollTop+Math.sign(event.deltaY)*PX15));
+}
+$("gridWrap").addEventListener("wheel",scrollBoardQuarter,{passive:false});
 // End edge scrolling even if the dragged element is removed during a drop.
 ["drop","dragend","pointerup","pointercancel"].forEach(type=>document.addEventListener(type,stopTransferAutoScroll,true));
 window.addEventListener("blur",stopTransferAutoScroll);
