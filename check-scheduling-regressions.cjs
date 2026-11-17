@@ -27,3 +27,15 @@ function field(value){return {value};}
  E.save.disabled=true;assert.equal(vm.runInContext('confirmEditorTransition()',c),false);
  console.log('PASS 2: switching editors respects canceled discard decisions and pending saves.');
 }
+{
+ const c=context({PX15:20,GRID_START:210,timeToMin:t=>Number(t.slice(0,2))*60+Number(t.slice(3,5)),dragGrabOffsetPx:0,boxLinks:{landing:(_key,raw)=>raw}});
+ load(c,'function cardBaseTopPx','function candidateVisualTop');load(c,'function transferDragOffset','function transferLaneDragOver');
+ c.jobs=[{id:'a',scheduled_time:'08:00',duration_minutes:60},{id:'b',scheduled_time:'08:00',duration_minutes:60}];
+ const layout=vm.runInContext('layoutLaneCards(jobs)',c),stacked=layout[1];
+ c.card={style:{top:String(stacked.top)},getBoundingClientRect:()=>({top:stacked.top,height:stacked.height})};c.job=c.jobs[1];c.y=stacked.top+20;
+ vm.runInContext('dragGrabOffsetPx=transferDragOffset(job,card,y)',c);
+ c.lane={getBoundingClientRect:()=>({top:0})};
+ assert.equal(vm.runInContext('landingMinutes({clientY:y},lane,job)',c),480);
+ assert.equal(vm.runInContext('landingMinutes({clientY:y+20},lane,job)',c),495);
+ console.log('PASS 3: stacked drag preserves time at rest and changes exactly one slot after 20px.');
+}

@@ -329,6 +329,11 @@ function driverHeaderDragEnd(e){draggedDriver=null;e.currentTarget.classList.rem
 function driverHeaderDragOver(e){if(!draggedDriver||draggedDriver===e.currentTarget.dataset.driver)return;e.preventDefault();e.dataTransfer.dropEffect="move";e.currentTarget.classList.add("driver-dragover")}
 async function driverHeaderDrop(e){e.preventDefault();const target=e.currentTarget.dataset.driver,source=draggedDriver||e.dataTransfer.getData("application/x-transfer-driver");e.currentTarget.classList.remove("driver-dragover");if(!source||!target||source===target)return;const old=drivers.slice(),next=drivers.filter(d=>d!==source),rect=e.currentTarget.getBoundingClientRect(),after=e.clientX>rect.left+rect.width/2;let index=next.indexOf(target);if(index<0)return;if(after)index++;next.splice(index,0,source);drivers=orderedUniq(next);renderOptions();renderBoard();if(!live){saveLocal();return}const r=await sb.rpc("reorder_transfer_drivers",{p_names:drivers});if(r.error){drivers=old;renderOptions();renderBoard();msg("Could not reorder drivers: "+r.error.message,"error");return}msg("Driver column order updated.","ok")}
 function clearDropPreviews(){boxLinks.clearPreview();document.querySelectorAll(".drop-preview").forEach(x=>x.remove());document.querySelectorAll(".lane.dragover").forEach(x=>x.classList.remove("dragover"))}
+function transferDragOffset(x,card,clientY){
+ const rect=card.getBoundingClientRect();
+ const visualShift=(parseFloat(card.style.top)||0)-cardBaseTopPx(x);
+ return Math.max(0,Math.min(rect.height,clientY-rect.top))+visualShift;
+}
 function landingMinutes(e,lane,x){const rect=lane.getBoundingClientRect(),raw=GRID_START+Math.round((e.clientY-rect.top-dragGrabOffsetPx)/PX15)*15;return boxLinks.landing('job:'+x.id,raw)}
 function transferLaneDragOver(e){if(!draggedTransferId)return;e.preventDefault();window.startTransferAutoScroll?.(e.clientX,e.clientY);const lane=e.currentTarget,x=items.find(i=>i.id===draggedTransferId);if(!x)return;clearDropPreviews();lane.classList.add('dragover');boxLinks.preview('job:'+x.id,lane,landingMinutes(e,lane,x))}
 
@@ -354,7 +359,7 @@ function makeCard(x,visualTop=null,visualHeight=null,stacked=false){
  b.title=[x.origin+' → '+x.destination,x.job_number,...deadlines.map(([label,value])=>label+': '+value)].join('\n');
  ["top","bottom"].forEach(edge=>{const h=document.createElement("span");h.className="resize-handle resize-"+edge;h.dataset.edge=edge;h.title=edge==="top"?"Drag to change start time and duration":"Drag to change duration";h.addEventListener("pointerdown",e=>beginTransferResize(e,x,b,edge));b.appendChild(h)});
  b.addEventListener("keydown",e=>{if(e.target===b&&(e.key==="Enter"||e.key===" ")){e.preventDefault();edit(x.id)}});
- b.addEventListener("dragstart",e=>{if(!window.TransfersAccess.can("move_load")){e.preventDefault();return}if(e.target.closest?.(".resize-handle,.load-chain")){e.preventDefault();return}ignoreClickUntil=Date.now()+500;draggedTransferId=x.id;const rect=b.getBoundingClientRect();dragGrabOffsetPx=Math.max(0,Math.min(rect.height,e.clientY-rect.top));b.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",x.id)});
+ b.addEventListener("dragstart",e=>{if(!window.TransfersAccess.can("move_load")){e.preventDefault();return}if(e.target.closest?.(".resize-handle,.load-chain")){e.preventDefault();return}ignoreClickUntil=Date.now()+500;draggedTransferId=x.id;dragGrabOffsetPx=transferDragOffset(x,b,e.clientY);b.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",x.id)});
  b.addEventListener("dragend",()=>{stopTransferAutoScroll();draggedTransferId=null;dragGrabOffsetPx=0;E.grid.querySelectorAll(".card.dragging").forEach(card=>card.classList.remove("dragging"));clearDropPreviews()});
  b.onclick=()=>{if(Date.now()<ignoreClickUntil)return;edit(x.id)};
  return b
