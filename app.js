@@ -364,6 +364,20 @@ function syncResizeForm(id,start,duration,persisted=false){
  E.duration.value=String(duration);E.time.value=minToTime(start);
  if(persisted&&transferInfoBaseline){transferInfoBaseline.duration=E.duration.value;transferInfoBaseline.time=E.time.value}
 }
+function syncBoardActionForm(row){
+ if(E.edit.value!==String(row.id))return;
+ const schedule={date:row.scheduled_date,time:String(row.scheduled_time).slice(0,5),duration:String(row.duration_minutes),driver:row.driver};
+ for(const [key,value] of Object.entries(schedule)){
+  E[key].value=value;
+  if(transferInfoBaseline)transferInfoBaseline[key]=value;
+ }
+}
+function changedTransferPayload(payload){
+ if(!transferInfoBaseline)return payload;
+ const fields={scheduled_date:'date',scheduled_time:'time',duration_minutes:'duration',driver:'driver',origin:'origin',destination:'destination',additional_stop:'additional_stop',additional_stop_2:'additional_stop_2',dock_number:'dock',pallet_count:'pallet',packing_slip:'packing',job_number:'job',order_status:'status',urgent:'urgent'};
+ const current=transferInfoValues();
+ return Object.fromEntries(Object.entries(payload).filter(([key])=>!fields[key]||current[fields[key]]!==transferInfoBaseline[fields[key]]));
+}
 function beginTransferResize(e,x,b,edge){
  if(!window.TransfersAccess.can("resize_load"))return;
  if(e.button!==0)return;
@@ -640,7 +654,7 @@ async function submit(ev){
   if(live){
     let r;
     if(id){
-      const updatePayload={
+      const updatePayload=changedTransferPayload({
         scheduled_date:p.scheduled_date,
         scheduled_time:p.scheduled_time,
         duration_minutes:p.duration_minutes,
@@ -657,7 +671,7 @@ async function submit(ev){
         order_status:p.order_status,
         urgent:p.urgent,
         updated_at:new Date().toISOString()
-      };
+      });
       r=await sb.from("transfers").update(updatePayload).eq("id",id).select("*").single();
       if(r.error&&urgentColumnMissing(r.error)){
         urgentFallback=true;
@@ -721,7 +735,7 @@ document.addEventListener("edit-load-latest",event=>{
 });
 
 const slotStatuses=window.createSlotStatuses({sb,grid:E.grid,getDate:()=>E.boardDate.value,getUser:()=>user,report:msg,start:GRID_START,end:GRID_END,px:PX15,getLinks:()=>boxLinks,onSelectStatus:selectStatusEditor});
-const boxLinks=window.createBoardLinks({sb,grid:E.grid,getDate:()=>E.boardDate.value,getUser:()=>user,getJobs:()=>items,getStatuses:()=>slotStatuses.rows(),report:msg,start:GRID_START,end:GRID_END,px:PX15,applyMove:result=>{(result.jobs||[]).forEach(row=>{const previous=items.find(x=>x.id===row.id);if(previous&&(previous.scheduled_time!==row.scheduled_time||Number(previous.duration_minutes)!==Number(row.duration_minutes)))syncResizeForm(row.id,timeToMin(row.scheduled_time),Number(row.duration_minutes),true);replaceItem(row)});slotStatuses.applyRows(result.statuses||[]);if(!live)saveLocal();renderBoard()}});
+const boxLinks=window.createBoardLinks({sb,grid:E.grid,getDate:()=>E.boardDate.value,getUser:()=>user,getJobs:()=>items,getStatuses:()=>slotStatuses.rows(),report:msg,start:GRID_START,end:GRID_END,px:PX15,applyMove:result=>{(result.jobs||[]).forEach(row=>{syncBoardActionForm(row);replaceItem(row)});slotStatuses.applyRows(result.statuses||[]);if(!live)saveLocal();renderBoard()}});
 function transferInfoValues(){
   return {
     date:E.date?.value||"",
