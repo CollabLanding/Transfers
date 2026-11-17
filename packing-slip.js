@@ -126,6 +126,19 @@
    row.pallets=pallets;
   }
  }
+ function pastedProductDescription(value){
+  // Remove high-confidence request clauses, not individual words that might
+  // also be product names (for example, Send N Seal envelopes).
+  const request=/\b(?:(?:so|then)\s+)?(?:(?:can|could|would|will)\s+you\b|(?:you\s+can\s+)?(?:send|ship|deliver|bring|get)\s+(?:me|us)\b|(?:i|we)\s+(?:(?:will|still|also)\s+)?(?:need|want|would\s+like)\b|please\s+(?:send|ship|deliver|bring|provide|load|add)\b|let\s+(?:me|us)\s+know\b|actually\s+(?:make|send|ship|change)\b|(?:make\s+that|correction\s*:)\b|thank\s+you\b|thanks\b)/i;
+  const lines=[];
+  for(const raw of String(value||'').split(/\r?\n/)){
+   let line=raw.trim(),match=request.exec(line);
+   if(match)line=line.slice(0,match.index);
+   line=line.replace(/^[\s,;:|–—]+|[\s,;:|–—.!?]+$/g,'').replace(/(?:\s+(?:and|so|of|for))+\s*$/i,'').trim();
+   if(line&&!/^(?:hello|hi|good\s+(?:morning|afternoon|evening)|please|send|ship|deliver)[!.\s]*$/i.test(line))lines.push(line);
+  }
+  return lines.join('\n');
+ }
  function parseConversationLoad(text){
   if(!/\b(?:hello|please|good morning|can you|send|sending|work number|part number|from number|thank|need|actually|instead|correction)\b/i.test(text))return null;
   const part='(?=[A-Z0-9-]*\\d)[A-Z0-9]+(?:-[A-Z0-9]+)+';
@@ -156,7 +169,16 @@
    if(/^\d{4}-\d{2}-\d{2}$/.test(m[1])||/^\d{3}-\d{3}-\d{4}$/.test(m[1]))continue;
    if(!byPart.has(m[1].toUpperCase())){byPart.set(m[1].toUpperCase(),{un:m[1],description:'',quantities:{}});warnings.push('Confirm quantity for '+m[1]);}
   }
-  const rows=[...byPart.values()].map(({quantities,...row})=>row);
+  // Keep actual product wording beside a part even when its quantity came
+  // from a request sentence. Never turn the request itself into a description.
+  const references=[...text.matchAll(new RegExp('\\b('+part+')\\b','gi'))];
+  for(const [index,reference] of references.entries()){
+   const entry=byPart.get(reference[1].toUpperCase());if(!entry)continue;
+   const tail=text.slice(reference.index+reference[0].length,references[index+1]?.index??text.length).split(/\r?\n/)[0];
+   const description=pastedProductDescription(tail.replace(new RegExp('\\b'+amount,'gi'),'').replace(/\s+and\s*$/i,''));
+   if(description&&!/^(?:and|from|is|are|needs?|requires?|qty|quantity|with|of|for|[\s:|,])+$/i.test(description))entry.productDescription=description;
+  }
+  const rows=[...byPart.values()].map(({quantities,productDescription,...row})=>({...row,description:[productDescription,row.description].filter(Boolean).join('\n')}));
   if(rows.length>100)throw Error('Import no more than 100 rows at a time.');
   applySheetPalletCounts(rows,warnings);
   return {rows,warnings};
@@ -200,8 +222,8 @@
     current.description+=(current.description?"\n":"")+line;attach(current,pallets);continue;
    }
    const part=line.match(/^([A-Z0-9]+(?:-[A-Z0-9]+)+)(?:\s*[:|,\t]\s*|\s+)?(.*)$/i);
-   if(part){flush();current={un:part[1],description:part[2].trim()};attach(current,pendingPallets);attach(current,pallets);pendingPallets=null;continue}
-   if(current){current.description+=(current.description?"\n":"")+line;attach(current,pallets)}
+   if(part){flush();current={un:part[1],description:pastedProductDescription(part[2])};attach(current,pendingPallets);attach(current,pallets);pendingPallets=null;continue}
+   if(current){const description=pastedProductDescription(line);if(description)current.description+=(current.description?"\n":"")+description;attach(current,pallets)}
    else{warnings.push(raw.trim());if(pallets!=null)pendingPallets=pallets}
   }
   flush();
