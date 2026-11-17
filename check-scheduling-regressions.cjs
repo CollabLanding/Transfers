@@ -39,3 +39,15 @@ function field(value){return {value};}
  assert.equal(vm.runInContext('landingMinutes({clientY:y+20},lane,job)',c),495);
  console.log('PASS 3: stacked drag preserves time at rest and changes exactly one slot after 20px.');
 }
+async function checkLinkedTies(){
+ let jobs=[{id:'a',driver:'D',scheduled_date:'2026-11-17',scheduled_time:'08:00',duration_minutes:60},{id:'b',driver:'D',scheduled_date:'2026-11-17',scheduled_time:'08:00',duration_minutes:60},{id:'c',driver:'D',scheduled_date:'2026-11-17',scheduled_time:'09:30',duration_minutes:60}];
+ let saved=JSON.stringify([{source_key:'job:a',target_key:'job:b'},{source_key:'job:b',target_key:'job:c'}]);
+ const window={TransfersAccess:{can:()=>true},TransferChainVisual:{renderLinks(){}}};
+ const c=context({window,localStorage:{getItem:()=>saved,setItem:(_k,v)=>saved=v},document:{}});
+ vm.runInContext(fs.readFileSync(__dirname+'/board-links.js','utf8'),c);
+ const links=window.createBoardLinks({sb:null,grid:{querySelectorAll:()=>[]},getDate:()=> '2026-11-17',getUser:()=>({id:'u'}),getJobs:()=>jobs,getStatuses:()=>[],start:210,end:1320,px:20,report(){},applyMove:r=>{jobs=jobs.map(j=>r.jobs.find(n=>n.id===j.id)||j)}});
+ await links.refresh();assert(await links.resize('job:a',480,570));assert.equal(jobs[1].scheduled_time,'08:30');assert.equal(jobs[2].scheduled_time,'10:00');
+ assert(await links.resize('job:a',480,540));assert.equal(jobs[1].scheduled_time,'08:00');assert.equal(jobs[2].scheduled_time,'09:30');
+ console.log('PASS 4: same-start links and their downstream jobs follow grow/shrink.');
+}
+checkLinkedTies().catch(error=>{console.error(error);process.exitCode=1});

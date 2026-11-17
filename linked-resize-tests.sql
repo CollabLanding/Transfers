@@ -46,6 +46,21 @@ begin
  exception when others then if sqlerrm<>'This box changed while resizing. Try again.' then raise;end if;end;
  begin perform public.resize_board_link_group('status:'||s,570,1320,570,600);raise exception 'Out of bounds accepted';
  exception when others then if sqlerrm<>'All linked boxes must fit within the board hours' then raise;end if;end;
+ -- Same-start boxes must not cut off the rest of the connected component.
+ delete from public.transfer_slot_statuses where driver=d;
+ delete from public.transfers where driver=d;
+ insert into public.transfers(scheduled_date,scheduled_time,driver,origin,destination,pallet_count,job_number,duration_minutes,created_by,created_by_name)
+ values('2099-01-01','08:00',d,'Test','Test',0,'Test',60,auth.uid(),'Test') returning id into a;
+ insert into public.transfers(scheduled_date,scheduled_time,driver,origin,destination,pallet_count,job_number,duration_minutes,created_by,created_by_name)
+ values('2099-01-01','08:00',d,'Test','Test',0,'Test',60,auth.uid(),'Test') returning id into b;
+ insert into public.transfers(scheduled_date,scheduled_time,driver,origin,destination,pallet_count,job_number,duration_minutes,created_by,created_by_name)
+ values('2099-01-01','09:30',d,'Test','Test',0,'Test',60,auth.uid(),'Test') returning id into c;
+ perform public.set_board_box_link('job:'||a,'job:'||b);
+ perform public.set_board_box_link('job:'||b,'job:'||c);
+ perform public.resize_board_link_group('job:'||a,480,570,480,540);
+ if (select scheduled_time from public.transfers where id=b)<>time '08:30' or (select scheduled_time from public.transfers where id=c)<>time '10:00' then raise exception 'Same-start follower traversal failed';end if;
+ perform public.resize_board_link_group('job:'||a,480,540,480,570);
+ if (select scheduled_time from public.transfers where id=b)<>time '08:00' or (select scheduled_time from public.transfers where id=c)<>time '09:30' then raise exception 'Same-start shrink failed';end if;
  if has_function_privilege('anon','public.resize_board_link_group(text,integer,integer,integer,integer)','execute') then raise exception 'Anonymous resize allowed';end if;
 end;$test$;
 select 'PASS: authenticated atomic resize, job/status downstream chain, reverse links, top edge, grow/shrink, upward push and board bounds, collision rollback, stale edit, board bounds and anonymous denial' result;

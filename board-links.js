@@ -7,12 +7,9 @@ window.createBoardLinks=function({sb,grid,getDate,getUser,getJobs,getStatuses,ap
  function group(key){const ids=keysFor(key);return nodes().filter(n=>ids.has(n.key))}
  function resizeFollowers(key,above=false){
   const all=nodes(),anchor=all.find(n=>n.key===key);if(!anchor)return [];
-  const ids=new Set([key]);let changed=true;
-  while(changed){changed=false;for(const e of edges)for(const [a,b] of [[e.source_key,e.target_key],[e.target_key,e.source_key]]){
-   const n=all.find(n=>n.key===b);
-   if(ids.has(a)&&!ids.has(b)&&n&&(above?n.start<anchor.start:n.start>anchor.start)&&n.driver===anchor.driver&&n.date===anchor.date){ids.add(b);changed=true}
-  }}
-  return all.filter(n=>n.key!==key&&ids.has(n.key));
+  // Traverse the complete component before classifying followers. Equal-start
+  // boxes follow the bottom edge; upper boxes follow the top edge.
+  return group(key).filter(n=>n.key!==key&&n.driver===anchor.driver&&n.date===anchor.date&&(above?n.start<anchor.start:n.start>=anchor.start));
  }
  function resizeBounds(key){
   const anchor=nodes().find(n=>n.key===key);if(!anchor)return {minStart:start,maxStart:end,minEnd:start,maxEnd:end};
