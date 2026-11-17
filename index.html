@@ -17,7 +17,7 @@
   <script src="config.js?v=20261009-permissions"></script>
   <script src="access-control.js?v=20261113-owner-recovery"></script>
 <link rel="stylesheet" href="slot-status.css?v=20261111-centered-grips">
-<link rel="stylesheet" href="status-history.css?v=20261009-permissions">
+<link rel="stylesheet" href="status-history.css?v=20261117-reopened-history">
 <script src="popup-dismiss.js?v=20261016" defer></script>
 <script src="site-language.js?v=20261014" defer></script>
 <style>#form>.row>label{margin:7px 0}#form .driver-status-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 54px;gap:10px}#form .driver-status-row label,#form .driver-status-row select{min-width:0}#form .route-add-stop-field{flex:0 0 auto;padding-top:27px}#addStop{padding:8px 6px;white-space:nowrap;font-size:12px}#form .additional-stop-field{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin:7px 0}#form .additional-stop-row{display:contents}#form .route-row{flex-wrap:nowrap;row-gap:0}#form .route-row.has-additional-stops{flex-wrap:wrap}#form .route-row.has-additional-stops .route-origin-field{order:0}#form .route-row.has-additional-stops #additionalStopField{order:1}#form .route-row.has-additional-stops .route-stop-break{order:2}#form .route-row.has-additional-stops #additionalStopField2{order:3}#form .route-row.has-additional-stops .route-destination-field{order:4}#form .route-row.has-additional-stops .route-add-stop-field{order:5}#form .route-row.has-additional-stops .route-origin-field{flex:0 0 var(--saved-origin-width)}#form .route-row.has-additional-stops .route-destination-field{flex:0 0 var(--saved-destination-width)}#form .route-stop-break{flex:0 0 100%;height:0}#form .route-row.has-additional-stops .route-stop-break{display:block!important}#form .additional-stop-field{flex:0 0 auto}#form .additional-stop-heading{display:flex;align-items:center;gap:4px;white-space:nowrap;position:relative;padding-right:24px}#form .additional-stop-heading label{margin:0}#form .additional-stop-field select{min-width:0}#form .additional-stop-heading button{position:absolute;right:0;top:50%;transform:translateY(-50%);display:inline-flex;flex:0 0 20px;align-items:center;justify-content:center;width:20px;height:20px;min-width:20px;min-height:20px;padding:1px;margin:0;border:1px solid var(--line,#cbd2d9);border-radius:4px;background:var(--bg,#eef1f4);color:var(--text);font:14px/1 Arial,sans-serif;overflow:visible}
@@ -507,10 +507,11 @@ body.printing-packing-slip{height:auto!important;overflow:visible!important;back
 <div id="login" class="login hidden">
   <form id="loginForm" class="loginbox"><h1>Transfers</h1><p>Sign in to the transfer board.</p><input id="loginEmail" type="email" placeholder="Email" required><input id="loginPassword" type="password" placeholder="Password" required><button class="primary">Sign In</button><p id="loginMsg"></p></form>
 </div>
-<script src="slot-status.js?v=20261105-linked-push"></script>
+<script src="board-interaction.js?v=20261117-interactions"></script>
+<script src="slot-status.js?v=20261117-interactions"></script>
 <script src="chain-visual.js?v=20261110-free-drag"></script>
-<script src="board-links.js?v=20261110-direct-link-transition"></script>
-<script src="status-history.js?v=20261012-swapped-status-colors"></script>
+<script src="board-links.js?v=20261117-resize-interactions"></script>
+<script src="status-history.js?v=20261117-reopened-history"></script>
 <script src="editor-bubbles.js?v=20261009-vertical-bubbles"></script>
 <script src="driver-availability.js?v=20261012-overnight"></script>
 <dialog id="packingSlip" aria-labelledby="packingTitle">
@@ -523,7 +524,7 @@ body.printing-packing-slip{height:auto!important;overflow:visible!important;back
 </dialog>
 <article id="packingPrintSheet"></article>
 <script src="packing-slip.js?v=20261113-conversation-quantities"></script>
-<script src="app.js?v=20261113-reset-route-select"></script>
+<script src="app.js?v=20261117-scheduling-audit"></script>
 <script src="order-status.js?v=20261009-permissions"></script>
 <script src="recent-activity.js?v=20261112-created-label"></script>
 <script src="duplicate-transfer.js?v=20261103-packing-slip"></script>

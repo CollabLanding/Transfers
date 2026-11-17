@@ -10,6 +10,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
   document.body.append(dialog);
   const time = m => (Math.floor(m / 60) % 12 || 12) + ':' + String(m % 60).padStart(2, '0') + (m >= 720 ? ' PM' : ' AM');
   function clear() {
+    window.TransferBoardInteraction?.end("status-selection");
     selection = null;
     grid.querySelectorAll('.slot-selection').forEach(n => n.remove());
   }
@@ -20,6 +21,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
   function displayStatus(row) { return row?.status === 'Custom' ? (String(row.custom_title || '').trim() || 'Custom') : row?.status || ''; }
   function displayStatus(row) { return row?.status === 'Custom' ? (String(row.custom_title || '').trim() || 'Custom') : row?.status || ''; }
   function paint() {
+    if(window.TransferBoardInteraction?.defer("statuses",paint))return;
     if (resizeCancel) return; // Keep the captured resize handle attached during background updates.
     grid.querySelectorAll('.slot-status-block,.slot-status-delete').forEach(n => n.remove());
     for (const lane of grid.querySelectorAll('.lane')) {
@@ -31,6 +33,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
           if (busy || dialog.open || !getUser() || e.target.closest('.load-chain,.slot-resize-handle')) { e.preventDefault(); return; }
           e.stopPropagation(); clear();
           moving = {row, date:getDate(), offset:Math.max(0,e.clientY-block.getBoundingClientRect().top)};
+          window.TransferBoardInteraction?.begin("status-drag",()=>{endMove();paint()});
           e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('application/x-slot-status',row.id);
           block.classList.add('slot-status-dragging');
         });
@@ -119,7 +122,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
       if(handle.hasPointerCapture(pointer))handle.releasePointerCapture(pointer);
       window.stopTransferAutoScroll?.();
       getLinks?.().clearResizePreview();
-      resizeCancel=null;busy=false;block.draggable=true;block.classList.remove('slot-status-resizing','is-blocked');
+      resizeCancel=null;busy=false;window.TransferBoardInteraction?.end("status-resize");block.draggable=true;block.classList.remove('slot-status-resizing','is-blocked');
     };
     const cancel=(repaint=true)=>{cleanup();if(repaint!==false)paint();};
     const escape=ev=>{if(ev.key==='Escape')cancel();};
@@ -131,12 +134,12 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
       if(overlap({...row,...payload},row.id)){paint();report('That time overlaps another status. Choose an open range.','error');return;}
       savePlacement(row,payload,'Status resized.');
     };
-    resizeCancel=cancel;
+    resizeCancel=cancel;window.TransferBoardInteraction?.begin("status-resize",cancel);
     handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',up);handle.addEventListener('pointercancel',cancel);handle.addEventListener('lostpointercapture',cancel);
     document.addEventListener('keydown',escape);window.addEventListener('blur',cancel);
   }
   function clearMovePreview() { grid.querySelectorAll('.slot-status-move-preview').forEach(n=>n.remove()); }
-  function endMove() { getLinks?.().clearPreview(); moving=null; clearMovePreview(); grid.querySelectorAll('.slot-status-dragging').forEach(n=>n.classList.remove('slot-status-dragging')); }
+  function endMove() { window.TransferBoardInteraction?.end("status-drag");getLinks?.().clearPreview(); moving=null; clearMovePreview(); grid.querySelectorAll('.slot-status-dragging').forEach(n=>n.classList.remove('slot-status-dragging')); }
   function movePosition(e,lane) {
     const duration=moving.row.end_minutes-moving.row.start_minutes;
     const raw=start+Math.round((e.clientY-lane.getBoundingClientRect().top-moving.offset)/px)*15;
@@ -190,6 +193,7 @@ window.createSlotStatuses = function ({sb, grid, getDate, getUser, report, start
     if (!lane || e.target.closest('.card,.slot-status-block,button,input,select')) return;
     clear(); const anchor = minute(e, lane);
     selection = {lane, driver: lane.dataset.driver, date: getDate(), anchor, last: anchor, pointer: e.pointerId};
+    window.TransferBoardInteraction?.begin("status-selection",()=>{if(!busy)close()});
     grid.setPointerCapture(e.pointerId); e.preventDefault(); preview();
   });
   grid.addEventListener('pointermove', e => {

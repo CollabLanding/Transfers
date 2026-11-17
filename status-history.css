@@ -394,3 +394,6 @@ html[data-theme="dark"] .status-history-editor-msg,
 body.dark-theme .status-history-editor-msg{
   color:#f0a2a2;
 }
+
+.history-event-marker{position:absolute;width:10px;height:10px;min-width:0;min-height:0;padding:0;border:2px solid;border-radius:50%;background:var(--panel,#fff);transform:translate(-50%,-50%);z-index:4;cursor:pointer}
+.history-event-marker:focus-visible{outline:2px solid currentColor;outline-offset:3px}

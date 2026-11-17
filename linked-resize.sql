@@ -17,22 +17,13 @@ begin
   if not transfers_private.has_permission('manage_status') then raise exception 'Managing statuses is not permitted' using errcode='42501';end if;
   if p_end-p_start<30 then raise exception 'A status must last at least 30 minutes';end if;
  end if;
- with recursive edges(a,b) as (
-  select source_key,target_key from public.board_box_links union all select target_key,source_key from public.board_box_links
- ), followers(k) as (
-  select p_anchor union
-  select e.b from followers f join edges e on e.a=f.k join public.board_link_nodes n on n.box_key=e.b
-  where n.start_minutes>anchor.start_minutes and n.driver=anchor.driver and n.scheduled_date=anchor.scheduled_date
- ) select array_agg(k) into keys from followers;
- with recursive edges(a,b) as (
-  select source_key,target_key from public.board_box_links union all select target_key,source_key from public.board_box_links
- ), preceding(k) as (
-  select p_anchor union
-  select e.b from preceding f join edges e on e.a=f.k join public.board_link_nodes n on n.box_key=e.b
-  where n.start_minutes<anchor.start_minutes and n.driver=anchor.driver and n.scheduled_date=anchor.scheduled_date
- ) select array_agg(k) filter(where k<>p_anchor) into above_keys from preceding;
+ -- Classify the whole component, so a same-start or zigzag link cannot
+ -- hide a later follower. Same-start boxes follow the bottom edge.
+ select array_agg(n.box_key),array_agg(n.box_key) filter(where n.start_minutes<anchor.start_minutes)
+ into keys,above_keys
+ from public.board_link_group(p_anchor) g join public.board_link_nodes n using(box_key)
+ where n.driver=anchor.driver and n.scheduled_date=anchor.scheduled_date;
  above_keys:=coalesce(above_keys,array[]::text[]);
- keys:=keys||above_keys;
  delta:=p_end-anchor.end_minutes;
  top_delta:=p_start-anchor.start_minutes;
  if exists(select 1 from public.board_link_nodes where box_key=any(keys) and box_key<>p_anchor and (start_minutes+case when box_key=any(above_keys) then top_delta else delta end<210 or end_minutes+case when box_key=any(above_keys) then top_delta else delta end>1320)) then raise exception 'All linked boxes must fit within the board hours';end if;
