@@ -76,3 +76,15 @@ checkLinkedTies().catch(error=>{console.error(error);process.exitCode=1});
  cancelGesture();assert.equal(E.time.value,'08:15');assert.equal(E.duration.value,'75');assert.equal(c.transferInfoBaseline.time,'08:00');assert.equal(classes.has('resizing'),false);assert.equal(handle.events.size,0);assert.equal(released,1);assert.equal(renders,1);
  console.log('PASS 5b: interrupted job resize restores the prior draft without advancing its saved baseline.');
 }
+{
+ const source=fs.readFileSync(__dirname+'/status-history.js','utf8'),c=context();
+ load(c,'  function parseChange','  function graph(',source);
+ const rows=[['Planned','Loading','13:00'],['Loading','Delivered','14:00'],['Delivered','Loading','15:00'],['Loading','Planned','15:30'],['Planned','Loading','16:00']].map(([from,to,time],i)=>({id:i+1,action:'Status changed',details:from+' → '+to,created_at:'2026-11-16T'+time+':00Z'}));
+ c.rows=rows;c.transfer={created_at:'2026-11-16T12:00:00Z',order_status:'Loading'};
+ const open=vm.runInContext('buildIntervals(transfer,rows)',c);
+ assert.equal(open.markers.deliveredAt,null);assert.equal(open.markers.plannedAt.toISOString(),'2026-11-16T12:00:00.000Z');assert.equal(open.intervals.length,3);assert.equal(open.boundaryEvents.length,3);
+ c.rows=[...rows,{id:6,action:'Status changed',details:'Loading → Delivered',created_at:'2026-11-16T17:00:00Z'}];c.transfer.order_status='Delivered';
+ const done=vm.runInContext('buildIntervals(transfer,rows)',c);assert.equal(done.markers.deliveredAt.toISOString(),'2026-11-16T17:00:00.000Z');assert.equal(done.intervals.length,3);assert.equal(done.intervals[2].end.toISOString(),'2026-11-16T17:00:00.000Z');
+ c.rows=[];c.transfer.order_status='Planned';assert.equal(vm.runInContext('buildIntervals(transfer,rows).intervals.length',c),0);
+ console.log('PASS 6: reopened/replanned jobs retain all intervals; only the final delivery closes the timeline.');
+}

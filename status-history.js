@@ -26,7 +26,7 @@
     "Delivered":"#119447"
   };
 
-  let restoreFocus=null,editingChange=null,activeTransfer=null,activeHistory=null;
+  let restoreFocus=null,editingChange=null,activeTransfer=null,activeHistory=null,loadToken=0;
   function ensureEditor(){
     if(E.editor)return;
     const dialog=E.screen?.querySelector(".status-history-dialog"); if(!dialog)return;
@@ -100,10 +100,11 @@
       .sort((a,b)=>a.at-b.at);
 
     const created=new Date(transfer.created_at);
-    const plannedChange=changes.find(change=>change.to==="Planned");
     const fallbackStart=Number.isFinite(created.getTime())?created:(changes[0]?.at||new Date());
-    const plannedAt=plannedChange?.at||fallbackStart;
-    const deliveredChange=changes.find(change=>change.to==="Delivered");
+    const plannedAt=fallbackStart;
+    const plannedChange=changes.find(change=>change.to==="Planned"&&change.at.getTime()===plannedAt.getTime());
+    const lastChange=changes[changes.length-1];
+    const deliveredChange=transfer.order_status==="Delivered"&&lastChange?.to==="Delivered"?lastChange:null;
     const deliveredAt=deliveredChange?.at||null;
     const timelineEnd=deliveredAt||new Date();
 
@@ -115,6 +116,7 @@
     for(const change of changes){
       if(change.at<=start){
         status=change.to||status;
+        startChangeId=change.id;
         continue;
       }
 
@@ -127,7 +129,6 @@
       status=change.to||status;
       start=change.at;
       startChangeId=change.id;
-      if(status==="Delivered")break;
     }
 
     if(status!=="Planned"&&status!=="Delivered"&&timelineEnd>start){
@@ -147,6 +148,8 @@
     return {
       intervals:merged,
       changes,
+      timelineEnd,
+      boundaryEvents:changes.filter(change=>change.to==="Planned"||change.to==="Delivered"||change.from==="Delivered"),
       markers:{plannedAt,plannedChangeId:plannedChange?.id??null,deliveredAt,deliveredChangeId:deliveredChange?.id??null}
     };
   }
@@ -168,8 +171,8 @@
     const start=(firstTracked&&Number.isFinite(firstTracked.getTime()))
       ?firstTracked.getTime()
       :plannedAt.getTime();
-    const end=(deliveredAt&&Number.isFinite(deliveredAt.getTime()))
-      ?deliveredAt.getTime()
+    const end=(history.timelineEnd&&Number.isFinite(history.timelineEnd.getTime()))
+      ?history.timelineEnd.getTime()
       :(lastTracked&&Number.isFinite(lastTracked.getTime())
         ?lastTracked.getTime()
         :Math.max(start+60000,Date.now()));
@@ -192,7 +195,7 @@
       const x1=pct(s),x2=pct(e),yy=y(interval.status);
 
       // Draw the vertical step whenever the status changes.
-      if(lastX!==null&&x1>=lastX&&lastY!==null&&lastY!==yy){
+      if(lastX!==null&&Math.abs(x1-lastX)<0.000001&&lastY!==null&&lastY!==yy){
         segments+='<span class="history-v-segment" style="left:'+x1+'%;top:'+Math.min(lastY,yy)+'px;height:'+Math.abs(lastY-yy)+'px"></span>';
       }
 
@@ -215,6 +218,14 @@
       return esc(date+" · "+time);
     };
 
+    // Delivery/reset/reopening events remain visible without counting boundary
+    // statuses as working durations. Each event retains its own edit target.
+    for(const change of history.boundaryEvents||[]){
+      const reopened=change.from==="Delivered"&&change.to!=="Delivered";
+      const label=(reopened?"Reopened: ":"")+change.to+" · "+change.at.toLocaleString();
+      const attrs=change.id?' data-history-edit-id="'+esc(change.id)+'" data-history-edit-status="'+esc(change.to)+'"':'';
+      segments+='<button type="button" class="history-event-marker"'+attrs+' aria-label="'+esc(label)+'" title="'+esc(label)+'" style="left:'+pct(change.at.getTime())+'%;top:'+y(change.to)+'px;border-color:'+esc(COLORS[change.to]||"#7c3aed")+'"></button>';
+    }
     const statusTimes={
       Planned:statusTimestamp(plannedAt),
       Delivered:statusTimestamp(deliveredAt)
@@ -234,13 +245,15 @@
     const grids=levels.map(status=>'<span class="history-horizontal-line" style="top:'+y(status)+'px"></span>').join("")
       +ticks.map(t=>'<span class="history-vertical-line" style="left:'+pct(t)+'%"></span>').join("");
 
-    const current=deliveredAt?"Delivered":(intervals[intervals.length-1]?.status||transfer.order_status||"Planned");
+    const current=transfer.order_status||history.changes?.[history.changes.length-1]?.to||"Planned";
     activeTransfer=transfer; activeHistory=history;
     E.title.textContent=transfer.job_number?("Job "+transfer.job_number):"Status History";
     E.graph.innerHTML='<div class="status-history-summary"><div class="status-history-summary-copy"></div><div class="status-history-current"><span>Current Status</span><strong style="color:'+esc(COLORS[current]||"#7c3aed")+'">'+esc(current)+'</strong></div></div><div class="history-chart"><div class="history-line-layout"><div class="history-y-axis">'+labels+'</div><div class="history-plot" style="height:'+height+'px"><div class="history-grid">'+grids+'</div>'+segments+'</div></div><div class="history-axis-bottom"><div></div><div class="history-axis-caption">Elapsed time</div></div></div>';
   }
 
   async function load(){
+    const token=++loadToken;
+    activeTransfer=null;activeHistory=null;
     ensureEditor(); closeEditor();
     const id=String(E.editId?.value||"").trim();
     if(!id){
@@ -262,6 +275,7 @@
       sb.from("transfer_activity").select("id,action,details,created_at").eq("transfer_id",id).eq("action","Status changed").order("created_at",{ascending:true})
     ]);
 
+    if(token!==loadToken||id!==String(E.editId?.value||"").trim()||E.screen.classList.contains("hidden"))return;
     if(transferResult.error||activityResult.error){
       const error=transferResult.error||activityResult.error;
       E.graph.innerHTML='<div class="status-history-empty">Could not load status history: '+esc(error?.message||"Unknown error")+'</div>';
@@ -287,6 +301,7 @@
   }
 
   function close(){
+    loadToken++;activeTransfer=null;activeHistory=null;
     if(!E.screen)return;
     E.screen.classList.add("hidden");
     document.body.classList.remove("status-history-open");
