@@ -606,7 +606,8 @@ let additionalStopCount=0;
 function setAdditionalStop(count){const routeRow=E.origin.closest(".route-row");if(Number(count)>0&&!routeRow.classList.contains("has-additional-stops")){routeRow.style.setProperty("--saved-origin-width",E.origin.getBoundingClientRect().width+"px");routeRow.style.setProperty("--saved-destination-width",E.destination.getBoundingClientRect().width+"px");}additionalStopCount=Math.max(0,Math.min(2,Number(count)));E.origin.closest(".route-row").classList.toggle("has-additional-stops",additionalStopCount>0);requestAnimationFrame(matchAdditionalStopWidths);$("additionalStopRow").classList.toggle("hidden",!additionalStopCount);$("additionalStopField").classList.toggle("hidden",additionalStopCount<1);$("additionalStopField2").classList.toggle("hidden",additionalStopCount<2);$("addStop").classList.remove("hidden");$("addStop").disabled=additionalStopCount===2;$("addStop").setAttribute("aria-expanded",String(additionalStopCount>0));if(additionalStopCount<1)E.additionalStop.value="";if(additionalStopCount<2)E.additionalStop2.value="";}
 function reset(){setAdditionalStop(false);window.EditGuard?.unpin('transfers');transferInfoBaseline=null;closeStatusEditor();E.form.reset();E.origin.value="";E.destination.value="";window.PackingSlip?.load(null);E.edit.value="";E.date.value=E.boardDate.value;E.time.value="08:00";E.duration.value="60";if(E.status)E.status.value="Planned";if(E.urgent)E.urgent.checked=false;E.formTitle.textContent="Build Transfer Load";E.save.textContent="Add Transfer";E.del.classList.add("hidden");E.cancel.classList.add("hidden");E.textDriver?.classList.add("hidden");E.statusHistory?.classList.add("hidden");window.closeStatusHistory?.();E.statusHistoryScreen?.classList.add("hidden");renderOptions();msg("");window.TransfersAccess.apply();publishEditorPresence()}
 function edit(id,discardChecked=false){if(!window.TransfersAccess.can("edit_load"))return;let x=items.find(i=>i.id===String(id));if(!x)return;if(!discardChecked){if(E.edit.value===String(id)&&E.slotStatusEditor.classList.contains("hidden"))return;if(!confirmEditorTransition())return;}closeStatusEditor();window.EditGuard?.unpin("transfers");window.EditGuard?.pin("transfers",x);E.edit.value=x.id;E.date.value=x.scheduled_date;E.time.value=x.scheduled_time;E.duration.value=String(x.duration_minutes);renderOptions();E.driver.value=x.driver;E.origin.value=x.origin;E.destination.value=x.destination;E.additionalStop.value=x.additional_stop||"";E.additionalStop2.value=x.additional_stop_2||"";setAdditionalStop(x.additional_stop_2?2:x.additional_stop?1:0);E.dock.value=x.dock_number==null?"":String(x.dock_number);window.PackingSlip?window.PackingSlip.load(x.packing_slip,x.pallet_count):(E.pallet.value=x.pallet_count);E.job.value=x.job_number;E.status.value=x.order_status||"Planned";if(E.urgent)E.urgent.checked=Boolean(x.urgent);E.formTitle.replaceChildren(document.createTextNode("Transfer Info"),document.createTextNode(" Move #"+(x.move_number??"—")));E.save.textContent="Update";E.del.classList.remove("hidden");E.cancel.classList.remove("hidden");E.textDriver?.classList.remove("hidden");E.statusHistory?.classList.remove("hidden");transferInfoBaseline=transferInfoValues();createdByMessage(x);window.TransfersAccess.apply();publishEditorPresence()}
-async function openTransferEditor(id){
+async function openTransferEditor(id,{reveal=false}={}){
+  if(!window.TransfersAccess.can("view_board"))return;
   let x=items.find(i=>String(i.id)===String(id));
   if(!x&&live){
     const result=await sb.from("transfers").select("*").eq("id",id).maybeSingle();
@@ -617,14 +618,25 @@ async function openTransferEditor(id){
       locations=uniq([...locations,x.origin,x.destination]);
     }
   }
-  if(!x)return;
+  if(!x){if(reveal)msg("This job is unavailable or has been deleted.","error");return;}
   if(!confirmEditorTransition())return;
   window.TransferBoardInteraction?.cancel();
   const changedDay=E.boardDate.value!==x.scheduled_date;
   E.boardDate.value=x.scheduled_date;
   renderOptions();
   if(changedDay)await loadBoardSchedule();else renderBoard();
-  if(E.boardDate.value===x.scheduled_date)edit(x.id,true);
+  if(E.boardDate.value!==x.scheduled_date)return;
+  edit(x.id,true);
+  if(reveal){
+    const card=Array.from(E.grid.querySelectorAll(".card[data-id]")).find(card=>card.dataset.id===String(x.id));
+    const wrap=$("gridWrap");
+    if(card){
+      const header=E.grid.querySelector(".headrow");
+      wrap.scrollTop+=card.getBoundingClientRect().top-wrap.getBoundingClientRect().top-(header?.offsetHeight||0)-8;
+      const bounds=wrap.getBoundingClientRect(),position=card.getBoundingClientRect();
+      if(position.left<bounds.left||position.right>bounds.right)card.scrollIntoView({block:"nearest",inline:"center"});
+    }
+  }
 }
 window.openTransferEditor=openTransferEditor;
 function urgentColumnMissing(error){
@@ -749,7 +761,10 @@ function session(s){
  const next=sessionQueue.then(()=>applySession(s),()=>applySession(s));
  sessionQueue=next.catch(()=>{});return next;
 }
-async function applySession(s){await window.TransfersAccess.ready;await window.TransfersAccess.refresh(s);if(!s?.user){initializedSessionUser=null;renderUsers([],true);boxLinks.reset();slotStatuses.reset();user=null;editorPresenceReady=false;if(presence){await sb.removeChannel(presence);presence=null;}if(dataChannel){await sb.removeChannel(dataChannel);dataChannel=null;}window.TransferEditors?.setLocal(null);window.TransferEditors?.sync([]);E.login.classList.remove("hidden");return}if(initializedSessionUser===s.user.id&&user?.id===s.user.id){user=s.user;return}if(user?.id!==s.user.id)renderUsers([],true);user=s.user;E.login.classList.add("hidden");E.signout.classList.remove("hidden");let r=await sb.from("profiles").select("display_name,bubble_color").eq("id",user.id).maybeSingle();profile=r.data||{display_name:user.email?.split("@")[0]||"User"};E.me.textContent=String(name()).split("@")[0];E.email.textContent=user.email||"";await loadData();if(!window.TransfersAccess.can("view_board")){initializedSessionUser=user.id;reset();return}await slotStatuses.refresh();await boxLinks.refresh();await subscribe();initializedSessionUser=user.id}
+async function applySession(s){await window.TransfersAccess.ready;await window.TransfersAccess.refresh(s);if(!s?.user){initializedSessionUser=null;renderUsers([],true);boxLinks.reset();slotStatuses.reset();user=null;editorPresenceReady=false;if(presence){await sb.removeChannel(presence);presence=null;}if(dataChannel){await sb.removeChannel(dataChannel);dataChannel=null;}window.TransferEditors?.setLocal(null);window.TransferEditors?.sync([]);E.login.classList.remove("hidden");return}if(initializedSessionUser===s.user.id&&user?.id===s.user.id){user=s.user;return}if(user?.id!==s.user.id)renderUsers([],true);user=s.user;E.login.classList.add("hidden");E.signout.classList.remove("hidden");let r=await sb.from("profiles").select("display_name,bubble_color").eq("id",user.id).maybeSingle();profile=r.data||{display_name:user.email?.split("@")[0]||"User"};E.me.textContent=String(name()).split("@")[0];E.email.textContent=user.email||"";await loadData();if(!window.TransfersAccess.can("view_board")){initializedSessionUser=user.id;reset();return}await slotStatuses.refresh();await boxLinks.refresh();await subscribe();initializedSessionUser=user.id;
+ const job=new URLSearchParams(location.search).get("job");
+ if(job)await openTransferEditor(job,{reveal:true});
+}
 
 document.addEventListener("edit-load-latest",event=>{
  if(event.detail.table==="transfers"){
