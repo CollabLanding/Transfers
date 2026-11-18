@@ -25,9 +25,9 @@
         pallets:job?(x.pallet_count??null):0,duration:job?(x.duration_minutes??null):(x.end_minutes!=null&&x.start_minutes!=null?x.end_minutes-x.start_minutes:null)};
     });
   }
-  function filter(rows,{from="",to="",driver="",type="",status="",location="",search=""}={}){
+  function filter(rows,{from="",to="",driver="",type="",status="",location="",origin="",destination="",search=""}={}){
     const term=search.trim().toLowerCase();
-    return rows.filter(r=>(!from||r.date>=from)&&(!to||r.date<=to)&&(!driver||r.driver===driver)&&(!type||r.type===type)&&(status==="Deleted"?!!r.deleted:(!r.deleted&&(!status||r.status===status)))&&(!location||(r.type==="Job"&&[r.origin,r.additional_stop,r.additional_stop_2,r.destination].includes(location)))&&(!term||[r.driver,r.job,r.move,r.route,r.notes,r.status].join(" ").toLowerCase().includes(term)));
+    return rows.filter(r=>(!from||r.date>=from)&&(!to||r.date<=to)&&(!driver||r.driver===driver)&&(!type||r.type===type)&&(status==="Deleted"?!!r.deleted:(!r.deleted&&(!status||r.status===status)))&&(!location||(r.type==="Job"&&[r.origin,r.additional_stop,r.additional_stop_2,r.destination].includes(location)))&&(!origin||(r.type==="Job"&&r.origin===origin))&&(!destination||(r.type==="Job"&&r.destination===destination))&&(!term||[r.driver,r.job,r.move,r.route,r.notes,r.status].join(" ").toLowerCase().includes(term)));
   }
   function totals(rows){
     const out={jobs:0,delivered:0,pallets:0,jobMinutes:0,slots:0,slotMinutes:0,drivers:new Map(),jobStatuses:new Map(),slotStatuses:new Map()};

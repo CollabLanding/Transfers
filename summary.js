@@ -67,15 +67,15 @@
       }
       const now=new Date(),today=D.dateKey(now),time=now.getHours()*60+now.getMinutes();
       rows=rows.filter(r=>(!scope.from||r.date>=scope.from)&&r.date<=scope.to&&(r.deleted||r.date<today||(r.date===today&&r.start<=time)));
-      const selections={type:el("recordType").value,status:el("recordStatus").value,location:el("recordLocation").value,search:el("recordSearch").value};
+      const selections={type:el("recordType").value,status:el("recordStatus").value,location:el("recordLocation").value,origin:el("recordOrigin").value,destination:el("recordDestination").value,search:el("recordSearch").value};
       render();
-      el("recordType").value=selections.type;el("recordStatus").value=selections.status;el("recordLocation").value=selections.location;el("recordSearch").value=selections.search;details();
+      el("recordType").value=selections.type;el("recordStatus").value=selections.status;el("recordLocation").value=selections.location;el("recordOrigin").value=selections.origin;el("recordDestination").value=selections.destination;el("recordSearch").value=selections.search;details();
       message(data?.restored?"Record restored to the Transfers board on "+date(newDate)+".":record.deleted?"Deleted record date updated.":"Record updated.",false);
     }catch(error){if(token===generation)message("Could not save record: "+error.message,true);}
     finally{button.disabled=false;button.textContent="Save";}
   }
   function details(){
-    page=0;visible=D.filter(rows,{type:el("recordType").value,status:el("recordStatus").value,location:el("recordLocation").value,search:el("recordSearch").value});renderPage();busy(false);
+    page=0;visible=D.filter(rows,{type:el("recordType").value,status:el("recordStatus").value,location:el("recordLocation").value,origin:el("recordOrigin").value,destination:el("recordDestination").value,search:el("recordSearch").value});renderPage();busy(false);
   }
   function renderPage(){
     const pages=Math.max(1,Math.ceil(visible.length/pageSize));page=Math.min(page,pages-1);
@@ -95,8 +95,10 @@
     el("reportUpdated").textContent="Run "+new Date().toLocaleString();
     const statuses=[...new Set(rows.filter(r=>!r.deleted).map(r=>r.status))].sort();if(window.TransfersAccess.can("deleted_records"))statuses.push("Deleted");el("recordStatus").innerHTML='<option value="">All statuses</option>'+statuses.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join("");
     const locations=[...new Set([...locationCatalog,...rows.filter(r=>r.type==="Job").flatMap(r=>[r.origin,r.additional_stop,r.additional_stop_2,r.destination])].filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-    el("recordLocation").innerHTML='<option value="">All locations</option>'+locations.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join("");
-    el("recordLocation").value="";
+    for(const [id,label] of [["recordLocation","All locations"],["recordOrigin","All origins"],["recordDestination","All destinations"]]){
+      el(id).innerHTML='<option value="">'+label+'</option>'+locations.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join("");
+      el(id).value="";
+    }
     el("recordType").value="";el("recordSearch").value="";el("reportResults").classList.remove("hidden");details();
   }
   async function run(){
@@ -151,7 +153,7 @@
   el("period").addEventListener("change",preset);
   for(const id of ["dateFrom","dateTo"])el(id).addEventListener("change",()=>{el("period").value="custom";});
   el("reportFilters").addEventListener("submit",e=>{e.preventDefault();run();});
-  for(const id of ["recordType","recordStatus","recordLocation"])el(id).addEventListener("change",details);
+  for(const id of ["recordType","recordStatus","recordLocation","recordOrigin","recordDestination"])el(id).addEventListener("change",details);
   el("recordRows").addEventListener("click",e=>{const b=e.target.closest(".record-save");if(b)saveRecord(b);});
   el("recordRows").addEventListener("change",e=>{if(e.target.matches(".record-status"))e.target.closest("tr").querySelector(".record-custom")?.classList.toggle("hidden",e.target.value!=="Custom");});
   el("recordSearch").addEventListener("input",details);
