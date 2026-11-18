@@ -12,7 +12,7 @@
     }catch(_err){}
   </script>
   <link rel="stylesheet" href="styles.css?v=20261026-below-header-scroll">
-  <link rel="stylesheet" href="summary.css?v=20261026-window-scrollbar">
+  <link rel="stylesheet" href="summary.css?v=20261118-multi-route">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="edit-guard.js?v=20261016-rapid-saves"></script>
   <script src="config.js?v=20261009-permissions"></script>
@@ -83,14 +83,13 @@
       <div class="record-controls">
         <label>Show<select id="recordType"><option value="">Jobs + time-slot statuses</option><option value="Job">Jobs only</option><option value="Time-slot status">Time-slot statuses only</option></select></label>
         <label>Status<select id="recordStatus"><option value="">All statuses</option><option value="Deleted">Deleted</option></select></label>
-        <label>Location<select id="recordLocation" aria-describedby="locationHelp"><option value="">All locations</option></select></label>
-        <label>From<select id="recordOrigin"><option value="">All origins</option></select></label>
-        <label>To<select id="recordDestination"><option value="">All destinations</option></select></label>
+        <details class="route-filter"><summary>From · <span id="recordOriginCount">All origins</span></summary><div id="recordOrigin" class="route-options" role="group" aria-label="From locations"></div></details>
+        <details class="route-filter"><summary>To · <span id="recordDestinationCount">All destinations</span></summary><div id="recordDestination" class="route-options" role="group" aria-label="To locations"></div></details>
         <label class="record-search">Search<input id="recordSearch" type="search" placeholder="Job, move, route, driver, or note"></label>
       </div>
       <div class="summary-table-wrap"><table><thead><tr><th>Date / time</th><th>Driver slot</th><th>Type</th><th>Job / move</th><th>Route / notes</th><th>Status</th><th>Pallets</th><th>Scheduled duration</th><th class="record-edit-control">Edit</th></tr></thead><tbody id="recordRows"></tbody></table></div>
       <div class="report-pagination"><span id="pageLabel"></span><div><button id="previousPage">Previous</button><button id="nextPage">Next</button></div></div>
-      <p class="summary-help">Date and Status changes take effect when you click the row’s Save button. Changing a deleted record’s status to a regular status and clicking Save restores it to the Transfers board on the selected date. Keep Deleted selected to change only its date. Older recovered jobs may have incomplete details; previously deleted time-slot boxes were not retained.<br>Totals describe active records in the date and driver-slot report above. Show, Status, Location, From, To, and Search narrow the detailed records and CSV export. From and To match the route’s origin and final destination; Location matches any stop.</p>
+      <p class="summary-help">Date and Status changes take effect when you click the row’s Save button. Changing a deleted record’s status to a regular status and clicking Save restores it to the Transfers board on the selected date. Keep Deleted selected to change only its date. Older recovered jobs may have incomplete details; previously deleted time-slot boxes were not retained.<br>Totals describe active records in the date and driver-slot report above. Show, Status, From, To, and Search narrow the detailed records and CSV export. From and To match the route’s origin and final destination.</p>
     </section>
   </div>
 </main>
@@ -107,8 +106,8 @@
 </div>
 
 <script src="theme.js?v=20261009-permissions"></script>
-<script src="summary-data.js?v=20261118-route-filters"></script>
-<script src="summary.js?v=20261118-move-links"></script>
+<script src="summary-data.js?v=20261118-multi-route"></script>
+<script src="summary.js?v=20261118-multi-route"></script>
 <script src="user-profile.js?v=20261016-account-options"></script>
 <script src="visitor-share.js?v=20261022-simple" defer></script>
 </body>
