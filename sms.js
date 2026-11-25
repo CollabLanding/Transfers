@@ -48,17 +48,20 @@
   function templateText(kind){
     if(!transfer)return "";
     const move=(transfer.urgent?"HOT ":"")+"Move #"+(transfer.move_number??"—");
-    const route=[transfer.origin,transfer.additional_stop,transfer.additional_stop_2,transfer.destination].filter(Boolean).join(" → ");
-    const schedule=fmtDate(transfer.scheduled_date)+" at "+fmtTime(transfer.scheduled_time);
-    const job=transfer.job_number?" Job/Notes: "+transfer.job_number+".":"";
+    const route=[
+      [transfer.origin,transfer.dock_number],
+      [transfer.additional_stop],
+      [transfer.additional_stop_2],
+      [transfer.destination,transfer.destination_dock_number]
+    ].filter(([location])=>location)
+      .map(([location,dock])=>dock==null||dock===""?location:location+", dock "+dock)
+      .join(" to ");
     if(kind==="update"){
-      return "Transfers Dispatch: "+move+" update. "+route+". Scheduled "+schedule+". Status: "+(transfer.order_status||"Loading")+"."+job;
-    }
-    if(kind==="delay"){
-      return "Transfers Dispatch: "+move+" delay/update. "+route+". Current scheduled time is "+schedule+"."+job+" Please contact dispatch if you need updated timing.";
+      const reference=[move,route].filter(Boolean).join(", ");
+      return reference+"\nPlease reply with your current status and ETA. Thanks!";
     }
     return [
-      [move, [[transfer.origin,transfer.dock_number],[transfer.additional_stop],[transfer.additional_stop_2],[transfer.destination,transfer.destination_dock_number]].filter(([location])=>location).map(([location,dock])=>dock==null||dock===""?location:location+", dock "+dock).join(" to ")].join(", "),
+      [move, route].filter(Boolean).join(", "),
       transfer.pallet_count!=null&&transfer.pallet_count!==""?transfer.pallet_count+" Pallets":"",
       transfer.job_number||""
     ].join("\n").trim();
