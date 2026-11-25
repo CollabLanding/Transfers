@@ -58,7 +58,7 @@
       .join(" to ");
     if(kind==="update"){
       const reference=[move,route].filter(Boolean).join(", ");
-      return reference+"\nPlease reply with your current status and ETA. Thanks!";
+      return reference+"\nPlease reply with your current status. Thanks!";
     }
     return [
       [move, route].filter(Boolean).join(", "),
