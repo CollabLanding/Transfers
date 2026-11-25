@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Today's Dispatches · Transfers</title>
+  <link rel="stylesheet" href="driver-dispatch.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script defer src="driver-dispatch.js?v=1"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Today's Dispatches</h1>
+        <p id="driverDate"></p>
+      </div>
+      <button id="driverSignout" type="button">Sign out</button>
+    </header>
+    <p id="driverFeedback" role="status">Loading dispatches…</p>
+    <section id="driverJobs" aria-label="Assigned loads"></section>
+  </main>
+  <dialog id="dispatchMessage">
+    <form>
+      <h2>Message Dispatch</h2>
+      <label for="driverMessageText" id="driverMessageLabel"></label>
+      <textarea id="driverMessageText" maxlength="400" rows="4" required></textarea>
+      <p id="driverMessageFeedback" role="status"></p>
+      <div class="actions">
+        <button type="button" id="driverMessageCancel">Cancel</button>
+        <button type="submit" class="primary">Send message</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

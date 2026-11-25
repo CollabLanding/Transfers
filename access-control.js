@@ -58,6 +58,7 @@
   let access=null;if(userId){const r=await sb.rpc("get_transfer_access");access=r.error?{role:"Vendor",permissions:{sign_out:true}}:r.data}
   if(version!==generation)return role;
   role=access?.role||null;permissions=access?.permissions||{};
+  if(role==="Driver"){location.replace("driver-dispatch.html");return role}
   const nextSignature=JSON.stringify([role,permissions]),previous=signature;signature=nextSignature;
   document.documentElement.dataset.accessRole=role||"signed-out";
   apply();
