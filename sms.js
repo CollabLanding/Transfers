@@ -54,7 +54,7 @@
       [transfer.additional_stop_2],
       [transfer.destination,transfer.destination_dock_number]
     ].filter(([location])=>location)
-      .map(([location,dock])=>dock==null||dock===""?location:location+", dock "+dock)
+      .map(([location,dock])=>dock==null||dock===""?location:location+" dock "+dock)
       .join(" to ");
     if(kind==="update"){
       const reference=[move,route].filter(Boolean).join(", ");
