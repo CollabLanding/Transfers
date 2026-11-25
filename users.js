@@ -61,13 +61,38 @@
   message.textContent="Loading users…";
   const r=await sb.rpc("list_transfer_users");
   if(r.error){message.textContent=r.error.message;rows.innerHTML="";return}
+  const driverOptions=await sb.rpc("get_driver_account_options");
+  const {slots=[],assignments={}}=driverOptions.data||{};
   rows.innerHTML=(r.data||[]).map(u=>{
    const locked=u.role==="Owner"||u.id===window.TransfersAccess.userId;
    return '<tr data-user-id="'+esc(u.id)+'"><td>'+esc(u.email)+'</td><td class="user-display-name">'+esc(u.display_name)+'</td><td>'+(locked?esc(u.role)+(u.role==="Owner"?' · Protected':' · Your account'):'<select aria-label="Role for '+esc(u.email)+'"><option value="Vendor"'+(u.role==="Vendor"?' selected':'')+'>Vendor</option><option value="User"'+(u.role==="User"?' selected':'')+'>User</option><option value="Admin"'+(u.role==="Admin"?' selected':'')+'>Admin</option></select>')+'</td><td>'+(locked?'':'<button type="button">Save</button>')+'</td></tr>';
   }).join("");
+  for(const row of rows.querySelectorAll("tr")){
+   const role=row.querySelector("select");
+   if(!role||driverOptions.error)continue;
+   const user=r.data.find(u=>u.id===row.dataset.userId);
+   const assigned=assignments[user.id];
+   role.add(new Option("Driver","Driver",false,user.role==="Driver"));
+   const slot=document.createElement("select");
+   slot.setAttribute("aria-label","Driver column for "+user.email);
+   slot.add(new Option("Choose driver column",""));
+   for(const name of new Set([...slots,...(assigned?[assigned]:[])])){
+    slot.add(new Option(name,name,false,name===assigned));
+   }
+   slot.value=assigned||"";
+   slot.dataset.driverSlot="";
+   role.after(slot);
+   const toggle=()=>{slot.hidden=role.value!=="Driver"};
+   role.addEventListener("change",toggle);
+   toggle();
+  }
   rows.querySelectorAll("button").forEach(button=>button.onclick=async()=>{
    const row=button.closest("tr");button.disabled=true;
-   const r=await sb.rpc("set_transfer_user_role",{p_user_id:row.dataset.userId,p_role:row.querySelector("select").value});
+   const role=row.querySelector("select").value;
+   const slot=row.querySelector("[data-driver-slot]")?.value;
+   const r=role==="Driver"
+    ? await sb.rpc("assign_transfer_driver_account",{p_user_id:row.dataset.userId,p_driver_slot:slot})
+    : await sb.rpc("set_transfer_user_role",{p_user_id:row.dataset.userId,p_role:role});
    button.disabled=false;
    if(r.error){message.textContent=r.error.message;return}
    await load();message.textContent="Role saved.";
