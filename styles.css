@@ -1861,3 +1861,11 @@ body.header-scroll-shell>main{flex:1 1 0;min-height:0;overflow:auto;scrollbar-gu
 /* Align sticky board and right sidebar with the Transfer Info panel. */
 main.transfer-layout > .board,
 main.transfer-layout > .right-sidebar{top:0}
+
+.card-route-dock{
+  margin-left:1px;
+  font-size:.65em;
+  font-weight:700;
+  line-height:0;
+  vertical-align:super;
+}

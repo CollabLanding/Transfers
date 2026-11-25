@@ -345,18 +345,20 @@ function deadlineText(date,time){
 }
 function makeCard(x,visualTop=null,visualHeight=null,stacked=false){
  const deadlines=[["PU",deadlineText(x.pickup_by_date,x.pickup_by_time)],["DL",deadlineText(x.deliver_by_date,x.deliver_by_time)]].filter(([,value])=>value);
+ const route=[[x.origin,x.dock_number],[x.additional_stop],[x.additional_stop_2],[x.destination,x.destination_dock_number]]
+   .filter(([location])=>location);
  let b=document.createElement("div");b.setAttribute("role","button");b.tabIndex=0;
- b.className="card "+statusClass(x.order_status)+(x.urgent?" urgent":"")+(stacked?" visually-stacked":"");b.draggable=true;b.dataset.id=x.id;if(x.dock_number!=null)b.classList.add("has-dock");if(deadlines.length)b.classList.add("has-deadlines");
+ b.className="card "+statusClass(x.order_status)+(x.urgent?" urgent":"")+(stacked?" visually-stacked":"");b.draggable=true;b.dataset.id=x.id;if(deadlines.length)b.classList.add("has-deadlines");
  b.style.top=(Number.isFinite(visualTop)?visualTop:cardBaseTopPx(x))+"px";
  b.style.height=(Number.isFinite(visualHeight)?visualHeight:cardHeightPx(x))+"px";
  b.innerHTML=(x.urgent?'<span class="urgent-tape" aria-hidden="true"></span>':'')+
-   '<span class="card-topline"><span class="card-status">'+esc(x.order_status||"Planned")+'</span>'+(x.dock_number!=null?'<span class="card-dock">Dock '+esc(x.dock_number)+'</span>':'')+'<span class="card-move">Move #'+esc(x.move_number??"—")+'</span></span>'+
-   '<small class="card-route">'+[x.origin,x.additional_stop,x.additional_stop_2,x.destination].filter(Boolean).map(value=>esc(compactLocation(value))).join(' → ')+'</small>'+
+   '<span class="card-topline"><span class="card-status">'+esc(x.order_status||"Planned")+'</span>'+'<span class="card-move">Move #'+esc(x.move_number??"—")+'</span></span>'+
+   '<small class="card-route">'+route.map(([location,dock])=>esc(compactLocation(location))+(dock==null?"":'<sup class="card-route-dock" aria-label="Dock '+esc(dock)+'">'+esc(dock)+'</sup>')).join(" → ")+'</small>'+
    '<b class="card-job">'+esc(x.job_number)+'</b>'+
    '<span class="card-pallet"><span class="card-pallet-count">'+esc(x.pallet_count)+'</span></span>'+
    '<small class="card-creator">'+esc(x.created_by_name)+'</small>'+
    (deadlines.length?'<span class="card-deadlines">'+deadlines.map(([label,value])=>'<span>'+label+': '+esc(value)+'</span>').join('')+'</span>':'');
- b.title=[x.origin+' → '+x.destination,x.job_number,...deadlines.map(([label,value])=>label+': '+value)].join('\n');
+ b.title=[route.map(([location,dock])=>dock==null?location:location+' (Dock '+dock+')').join(' → '),x.job_number,...deadlines.map(([label,value])=>label+': '+value)].join('\n');
  ["top","bottom"].forEach(edge=>{const h=document.createElement("span");h.className="resize-handle resize-"+edge;h.dataset.edge=edge;h.title=edge==="top"?"Drag to change start time and duration":"Drag to change duration";h.addEventListener("pointerdown",e=>beginTransferResize(e,x,b,edge));b.appendChild(h)});
  b.addEventListener("keydown",e=>{if(e.target===b&&(e.key==="Enter"||e.key===" ")){e.preventDefault();edit(x.id)}});
  b.addEventListener("dragstart",e=>{if(!window.TransfersAccess.can("move_load")){e.preventDefault();return}if(e.target.closest?.(".resize-handle,.load-chain")){e.preventDefault();return}ignoreClickUntil=Date.now()+500;draggedTransferId=x.id;window.TransferBoardInteraction?.begin("job-drag",()=>{draggedTransferId=null;dragGrabOffsetPx=0;b.classList.remove("dragging");clearDropPreviews();window.TransferBoardInteraction?.end("job-drag");renderBoard()});dragGrabOffsetPx=transferDragOffset(x,b,e.clientY);b.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",x.id)});
