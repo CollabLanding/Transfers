@@ -58,8 +58,8 @@
       return "Transfers Dispatch: "+move+" delay/update. "+route+". Current scheduled time is "+schedule+"."+job+" Please contact dispatch if you need updated timing.";
     }
     return [
-      [move, [transfer.origin,transfer.additional_stop,transfer.additional_stop_2,transfer.destination].filter(Boolean).join(" to ")].join(", "),
-      [transfer.pallet_count!=null&&transfer.pallet_count!==""?transfer.pallet_count+" Pallets":"",transfer.dock_number!=null&&transfer.dock_number!==""?"Dock "+transfer.dock_number:""].filter(Boolean).join(", "),
+      [move, [[transfer.origin,transfer.dock_number],[transfer.additional_stop],[transfer.additional_stop_2],[transfer.destination,transfer.destination_dock_number]].filter(([location])=>location).map(([location,dock])=>dock==null||dock===""?location:location+", dock "+dock).join(" to ")].join(", "),
+      transfer.pallet_count!=null&&transfer.pallet_count!==""?transfer.pallet_count+" Pallets":"",
       transfer.job_number||""
     ].join("\n").trim();
   }
@@ -112,7 +112,7 @@
     modal.classList.remove("hidden");
 
     const {data,error}=await sb.from("transfers")
-      .select("id,move_number,scheduled_date,scheduled_time,duration_minutes,driver,origin,destination,additional_stop,additional_stop_2,pallet_count,dock_number,job_number,order_status,urgent")
+      .select("id,move_number,scheduled_date,scheduled_time,duration_minutes,driver,origin,destination,additional_stop,additional_stop_2,pallet_count,dock_number,destination_dock_number,job_number,order_status,urgent")
       .eq("id",id)
       .single();
     if(error){
